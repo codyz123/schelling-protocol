@@ -8,6 +8,7 @@ import { Stage, orderTokens } from "../types.js";
 import { computeCompatibility } from "../matching/compatibility.js";
 import { getVertical } from "../verticals/registry.js";
 import { computeReputation } from "../core/reputation.js";
+import { computeMarketplaceMatch } from "../verticals/marketplace/scoring.js";
 
 export interface SearchInput {
   user_token: string;
@@ -81,8 +82,18 @@ export async function handleSearch(
     };
   }
 
-  const callerEmbedding: number[] = JSON.parse(caller.embedding);
+  const callerEmbedding: number[] = caller.embedding ? JSON.parse(caller.embedding) : [];
   const callerDealBreakers = caller.deal_breakers ? JSON.parse(caller.deal_breakers) : {};
+  const callerRole = caller.role ?? "seeker";
+  const callerMarketplaceData = caller.marketplace_data ? JSON.parse(caller.marketplace_data) : {};
+
+  // For asymmetric verticals, search for the opposite role
+  let targetRole = callerRole; // Default for symmetric verticals
+  if (vertical && !vertical.symmetric) {
+    if (verticalId === "marketplace") {
+      targetRole = callerRole === "seller" ? "buyer" : "seller";
+    }
+  }
 
   // Two-pass filtering: hard filters first (deal-breakers), then soft scoring
   
@@ -92,6 +103,7 @@ export async function handleSearch(
     WHERE u.protocol_version = ?
       AND u.vertical_id = ?
       AND u.user_token != ?
+      AND u.status = 'active'
       AND u.user_token NOT IN (
         SELECT declined_token FROM declines 
         WHERE decliner_token = ? AND vertical_id = ?
@@ -104,6 +116,12 @@ export async function handleSearch(
     input.user_token,
     verticalId,
   ];
+
+  // For asymmetric verticals, filter by target role
+  if (vertical && !vertical.symmetric) {
+    sql += ` AND u.role = ?`;
+    params.push(targetRole);
+  }
 
   // Apply hard filters based on vertical configuration
   if (vertical?.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("intent")) {
@@ -141,13 +159,48 @@ export async function handleSearch(
       verification_level: "anonymous" | "verified" | "attested";
       interaction_count: number;
     };
+    explanation?: string;
   }[] = [];
 
   for (const other of others) {
-    const otherEmbedding: number[] = JSON.parse(other.embedding);
-    const result = computeCompatibility(callerEmbedding, otherEmbedding);
+    let matchResult: any;
+    let score: number;
+    let categories: string[] = [];
+    let explanation: string | undefined;
 
-    if (result.overall_score >= threshold) {
+    if (verticalId === "marketplace") {
+      // Use marketplace-specific scoring
+      const otherMarketplaceData = other.marketplace_data ? JSON.parse(other.marketplace_data) : {};
+      
+      // For marketplace, scoring depends on roles
+      if (callerRole === "buyer" && other.role === "seller") {
+        // Buyer searching sellers - buyer preference vs seller listing
+        matchResult = computeMarketplaceMatch(otherMarketplaceData, callerMarketplaceData);
+      } else if (callerRole === "seller" && other.role === "buyer") {
+        // Seller searching buyers - seller listing vs buyer preference  
+        matchResult = computeMarketplaceMatch(callerMarketplaceData, otherMarketplaceData);
+      } else {
+        continue; // Skip incompatible roles
+      }
+      
+      score = matchResult.overall_score;
+      categories = [
+        `price_overlap_${matchResult.price_overlap_score.toFixed(2)}`,
+        `category_match_${matchResult.category_match_score.toFixed(2)}`,
+        `location_${matchResult.location_proximity_score.toFixed(2)}`
+      ];
+      explanation = matchResult.match_explanation;
+    } else {
+      // Use matchmaking compatibility scoring for other verticals
+      const otherEmbedding: number[] = other.embedding ? JSON.parse(other.embedding) : [];
+      matchResult = computeCompatibility(callerEmbedding, otherEmbedding);
+      score = matchResult.overall_score;
+      categories = matchResult.shared_categories.map(
+        (sc) => `${sc.direction}_${sc.dimension}`
+      );
+    }
+
+    if (score >= threshold) {
       // Get reputation for this candidate
       const reputation = computeReputation(ctx.db, other.user_token, verticalId);
       
@@ -156,17 +209,33 @@ export async function handleSearch(
         continue; // Skip this candidate
       }
 
+      // Handle exclusive commitment for marketplace
+      if (verticalId === "marketplace" && vertical?.exclusive_commitment) {
+        // Check if this user is already committed to someone else
+        const existingCommitments = ctx.db
+          .prepare(`
+            SELECT COUNT(*) as count FROM candidates 
+            WHERE (user_a_token = ? OR user_b_token = ?) 
+              AND vertical_id = ? 
+              AND (stage_a >= 4 OR stage_b >= 4)
+          `)
+          .get(other.user_token, other.user_token, verticalId) as { count: number };
+        
+        if (existingCommitments.count > 0) {
+          continue; // Skip users with existing commitments in exclusive verticals
+        }
+      }
+
       scored.push({
         user: other,
-        score: result.overall_score,
-        categories: result.shared_categories.map(
-          (sc) => `${sc.direction}_${sc.dimension}`
-        ),
+        score,
+        categories,
         reputation: {
           score: reputation.score,
           verification_level: reputation.verification_level,
           interaction_count: reputation.interaction_count,
         },
+        explanation,
       });
     }
   }

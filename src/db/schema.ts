@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
   agent_model      TEXT,
   embedding_method  TEXT,
   embedding        TEXT NOT NULL,
-  city             TEXT NOT NULL,
-  age_range        TEXT NOT NULL CHECK (age_range IN ('18-24','25-34','35-44','45-54','55-64','65+')),
-  intent           TEXT NOT NULL,
+  city             TEXT,
+  age_range        TEXT CHECK (age_range IS NULL OR age_range IN ('18-24','25-34','35-44','45-54','55-64','65+')),
+  intent           TEXT,
   interests        TEXT,
   values_text      TEXT,
   description      TEXT,
@@ -22,6 +22,14 @@ CREATE TABLE IF NOT EXISTS users (
   verification_level TEXT NOT NULL DEFAULT 'anonymous' CHECK (verification_level IN ('anonymous','verified','attested')),
   phone_hash       TEXT, -- for Sybil resistance
   agent_attestation TEXT, -- JSON: {model, method, interaction_hours, generated_at}
+  -- v2 asymmetric roles
+  role             TEXT, -- seller, buyer, seeker, etc. (vertical-specific)
+  -- v2 user status
+  status           TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','delisted')),
+  -- v2 media handling
+  media_refs       TEXT, -- JSON array of media references
+  -- v2 marketplace data storage
+  marketplace_data TEXT, -- JSON: category, condition, price_range, budget, location, etc.
   created_at       TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -124,6 +132,23 @@ CREATE INDEX IF NOT EXISTS idx_reputation_events_identity ON reputation_events(i
 CREATE INDEX IF NOT EXISTS idx_reputation_events_vertical ON reputation_events(vertical_id);
 CREATE INDEX IF NOT EXISTS idx_reputation_events_type ON reputation_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_reputation_events_created ON reputation_events(created_at);
+
+-- Negotiations table for asymmetric verticals
+CREATE TABLE IF NOT EXISTS negotiations (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  from_identity TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  round INTEGER NOT NULL,
+  proposal TEXT NOT NULL, -- JSON
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','accepted','countered','expired')),
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_negotiations_candidate ON negotiations(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_negotiations_from ON negotiations(from_identity);
+CREATE INDEX IF NOT EXISTS idx_negotiations_status ON negotiations(status);
+CREATE INDEX IF NOT EXISTS idx_negotiations_expires ON negotiations(expires_at);
 `;
 
 export function initSchema(db: Database): void {

@@ -11,6 +11,7 @@ import { handleGetIntroductions } from "../handlers/get-introductions.js";
 import { handleReportOutcome } from "../handlers/report-outcome.js";
 import { handleWithdraw } from "../handlers/withdraw.js";
 import { handleGetReputation } from "../handlers/get-reputation.js";
+import { handleNegotiate } from "../handlers/negotiate.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -28,13 +29,14 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // 1. schelling.register
   server.tool(
     "schelling.register",
-    "Register a user for matchmaking with a personality embedding and profile data",
+    "Register a user in a vertical (matchmaking, marketplace, etc.) with appropriate data",
     {
       protocol_version: z.string().describe("Must be 'schelling-2.0'"),
       vertical_id: z.string().default("matchmaking").describe("Vertical to register in"),
+      role: z.string().optional().describe("Role within vertical (seller/buyer for marketplace, seeker for matchmaking)"),
       agent_model: z.string().optional().describe("AI model used, e.g. 'claude-opus-4-6'"),
       embedding_method: z.string().optional().describe("How embedding was generated, e.g. 'anchor-rated'"),
-      embedding: z.array(z.number()).length(50).describe("50-dim personality embedding, each value in [-1, 1]"),
+      embedding: z.array(z.number()).optional().describe("Embedding vector (50-dim for matchmaking, zeros/omit for marketplace)"),
       city: z.string().min(1).max(100).describe("User's city"),
       age_range: z.enum(["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]),
       intent: z
@@ -55,7 +57,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .string()
         .max(1000)
         .optional()
-        .describe("Personality description for tier-3 profile"),
+        .describe("Profile description for tier-3 exchange"),
       seeking: z
         .string()
         .max(500)
@@ -67,7 +69,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
           contact: z.string(),
         })
         .optional()
-        .describe("Identity revealed only on mutual introduction"),
+        .describe("Identity revealed only on mutual connection"),
       deal_breakers: z
         .object({
           no_smoking: z.boolean().optional(),
@@ -93,6 +95,43 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         })
         .optional()
         .describe("Agent attestation metadata"),
+      status: z
+        .enum(["active", "paused", "delisted"])
+        .default("active")
+        .describe("User status (paused = hidden from search, delisted = auto-decline)"),
+      // Marketplace-specific fields
+      category: z.string().optional().describe("Marketplace category (electronics, vehicles, etc.)"),
+      condition: z
+        .enum(["new", "like-new", "good", "fair", "parts"])
+        .optional()
+        .describe("Item condition (for sellers)"),
+      price_range: z
+        .object({
+          min_acceptable: z.number().optional().describe("Minimum acceptable price (sellers)"),
+          asking_price: z.number().optional().describe("Initial asking price (sellers)"),
+        })
+        .optional()
+        .describe("Price range for sellers"),
+      budget: z
+        .object({
+          max_price: z.number().optional().describe("Maximum budget (buyers)"),
+          preferred_price: z.number().optional().describe("Preferred price (buyers)"),
+        })
+        .optional()
+        .describe("Budget for buyers"),
+      location: z.string().optional().describe("Location for marketplace transactions"),
+      photos: z
+        .array(z.string())
+        .optional()
+        .describe("Photo URLs or references for marketplace listings"),
+      shipping_options: z
+        .array(z.string())
+        .optional()
+        .describe("Available shipping methods"),
+      item_attributes: z
+        .record(z.any())
+        .optional()
+        .describe("Category-specific item attributes"),
       user_token: z
         .string()
         .optional()
@@ -266,5 +305,34 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .describe("Get vertical-specific reputation (omit for global)"),
     },
     async (params) => toMcpResponse(handleGetReputation(ctx, params))
+  );
+
+  // 11. schelling.negotiate
+  server.tool(
+    "schelling.negotiate",
+    "Send proposals, counteroffers, or accept proposals in asymmetric verticals (e.g. marketplace)",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate ID to negotiate with"),
+      proposal: z
+        .object({
+          price: z.number().optional().describe("Proposed price"),
+          terms: z.string().optional().describe("Proposed terms"),
+          shipping_method: z.string().optional().describe("Proposed shipping method"),
+          delivery_date: z.string().optional().describe("Proposed delivery date"),
+          notes: z.string().optional().describe("Additional notes or conditions"),
+        })
+        .optional()
+        .describe("Proposal to send (omit if accepting existing proposal)"),
+      accept: z
+        .boolean()
+        .optional()
+        .describe("Set to true to accept the latest pending proposal"),
+      idempotency_key: z
+        .string()
+        .optional()
+        .describe("Client-generated key for request deduplication"),
+    },
+    async (params) => toMcpResponse(await handleNegotiate(params, ctx))
   );
 }
