@@ -67,11 +67,17 @@ describe("v2 features", () => {
       const candidateId = searchResult.data.candidates[0]?.candidate_id;
       expect(candidateId).toBeDefined();
 
+      // Determine which side tokenA is on (depends on lexicographic ordering)
+      const candidateRow = ctx.db
+        .prepare("SELECT user_a_token, stage_a, stage_b FROM candidates WHERE id = ?")
+        .get(candidateId) as { user_a_token: string; stage_a: number; stage_b: number };
+      const col = tokenA === candidateRow.user_a_token ? "stage_a" : "stage_b";
+
       // Check stage is DISCOVERED (1)
       const candidate1 = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidate1.stage_a).toBe(Stage.DISCOVERED);
+        .prepare(`SELECT ${col} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidate1.stage).toBe(Stage.DISCOVERED);
 
       // Compare should advance to EVALUATED (stage 2)  
       const compareResult = await handleCompare(
@@ -81,9 +87,9 @@ describe("v2 features", () => {
       expect(compareResult.ok).toBe(true);
 
       const candidate2 = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidate2.stage_a).toBe(Stage.EVALUATED);
+        .prepare(`SELECT ${col} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidate2.stage).toBe(Stage.EVALUATED);
 
       // Mutual evaluation needed for profile exchange
       await handleCompare(
@@ -99,9 +105,9 @@ describe("v2 features", () => {
       expect(profileResult.ok).toBe(true);
 
       const candidate3 = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidate3.stage_a).toBe(Stage.EXCHANGED);
+        .prepare(`SELECT ${col} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidate3.stage).toBe(Stage.EXCHANGED);
 
       // Propose should advance to COMMITTED (stage 4)
       const proposeResult = await handlePropose(
@@ -111,9 +117,9 @@ describe("v2 features", () => {
       expect(proposeResult.ok).toBe(true);
 
       const candidate4 = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidate4.stage_a).toBe(Stage.COMMITTED);
+        .prepare(`SELECT ${col} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidate4.stage).toBe(Stage.COMMITTED);
     });
 
     test("COMPLETED stage (6) reached after outcome reporting", async () => {
@@ -137,10 +143,13 @@ describe("v2 features", () => {
 
       // Should now be at CONNECTED (5)
       const candidate = ctx.db
-        .prepare("SELECT stage_a, stage_b FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number; stage_b: number };
+        .prepare("SELECT user_a_token, stage_a, stage_b FROM candidates WHERE id = ?")
+        .get(candidateId) as { user_a_token: string; stage_a: number; stage_b: number };
       expect(candidate.stage_a).toBe(Stage.CONNECTED);
       expect(candidate.stage_b).toBe(Stage.CONNECTED);
+
+      // Determine which column corresponds to tokenA
+      const colA = tokenA === candidate.user_a_token ? "stage_a" : "stage_b";
 
       // Report outcome should advance to COMPLETED (6)
       const { handleReportOutcome } = await import("../src/handlers/report-outcome.js");
@@ -153,9 +162,9 @@ describe("v2 features", () => {
       expect(outcomeResult.ok).toBe(true);
 
       const candidateFinal = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidateFinal.stage_a).toBe(Stage.COMPLETED);
+        .prepare(`SELECT ${colA} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidateFinal.stage).toBe(Stage.COMPLETED);
     });
   });
 
@@ -267,11 +276,17 @@ describe("v2 features", () => {
       // A proposes (advances to COMMITTED)
       await handlePropose({ user_token: tokenA, candidate_id: candidateId }, ctx);
 
+      // Determine which side tokenA is on
+      const candidateRow = ctx.db
+        .prepare("SELECT user_a_token FROM candidates WHERE id = ?")
+        .get(candidateId) as { user_a_token: string };
+      const col = tokenA === candidateRow.user_a_token ? "stage_a" : "stage_b";
+
       // Check A is now COMMITTED
       const candidate = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidate.stage_a).toBe(Stage.COMMITTED);
+        .prepare(`SELECT ${col} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidate.stage).toBe(Stage.COMMITTED);
 
       // A withdraws
       const withdrawResult = await handleWithdraw({
@@ -288,9 +303,9 @@ describe("v2 features", () => {
 
       // Check stage was reset to EXCHANGED
       const candidateAfter = ctx.db
-        .prepare("SELECT stage_a FROM candidates WHERE id = ?")
-        .get(candidateId) as { stage_a: number };
-      expect(candidateAfter.stage_a).toBe(Stage.EXCHANGED);
+        .prepare(`SELECT ${col} as stage FROM candidates WHERE id = ?`)
+        .get(candidateId) as { stage: number };
+      expect(candidateAfter.stage).toBe(Stage.EXCHANGED);
     });
 
     test("cannot withdraw from non-COMMITTED stages", async () => {
