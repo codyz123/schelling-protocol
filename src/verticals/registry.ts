@@ -42,6 +42,10 @@ export function getVerticalIds(): string[] {
   return Object.keys(_registry);
 }
 
+export function getVerticalRegistry(): Map<string, VerticalDescriptor> {
+  return new Map(Object.entries(_registry));
+}
+
 export interface ValidationResult {
   valid: boolean;
   errors: string[];

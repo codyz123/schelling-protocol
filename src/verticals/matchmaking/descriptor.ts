@@ -73,5 +73,39 @@ export const matchmakingVertical: VerticalDescriptor = {
     enabled: true,
     hard_filters: ["city", "age_range", "intent"], // These are hard constraints
     filter_before_scoring: true
+  },
+
+  // Phase 5: Onboarding configuration
+  onboarding: {
+    minimum_interaction_hours: 10,
+    collection_strategy: "observe_and_interview",
+    required_confidence_threshold: 0.8,
+    red_flags: [
+      "user_requests_embedding_manipulation",
+      "user_wants_to_hide_real_traits",
+      "user_asks_for_specific_scores",
+      "insufficient_interaction_history",
+      "user_seems_to_be_gaming_system"
+    ],
+    observation_priorities: [
+      "communication_style",
+      "conflict_response",
+      "values_hierarchy", 
+      "social_energy",
+      "intellectual_curiosity"
+    ],
+    interview_topics: [
+      "relationship_history",
+      "lifestyle_preferences",
+      "future_goals", 
+      "deal_breakers",
+      "communication_preferences"
+    ],
+    profile_writing_guidelines: {
+      perspective: "third_person",
+      tone: "honest_specific_non_performative",
+      avoid: ["generic_superlatives", "unrealistic_idealization"],
+      focus: ["authentic_traits", "specific_interests", "real_values"]
+    }
   }
 };

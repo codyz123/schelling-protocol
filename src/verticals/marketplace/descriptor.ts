@@ -92,5 +92,53 @@ export const marketplaceVertical: VerticalDescriptor = {
     enabled: true,
     hard_filters: ["category", "location", "price_range"],
     filter_before_scoring: true
+  },
+
+  // Phase 5: Onboarding configuration
+  onboarding: {
+    seller_collection: {
+      required_accuracy: 0.95,
+      photo_requirements: {
+        minimum: 1,
+        recommended: 3,
+        types: ["main_item", "condition_details", "accessories"],
+        quality_standards: "clear, well-lit, representative"
+      },
+      condition_assessment: {
+        method: "honest_detailed_description",
+        categories: ["new", "like-new", "good", "fair", "parts"],
+        require_explanation: true
+      },
+      pricing_guidance: {
+        research_comparable: true,
+        consider_market_rates: true,
+        allow_negotiation_room: true
+      },
+      red_flags: [
+        "unrealistic_item_descriptions",
+        "suspiciously_low_prices",
+        "unwillingness_to_provide_photos",
+        "vague_condition_descriptions",
+        "inconsistent_information"
+      ]
+    },
+    buyer_collection: {
+      budget_realism: {
+        check_market_rates: true,
+        allow_flexibility: true,
+        consider_total_cost: true
+      },
+      requirements_clarity: {
+        specific_needs: true,
+        deal_breakers: true,
+        nice_to_haves: true
+      },
+      red_flags: [
+        "unrealistic_budget_expectations",
+        "vague_requirements",
+        "pressure_for_immediate_decisions",
+        "unwillingness_to_provide_payment_info"
+      ]
+    }
   }
 };

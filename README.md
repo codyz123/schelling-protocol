@@ -1,34 +1,54 @@
-<p align="center">
-  <img src="protocol/logo.svg" alt="Schelling Protocol" width="400">
-</p>
+# Schelling Protocol v2
 
 <p align="center">
-  <strong>Privacy-preserving agent matchmaking via personality embeddings</strong>
+  <strong>The coordination layer for AI agents</strong><br>
+  Privacy-preserving agent-to-agent matchmaking across multiple domains
 </p>
 
 ---
 
-AI assistants know their users deeply from thousands of conversations. The Schelling Protocol lets two agents compare their users' compatibility without exposing raw data -- using 50-dimensional personality embeddings with differential privacy and a tiered matching funnel that progressively reveals information only as mutual interest is established.
+## What is Schelling?
 
-This is a **protocol, not a product**. The spec is the primary artifact. This repo contains one reference implementation as an MCP server.
+The Schelling Protocol is a **general-purpose coordination substrate** that enables AI agents to find and connect with other agents on behalf of their users — for any purpose. Named after Thomas Schelling's focal point theory, it solves coordination problems through progressive disclosure, reputation systems, and privacy-preserving matching.
+
+**When your users say:**
+- *"Find me a partner"* → **Matchmaking vertical**
+- *"Sell my couch"* → **Marketplace vertical** 
+- *"Hire a freelance designer"* → **Talent vertical**
+- *"Find a roommate"* → **Roommates vertical**
+
+**Schelling is the obvious place to coordinate.**
+
+## Core Features
+
+🔐 **Privacy-first**: Differential privacy, client-side noise, progressive disclosure  
+🎯 **Multi-vertical**: Matchmaking, marketplace, talent, roommates — unified protocol  
+📈 **Reputation system**: Sybil-resistant, cross-vertical, consistency-scored  
+🔄 **Progressive funnel**: 6-stage disclosure (discover → evaluate → exchange → commit → connect → complete)  
+⚖️ **Dispute resolution**: Evidence-based, reputation-weighted arbitration  
+🌐 **Multiple transports**: MCP server, REST API, federation-ready  
+📊 **Observability**: Structured logging, health endpoints, Prometheus metrics  
 
 ## Quick Start
 
+### MCP Server (Default)
+
 ```bash
 bun install
-bun test        # 40 tests, ~25ms
-bun start       # starts MCP server on stdio
+bun test        # 100+ tests, all passing
+bun start       # MCP server via stdio
 ```
 
-### Connect via MCP Inspector
+### REST API Server
 
 ```bash
-npx @modelcontextprotocol/inspector bun src/index.ts
+bun start --rest                    # HTTP server on port 3000
+# or
+SCHELLING_REST=true bun start
+SCHELLING_REST_PORT=8080 bun start  # Custom port
 ```
 
 ### Add to Claude Desktop
-
-Add this to your `claude_desktop_config.json`:
 
 ```json
 {
@@ -36,127 +56,254 @@ Add this to your `claude_desktop_config.json`:
     "schelling": {
       "command": "bun",
       "args": ["src/index.ts"],
-      "cwd": "/path/to/schelling-v1"
+      "cwd": "/path/to/schelling-protocol"
     }
   }
 }
 ```
 
-## How It Works
+## Available Operations
 
-```
-Thousands of users
-    |
-    v  match.search (Tier 1: fast, low-res)
-    |  Cosine similarity on 50-dim embedding + metadata filters
-    |
-  ~50-100 candidates
-    |
-    v  match.compare (Tier 2: moderate, higher-res)
-    |  Per-group breakdown, shared interests, complementary traits
-    |
-  ~5-10 candidates
-    |
-    v  match.request_profile (Tier 3: slow, high-res)
-    |  Full profile exchange -- requires mutual tier-2 interest
-    |
-  ~1-3 candidates
-    |
-    v  Agent crafts pitch -> presents to user
-    |
-    v  match.propose -> user opts in
-    |
-    v  Mutual opt-in? -> match.get_introductions
-    |  Identities revealed, intro facilitated
-    |
-    v  match.report_outcome -> feedback loop
-```
+### Discovery & Onboarding
+- `schelling.verticals` — List available coordination verticals
+- `schelling.onboard` — Get collection guide for a vertical
+- `schelling.server_info` — Server capabilities and statistics
 
-Agents can `match.decline` at any stage. Declines are permanent and excluded from future searches.
+### Core Matching Flow  
+- `schelling.register` — Register user in a vertical (matchmaking, marketplace, etc.)
+- `schelling.search` — Find compatible candidates (tier 1: coarse filter)
+- `schelling.evaluate` — Detailed comparison (tier 2: per-dimension analysis)
+- `schelling.exchange` — Full profile exchange (tier 3: requires mutual interest)
+- `schelling.commit` — Opt-in to proceed (tier 4: serious intent signal)
+- `schelling.connections` — Get mutual matches (tier 5: identities revealed)
 
-## The 8 Tools
+### Marketplace-Specific
+- `schelling.negotiate` — Send/accept proposals with structured terms
+- `schelling.verify` — Request/provide verification artifacts
 
-| Tool | Tier | Description |
-|------|------|-------------|
-| `match.register` | -- | Register with embedding, profile data, and identity |
-| `match.search` | 1 | Fast coarse search via embedding similarity |
-| `match.compare` | 2 | Detailed per-dimension breakdown |
-| `match.request_profile` | 3 | Full profile (requires mutual tier-2) |
-| `match.propose` | -- | User opts in after agent pitch |
-| `match.decline` | -- | Permanent exit from a candidate pair |
-| `match.get_introductions` | -- | Poll for mutual matches |
-| `match.report_outcome` | -- | Feedback loop after introduction |
+### Reputation & Safety
+- `schelling.reputation` — View reputation scores and breakdowns
+- `schelling.dispute` — File evidence-based disputes
+- `schelling.report` — Report interaction outcomes for reputation
+- `schelling.withdraw` — Back out of commitments (reputation cost)
+- `schelling.decline` — Permanently exclude candidates
+
+### Data Rights
+- `schelling.export` — Export all user data (GDPR compliance)
+- `schelling.delete_account` — Permanent account deletion
+
+## Supported Verticals
+
+### 🌹 Romantic Matchmaking
+**Agent prompt**: *"Find me a romantic partner using personality compatibility"*
+- **Data**: 50-dimensional personality embedding + preferences
+- **Scoring**: Cosine similarity with group weights (personality, values, intellectual, etc.)
+- **Progressive disclosure**: Personality breakdown → interests → full profile → contact
+- **Timeline**: Optimized for relationship building (weeks/months)
+
+### 🛒 Buy/Sell Marketplace  
+**Agent prompt**: *"Help me sell my [item]"* or *"Find me a [item] to buy"*
+- **Roles**: Asymmetric (sellers list items, buyers search with budgets)
+- **Data**: Structured listings (category, condition, price) + buyer preferences
+- **Features**: Price negotiation, photo verification, escrow-ready
+- **Timeline**: Optimized for transactions (hours/days)
+
+### 💼 Talent & Hiring
+**Agent prompt**: *"Find me a freelance [skill]"* or *"Help me find work in [domain]"*
+- **Roles**: Asymmetric (employers post roles, candidates search)
+- **Data**: Skills vectors + work style compatibility
+- **Features**: Portfolio exchange, reference verification
+- **Timeline**: Optimized for professional relationships (days/weeks)
+
+### 🏠 Roommate Matching
+**Agent prompt**: *"Find me a compatible roommate"*
+- **Data**: Lifestyle compatibility + personality subset
+- **Scoring**: Living habit alignment weighted higher than personality
+- **Features**: Lease verification, move-in coordination
+- **Timeline**: Optimized for housing cycles (weeks/months)
 
 ## Architecture
 
 ```
-src/
-  index.ts                  # Entry point: DB + MCP server + transport
-  types.ts                  # Shared types, dimensions, stage enum
-  db/
-    client.ts               # SQLite singleton (bun:sqlite, WAL mode)
-    schema.ts               # DDL: users, candidates, declines, outcomes
-  matching/
-    compatibility.ts        # Cosine similarity, shared categories, openers
-    privacy.ts              # Laplace noise, embedding validation
-  handlers/                 # Pure functions: typed input -> typed output
-    register.ts
-    search.ts
-    compare.ts
-    request-profile.ts
-    propose.ts
-    decline.ts
-    get-introductions.ts
-    report-outcome.ts
-  transports/
-    mcp.ts                  # Binds handlers to MCP tools via Zod schemas
-
-protocol/                   # THE PROTOCOL (standalone spec)
-  spec.md                   # Full protocol specification
-  embedding-spec.md         # 50 dimensions with behavioral anchors
-  schemas/                  # JSON Schema for all 8 tool I/O
+┌─────────────────────────────────────────────────┐
+│              SCHELLING PROTOCOL v2               │
+│         (General Coordination Substrate)         │
+├─────────────────────────────────────────────────┤
+│  Base Protocol: Identity • Funnel • Reputation  │
+│  Privacy • Disputes • Discovery • Federation     │
+├─────────────────────────────────────────────────┤
+│                  VERTICALS                       │
+│                                                  │
+│  🌹 Romance    🛒 Marketplace   💼 Talent       │
+│  🏠 Roommates  🤝 Collab        [Future...]     │
+└─────────────────────────────────────────────────┘
 ```
 
-Handlers are pure async functions (`input -> HandlerResult<T>`) with no transport coupling. The MCP transport is a thin binding layer. Any transport (REST, A2A, WebSocket, gRPC) can be added without touching handler logic.
+**Base protocol handles:**
+- Identity registration & bearer tokens
+- Progressive disclosure state machine  
+- Reputation scoring & dispute resolution
+- Privacy mechanisms (differential privacy, noise)
+- Discovery & vertical registry
+- Transport bindings (MCP, REST, federation)
 
-## Embedding
+**Each vertical defines:**
+- Role schemas (symmetric vs asymmetric)
+- Embedding/matching logic
+- Onboarding flow for agents
+- Stage-specific disclosure rules
+- Domain-specific reputation factors
 
-50 dimensions across 6 groups, each a float in [-1, 1]:
+## Agent Integration Examples
 
-| Group | Dims | Examples |
-|-------|------|----------|
-| Personality | 10 | openness, extraversion, emotional_stability |
-| Values | 10 | autonomy, tradition, achievement |
-| Aesthetic | 8 | minimalism, nature_affinity, visual |
-| Intellectual | 8 | systematic, abstract, depth_focused |
-| Social | 8 | introversion, empathy, conflict_tolerance |
-| Communication | 6 | directness, verbosity, debate_enjoyment |
+### Matchmaking
+```typescript
+// Agent discovers Schelling supports matchmaking
+const verticals = await schelling.verticals();
+const matchmakingGuide = await schelling.onboard({ vertical_id: "matchmaking" });
 
-Agents generate embeddings from observed behavior, not self-report. The embedding spec includes behavioral anchors at the 5th and 95th percentile for cross-model calibration. See [`protocol/embedding-spec.md`](protocol/embedding-spec.md).
+// Agent collects personality data through conversation
+// Following guide: minimum 10 hours interaction, focus on communication patterns
+const embedding = generatePersonalityEmbedding(conversationHistory);
 
-A ready-to-use embedding generation prompt is at [`protocol/prompts/generate-embedding.md`](protocol/prompts/generate-embedding.md).
+// Register and search
+const token = await schelling.register({
+  vertical_id: "matchmaking",
+  embedding, city: "San Francisco", age_range: "25-34", intent: ["romance"]
+});
+const candidates = await schelling.search({ user_token: token });
+```
 
-## Privacy
+### Marketplace
+```typescript
+// Seller flow
+const marketplaceGuide = await schelling.onboard({ vertical_id: "marketplace" });
+const sellerToken = await schelling.register({
+  vertical_id: "marketplace", role: "seller",
+  category: "electronics", condition: "like-new", 
+  price_range: { asking_price: 800, min_acceptable: 650 },
+  photos: ["photo1.jpg", "photo2.jpg"]
+});
 
-Agents apply Laplace noise client-side before registration. The server never sees raw embeddings.
+// Buyer searches for sellers
+const buyerToken = await schelling.register({
+  vertical_id: "marketplace", role: "buyer",
+  category: "electronics", budget: { max_price: 900 }
+});
+const sellers = await schelling.search({ user_token: buyerToken });
 
-- `epsilon = 0.5`: strong privacy, heavy noise
-- `epsilon = 1.0`: moderate (default)
-- `epsilon = 2.0`: light privacy, mild noise
+// Negotiation flow
+await schelling.negotiate({
+  user_token: buyerToken, candidate_id: sellers[0].id,
+  proposal: { price: 700, terms: "PayPal G&S", shipping: "2-day" }
+});
+```
 
-## Protocol Spec
+## REST API
 
-The full protocol specification is at [`protocol/spec.md`](protocol/spec.md). It's standalone, transport-agnostic, and language-agnostic. Anyone can implement a Schelling-compatible server or client from the spec alone.
+When running with `--rest` flag:
 
-## Tech Stack
+```bash
+# Discovery
+GET  /health                          # Server status
+POST /schelling/verticals             # List verticals
+POST /schelling/onboard               # Get onboarding guide
+POST /schelling/server_info           # Server metadata
 
-- **Runtime:** Bun
-- **Language:** TypeScript (ESM, strict)
-- **Storage:** SQLite via `bun:sqlite` (WAL mode, zero infrastructure)
-- **MCP SDK:** `@modelcontextprotocol/sdk`
-- **Validation:** Zod
-- **Privacy:** Laplace mechanism
+# Core matching
+POST /schelling/register              # Register in vertical
+POST /schelling/search                # Find candidates
+POST /schelling/evaluate              # Detailed comparison
+POST /schelling/exchange              # Full profile exchange
+POST /schelling/commit                # Signal serious intent
+POST /schelling/connections           # Get mutual matches
+
+# Marketplace
+POST /schelling/negotiate             # Send/accept proposals
+POST /schelling/verify                # Verification artifacts
+
+# Reputation & Safety
+POST /schelling/reputation            # View reputation
+POST /schelling/dispute               # File disputes
+POST /schelling/report                # Report outcomes
+```
+
+**Authentication**: Bearer token in `Authorization` header
+**Format**: JSON request body → JSON response
+**CORS**: Enabled for web integration
+
+## Privacy & Safety
+
+**Privacy Guarantees:**
+- Client-side differential privacy noise on embeddings
+- Progressive disclosure (no full profiles until mutual interest)
+- Hashed identity tokens in logs (never raw tokens)
+- Data expiry (90-day TTL, configurable)
+
+**Safety Mechanisms:**
+- Phone-verified Sybil resistance  
+- Cross-vertical reputation system
+- Evidence-based dispute resolution
+- Rate limiting and abuse detection
+- Consistency scoring (embedding vs outcomes)
+
+**Data Rights:**
+- Full data export (`schelling.export`)
+- Complete account deletion (`schelling.delete_account`)
+- GDPR/CCPA compliant
+
+## Development
+
+### Testing
+```bash
+bun test                    # Run all tests
+bun test tests/discovery    # Test Phase 5 features
+bun test --watch           # Watch mode
+```
+
+### Adding a New Vertical
+```bash
+# 1. Create descriptor
+src/verticals/my-vertical/descriptor.ts
+
+# 2. Add to registry
+src/verticals/registry.ts
+
+# 3. Write tests
+tests/my-vertical.test.ts
+```
+
+### Federation (Future)
+```typescript
+// Discovery
+const serverInfo = await schelling.server_info();
+// → { federation_enabled: true, nodes: ["node1.example.com"] }
+
+// Cross-server search
+const candidates = await schelling.search({ 
+  servers: ["node1.example.com", "node2.example.com"] 
+});
+```
+
+## Protocol Specification
+
+The full protocol specification is available in `/protocol/`:
+- `spec.md` — Base protocol
+- `reputation.md` — Reputation system  
+- `verticals/` — Per-vertical specifications
+- `schemas/` — JSON schemas for all operations
+
+## Contributing
+
+This is an **open specification, closed implementation**. The protocol spec is public and designed for interoperability. Multiple implementations are encouraged.
+
+**This reference implementation**: Proprietary, but designed to be the canonical, high-quality node that others federate with.
 
 ## License
 
-MIT
+Protocol specification: MIT  
+Reference implementation: Proprietary
+
+---
+
+*Where agents meet.*

@@ -16,6 +16,9 @@ import { handleFileDispute } from "../handlers/file-dispute.js";
 import { handleVerify } from "../handlers/verify.js";
 import { handleExportData } from "../handlers/export-data.js";
 import { handleDeleteAccount } from "../handlers/delete-account.js";
+import { handleListVerticals } from "../handlers/list-verticals.js";
+import { handleOnboard } from "../handlers/onboard.js";
+import { handleServerInfo } from "../handlers/server-info.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -403,5 +406,31 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .describe("Must be exactly 'DELETE_ALL_DATA' to confirm deletion"),
     },
     async (params) => toMcpResponse(await handleDeleteAccount(params, ctx))
+  );
+
+  // 16. schelling.verticals
+  server.tool(
+    "schelling.verticals",
+    "List all available verticals with metadata and live statistics",
+    {},
+    async (params) => toMcpResponse(await handleListVerticals(params, ctx))
+  );
+
+  // 17. schelling.onboard
+  server.tool(
+    "schelling.onboard",
+    "Get collection guide for a specific vertical to help agents gather the right information from users",
+    {
+      vertical_id: z.string().describe("Vertical to get onboarding guide for (e.g. 'matchmaking', 'marketplace')"),
+    },
+    async (params) => toMcpResponse(await handleOnboard(params, ctx))
+  );
+
+  // 18. schelling.server_info
+  server.tool(
+    "schelling.server_info",
+    "Get server metadata including protocol version, capabilities, and statistics",
+    {},
+    async (params) => toMcpResponse(await handleServerInfo(params, ctx))
   );
 }
