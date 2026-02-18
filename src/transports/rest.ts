@@ -26,6 +26,11 @@ import { handleMessages } from "../handlers/messages.js";
 import { handleDirect } from "../handlers/direct.js";
 import { handleRelayBlock } from "../handlers/relay-block.js";
 import { handlePending } from "../handlers/pending.js";
+import { handleFeedback } from "../handlers/feedback.js";
+import { handleMyInsights } from "../handlers/my-insights.js";
+import { handleJuryDuty } from "../handlers/jury-duty.js";
+import { handleJuryVerdict } from "../handlers/jury-verdict.js";
+import { handleAnalytics } from "../handlers/analytics.js";
 import { logger } from "../core/logger.js";
 
 interface RestServer {
@@ -205,6 +210,21 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               break;
             case 'pending':
               result = await handlePending(params, ctx);
+              break;
+            case 'feedback':
+              result = await handleFeedback(params, ctx);
+              break;
+            case 'my_insights':
+              result = await handleMyInsights(params, ctx);
+              break;
+            case 'jury_duty':
+              result = await handleJuryDuty(params, ctx);
+              break;
+            case 'jury_verdict':
+              result = await handleJuryVerdict(params, ctx);
+              break;
+            case 'analytics':
+              result = await handleAnalytics(params, ctx);
               break;
             case 'verticals':
             case 'clusters':

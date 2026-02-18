@@ -265,6 +265,77 @@ CREATE TABLE IF NOT EXISTS relay_blocks (
   UNIQUE (candidate_id, blocker_token)
 );
 
+-- Phase 7: Feedback & Learning tables
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  dimension_scores TEXT,
+  rejection_reason TEXT,
+  rejection_freeform TEXT,
+  what_i_wanted TEXT,
+  satisfaction TEXT CHECK (satisfaction IS NULL OR satisfaction IN ('very_satisfied','satisfied','neutral','dissatisfied','very_dissatisfied')),
+  would_recommend INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_token);
+CREATE INDEX IF NOT EXISTS idx_feedback_candidate ON feedback(candidate_id);
+
+CREATE TABLE IF NOT EXISTS learned_preferences (
+  id TEXT PRIMARY KEY,
+  user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  cluster_id TEXT NOT NULL,
+  dimension_importance TEXT,
+  ideal_ranges TEXT,
+  rejection_patterns TEXT,
+  stage_decline_distribution TEXT,
+  feedback_count INTEGER NOT NULL DEFAULT 0,
+  feedback_quality_score REAL NOT NULL DEFAULT 0.0,
+  last_updated TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (user_token, cluster_id)
+);
+CREATE INDEX IF NOT EXISTS idx_learned_prefs_user ON learned_preferences(user_token);
+CREATE INDEX IF NOT EXISTS idx_learned_prefs_cluster ON learned_preferences(cluster_id);
+
+-- Phase 9: Jury system tables
+CREATE TABLE IF NOT EXISTS jury_assignments (
+  id TEXT PRIMARY KEY,
+  dispute_id TEXT NOT NULL REFERENCES disputes(id) ON DELETE CASCADE,
+  juror_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  assigned_at TEXT NOT NULL DEFAULT (datetime('now')),
+  verdict TEXT CHECK (verdict IS NULL OR verdict IN ('for_filer','for_defendant','dismissed')),
+  reasoning TEXT,
+  voted_at TEXT,
+  replaced INTEGER NOT NULL DEFAULT 0,
+  replaced_at TEXT,
+  deadline_at TEXT,
+  UNIQUE (dispute_id, juror_token)
+);
+CREATE INDEX IF NOT EXISTS idx_jury_dispute ON jury_assignments(dispute_id);
+CREATE INDEX IF NOT EXISTS idx_jury_juror ON jury_assignments(juror_token);
+
+-- Phase 11: Analytics tables
+CREATE TABLE IF NOT EXISTS algorithm_variants (
+  id TEXT PRIMARY KEY,
+  variant_id TEXT NOT NULL,
+  user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  assigned_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (user_token)
+);
+CREATE INDEX IF NOT EXISTS idx_variants_variant ON algorithm_variants(variant_id);
+
+CREATE TABLE IF NOT EXISTS stage_transitions (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  user_token TEXT NOT NULL,
+  from_stage INTEGER NOT NULL,
+  to_stage INTEGER NOT NULL,
+  transitioned_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_transitions_candidate ON stage_transitions(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_transitions_user ON stage_transitions(user_token);
+
 CREATE TABLE IF NOT EXISTS similar_users (
   user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
   similar_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,

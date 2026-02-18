@@ -27,6 +27,11 @@ import { handleMessages } from "../handlers/messages.js";
 import { handleDirect } from "../handlers/direct.js";
 import { handleRelayBlock } from "../handlers/relay-block.js";
 import { handlePending } from "../handlers/pending.js";
+import { handleFeedback } from "../handlers/feedback.js";
+import { handleMyInsights } from "../handlers/my-insights.js";
+import { handleJuryDuty } from "../handlers/jury-duty.js";
+import { handleJuryVerdict } from "../handlers/jury-verdict.js";
+import { handleAnalytics } from "../handlers/analytics.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -555,6 +560,72 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
       user_token: z.string().describe("Your user token"),
     },
     async (params) => toMcpResponse(await handlePending(params, ctx))
+  );
+
+  // schelling.feedback
+  server.tool(
+    "schelling.feedback",
+    "Submit structured feedback about a match — dimension scores, satisfaction, recommendation",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate pair ID"),
+      dimension_scores: z.record(z.number().min(-1).max(1)).optional().describe("Dimension deviation scores [-1, 1]"),
+      satisfaction: z.enum(["very_satisfied", "satisfied", "neutral", "dissatisfied", "very_dissatisfied"]).optional(),
+      would_recommend: z.boolean().optional(),
+      rejection_reason: z.string().optional(),
+      rejection_freeform: z.string().optional(),
+      what_i_wanted: z.string().optional(),
+    },
+    async (params) => toMcpResponse(await handleFeedback(params, ctx))
+  );
+
+  // schelling.my_insights
+  server.tool(
+    "schelling.my_insights",
+    "Get aggregated feedback insights, learned preferences, and collaborative suggestions",
+    {
+      user_token: z.string().describe("Your user token"),
+      cluster_id: z.string().optional().describe("Cluster to get insights for"),
+    },
+    async (params) => toMcpResponse(await handleMyInsights(params, ctx))
+  );
+
+  // schelling.jury_duty
+  server.tool(
+    "schelling.jury_duty",
+    "View assigned jury cases awaiting your verdict",
+    {
+      user_token: z.string().describe("Your user token"),
+    },
+    async (params) => toMcpResponse(await handleJuryDuty(params, ctx))
+  );
+
+  // schelling.jury_verdict
+  server.tool(
+    "schelling.jury_verdict",
+    "Submit your verdict as a juror on a dispute case",
+    {
+      user_token: z.string().describe("Your user token"),
+      dispute_id: z.string().describe("Dispute ID to vote on"),
+      verdict: z.enum(["for_filer", "for_defendant", "dismissed"]).describe("Your verdict"),
+      reasoning: z.string().min(10).max(2000).describe("Reasoning for your verdict"),
+    },
+    async (params) => toMcpResponse(await handleJuryVerdict(params, ctx))
+  );
+
+  // schelling.analytics
+  server.tool(
+    "schelling.analytics",
+    "Get platform analytics — funnel metrics, outcome stats, A/B test results",
+    {
+      user_token: z.string().describe("Your user token (admin)"),
+      cluster_id: z.string().optional(),
+      time_range: z.object({
+        start: z.string().optional(),
+        end: z.string().optional(),
+      }).optional(),
+    },
+    async (params) => toMcpResponse(await handleAnalytics(params, ctx))
   );
 
   // 18. schelling.server_info
