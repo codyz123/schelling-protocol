@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.propose output",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["status", "candidate_id", "introduction"],
+      "properties": {
+        "status": { "const": "mutual" },
+        "candidate_id": { "type": "string" },
+        "introduction": {
+          "type": "object",
+          "required": ["name", "contact", "shared_interests", "compatibility_score", "suggested_opener"],
+          "properties": {
+            "name": { "type": "string" },
+            "contact": { "type": "string" },
+            "shared_interests": { "type": "array", "items": { "type": "string" } },
+            "compatibility_score": { "type": "number" },
+            "suggested_opener": { "type": "string" }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["status", "candidate_id", "message"],
+      "properties": {
+        "status": { "const": "pending" },
+        "candidate_id": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["status", "candidate_id", "message"],
+      "properties": {
+        "status": { "const": "mutual_no_identity" },
+        "candidate_id": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    }
+  ]
+}

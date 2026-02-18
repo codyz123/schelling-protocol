@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.search output",
+  "type": "object",
+  "required": ["candidates", "total_scanned"],
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "compatibility_score", "shared_categories", "intent", "city", "age_range"],
+        "properties": {
+          "candidate_id": { "type": "string" },
+          "compatibility_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "shared_categories": { "type": "array", "items": { "type": "string" } },
+          "intent": { "type": "array", "items": { "type": "string" } },
+          "city": { "type": "string" },
+          "age_range": { "type": "string" }
+        }
+      }
+    },
+    "total_scanned": { "type": "integer" }
+  }
+}

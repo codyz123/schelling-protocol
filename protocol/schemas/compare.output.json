@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.compare output",
+  "type": "object",
+  "required": ["comparisons"],
+  "properties": {
+    "comparisons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "compatibility_score", "breakdown", "shared_interests", "complementary_traits", "strongest_alignments"],
+        "properties": {
+          "candidate_id": { "type": "string" },
+          "compatibility_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "breakdown": {
+            "type": "object",
+            "properties": {
+              "personality": { "type": "number" },
+              "values": { "type": "number" },
+              "aesthetic": { "type": "number" },
+              "intellectual": { "type": "number" },
+              "social": { "type": "number" },
+              "communication": { "type": "number" }
+            }
+          },
+          "shared_interests": { "type": "array", "items": { "type": "string" } },
+          "complementary_traits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["dimension", "you", "them", "label"],
+              "properties": {
+                "dimension": { "type": "string" },
+                "you": { "type": "number" },
+                "them": { "type": "number" },
+                "label": { "type": "string" }
+              }
+            }
+          },
+          "strongest_alignments": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

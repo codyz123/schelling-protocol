@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.get_introductions input",
+  "type": "object",
+  "required": ["user_token"],
+  "properties": {
+    "user_token": { "type": "string" }
+  }
+}

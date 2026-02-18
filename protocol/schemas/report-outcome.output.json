@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.report_outcome output",
+  "type": "object",
+  "required": ["recorded"],
+  "properties": {
+    "recorded": { "const": true }
+  }
+}

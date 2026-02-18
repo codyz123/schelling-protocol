@@ -1,0 +1,19 @@
+{
+  "name": "schelling-v1",
+  "version": "1.0.0",
+  "description": "Schelling Protocol v1 — Privacy-preserving agent matchmaking via MCP",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}
