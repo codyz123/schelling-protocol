@@ -94,40 +94,40 @@ export async function handlePropose(
   const side = callerSide(input.user_token, candidate);
   const myStage = side === "a" ? candidate.stage_a : candidate.stage_b;
 
-  // Must be at PROFILED or higher
-  if (myStage < Stage.PROFILED) {
+  // Must be at EXCHANGED or higher
+  if (myStage < Stage.EXCHANGED) {
     return {
       ok: false,
       error: {
         code: "STAGE_VIOLATION",
-        message: `Must be at stage PROFILED (${Stage.PROFILED}) or higher to propose. Current stage: ${myStage}`,
+        message: `Must be at stage EXCHANGED (${Stage.EXCHANGED}) or higher to propose. Current stage: ${myStage}`,
       },
     };
   }
 
   // Atomic advance + mutual detection
-  const advanceToProposed = ctx.db.transaction(() => {
+  const advanceToCommitted = ctx.db.transaction(() => {
     const col = side === "a" ? "stage_a" : "stage_b";
     ctx.db
-      .prepare(`UPDATE candidates SET ${col} = MAX(${col}, ?) WHERE id = ?`)
-      .run(Stage.PROPOSED, input.candidate_id);
+      .prepare(`UPDATE candidates SET ${col} = MAX(${col}, ?), updated_at = datetime('now') WHERE id = ?`)
+      .run(Stage.COMMITTED, input.candidate_id);
 
     const row = ctx.db
       .prepare("SELECT * FROM candidates WHERE id = ?")
       .get(input.candidate_id) as CandidateRecord;
 
-    if (row.stage_a >= Stage.PROPOSED && row.stage_b >= Stage.PROPOSED) {
+    if (row.stage_a >= Stage.COMMITTED && row.stage_b >= Stage.COMMITTED) {
       ctx.db
         .prepare(
-          "UPDATE candidates SET stage_a = ?, stage_b = ? WHERE id = ?"
+          "UPDATE candidates SET stage_a = ?, stage_b = ?, updated_at = datetime('now') WHERE id = ?"
         )
-        .run(Stage.INTRODUCED, Stage.INTRODUCED, input.candidate_id);
+        .run(Stage.CONNECTED, Stage.CONNECTED, input.candidate_id);
       return { mutual: true };
     }
     return { mutual: false };
   });
 
-  const result = advanceToProposed();
+  const result = advanceToCommitted();
 
   if (!result.mutual) {
     return {

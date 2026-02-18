@@ -11,6 +11,7 @@ import { handleGetIntroductions } from "../src/handlers/get-introductions.js";
 import { handleReportOutcome } from "../src/handlers/report-outcome.js";
 import type { HandlerContext } from "../src/types.js";
 import { DIMENSION_COUNT } from "../src/types.js";
+import { initVerticalRegistry } from "../src/verticals/registry.js";
 
 let ctx: HandlerContext;
 
@@ -18,6 +19,7 @@ beforeEach(() => {
   const db = new Database(":memory:");
   db.exec("PRAGMA foreign_keys = ON");
   initSchema(db);
+  initVerticalRegistry(); // Initialize the vertical registry for tests
   ctx = { db };
 });
 
@@ -39,7 +41,7 @@ describe("full funnel integration", () => {
     // 1. Register user A
     const regA = await handleRegister(
       {
-        protocol_version: "schelling-1.0",
+        protocol_version: "schelling-2.0",
         embedding: embeddingA,
         city: "San Francisco",
         age_range: "25-34",
@@ -58,7 +60,7 @@ describe("full funnel integration", () => {
     // 2. Register user B (similar)
     const regB = await handleRegister(
       {
-        protocol_version: "schelling-1.0",
+        protocol_version: "schelling-2.0",
         embedding: embeddingB,
         city: "San Francisco",
         age_range: "25-34",
@@ -77,7 +79,7 @@ describe("full funnel integration", () => {
     // 3. Register user C (dissimilar)
     const regC = await handleRegister(
       {
-        protocol_version: "schelling-1.0",
+        protocol_version: "schelling-2.0",
         embedding: embeddingC,
         city: "New York",
         age_range: "35-44",
@@ -250,7 +252,7 @@ describe("full funnel integration", () => {
     // 16. A re-registers → old candidates, declines, outcomes all gone
     const reregA = await handleRegister(
       {
-        protocol_version: "schelling-1.0",
+        protocol_version: "schelling-2.0",
         embedding: embeddingA.map((v) => Math.max(-1, Math.min(1, v + 0.1))),
         city: "San Francisco",
         age_range: "25-34",

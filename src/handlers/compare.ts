@@ -127,9 +127,9 @@ export async function handleCompare(
     const col = side === "a" ? "stage_a" : "stage_b";
     ctx.db
       .prepare(
-        `UPDATE candidates SET ${col} = MAX(${col}, ?) WHERE id = ?`
+        `UPDATE candidates SET ${col} = MAX(${col}, ?), updated_at = datetime('now') WHERE id = ?`
       )
-      .run(Stage.COMPARED, candidateId);
+      .run(Stage.EVALUATED, candidateId);
 
     // Top 3 shared categories as strongest alignments
     const strongestAlignments = result.shared_categories

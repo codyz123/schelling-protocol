@@ -5,6 +5,7 @@ import { validateEmbedding } from "../matching/privacy.js";
 
 export interface RegisterInput {
   protocol_version: string;
+  vertical_id?: string;
   agent_model?: string;
   embedding_method?: string;
   embedding: number[];
@@ -16,7 +17,13 @@ export interface RegisterInput {
   description?: string;
   seeking?: string;
   identity?: { name: string; contact: string };
+  deal_breakers?: {
+    no_smoking?: boolean;
+    no_pets?: boolean;
+    max_distance_miles?: number;
+  };
   user_token?: string;
+  idempotency_key?: string;
 }
 
 export interface RegisterOutput {
@@ -29,6 +36,18 @@ export async function handleRegister(
   input: RegisterInput,
   ctx: HandlerContext
 ): Promise<HandlerResult<RegisterOutput>> {
+  const verticalId = input.vertical_id ?? 'matchmaking';
+  
+  // Check idempotency
+  if (input.idempotency_key) {
+    const existing = ctx.db
+      .prepare("SELECT response FROM idempotency_keys WHERE key = ? AND operation = 'register'")
+      .get(input.idempotency_key) as { response: string } | undefined;
+    if (existing) {
+      return { ok: true, data: JSON.parse(existing.response) };
+    }
+  }
+
   if (input.protocol_version !== PROTOCOL_VERSION) {
     return {
       ok: false,
@@ -60,14 +79,15 @@ export async function handleRegister(
     ctx.db
       .prepare(
         `INSERT INTO users (
-          user_token, protocol_version, agent_model, embedding_method,
+          user_token, protocol_version, vertical_id, agent_model, embedding_method,
           embedding, city, age_range, intent,
-          interests, values_text, description, seeking, identity
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          interests, values_text, description, seeking, identity, deal_breakers
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         token,
         input.protocol_version,
+        verticalId,
         input.agent_model ?? null,
         input.embedding_method ?? null,
         JSON.stringify(input.embedding),
@@ -78,18 +98,28 @@ export async function handleRegister(
         input.values_text ?? null,
         input.description ?? null,
         input.seeking ?? null,
-        input.identity ? JSON.stringify(input.identity) : null
+        input.identity ? JSON.stringify(input.identity) : null,
+        input.deal_breakers ? JSON.stringify(input.deal_breakers) : null
       );
   });
 
   register();
 
+  const result: RegisterOutput = {
+    user_token: token,
+    protocol_version: PROTOCOL_VERSION,
+    dimensions: DIMENSION_COUNT,
+  };
+
+  // Store idempotency key if provided
+  if (input.idempotency_key) {
+    ctx.db
+      .prepare("INSERT OR REPLACE INTO idempotency_keys (key, operation, user_token, response) VALUES (?, ?, ?, ?)")
+      .run(input.idempotency_key, 'register', token, JSON.stringify(result));
+  }
+
   return {
     ok: true,
-    data: {
-      user_token: token,
-      protocol_version: PROTOCOL_VERSION,
-      dimensions: DIMENSION_COUNT,
-    },
+    data: result,
   };
 }

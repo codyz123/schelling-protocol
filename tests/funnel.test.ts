@@ -10,6 +10,7 @@ import { handleDecline } from "../src/handlers/decline.js";
 import { handleReportOutcome } from "../src/handlers/report-outcome.js";
 import type { HandlerContext } from "../src/types.js";
 import { DIMENSION_COUNT } from "../src/types.js";
+import { initVerticalRegistry } from "../src/verticals/registry.js";
 
 function makeEmbedding(base: number, variance: number = 0): number[] {
   return new Array(DIMENSION_COUNT).fill(0).map((_, i) => {
@@ -24,6 +25,7 @@ beforeEach(() => {
   const db = new Database(":memory:");
   db.exec("PRAGMA foreign_keys = ON");
   initSchema(db);
+  initVerticalRegistry(); // Initialize the vertical registry for tests
   ctx = { db };
 });
 
@@ -33,7 +35,7 @@ async function registerUser(
 ) {
   const result = await handleRegister(
     {
-      protocol_version: "schelling-1.0",
+      protocol_version: "schelling-2.0",
       embedding,
       city: "San Francisco",
       age_range: "25-34",
@@ -294,12 +296,13 @@ describe("search filters", () => {
     // Manually insert a user with different version
     ctx.db
       .prepare(
-        `INSERT INTO users (user_token, protocol_version, embedding, city, age_range, intent)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (user_token, protocol_version, vertical_id, embedding, city, age_range, intent)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         "fake-token",
-        "schelling-2.0",
+        "schelling-1.0", // Different version from the current 2.0
+        "matchmaking",
         JSON.stringify(makeEmbedding(0.5, 0.2)),
         "San Francisco",
         "25-34",

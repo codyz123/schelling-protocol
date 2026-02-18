@@ -43,7 +43,7 @@ export async function handleGetIntroductions(
     };
   }
 
-  // Find all mutual introductions (both sides at stage 5)
+  // Find all mutual connections (both sides at stage 5 - CONNECTED)
   const introRows = ctx.db
     .prepare(
       `SELECT c.id, c.score, c.shared_categories, c.user_a_token, c.user_b_token,
@@ -96,7 +96,7 @@ export async function handleGetIntroductions(
     };
   });
 
-  // Count pending proposals (I proposed, they haven't)
+  // Count pending commitments (I committed, they haven't)
   const pendingRow = ctx.db
     .prepare(
       `SELECT COUNT(*) as count FROM candidates

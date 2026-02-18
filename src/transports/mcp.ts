@@ -9,6 +9,7 @@ import { handlePropose } from "../handlers/propose.js";
 import { handleDecline } from "../handlers/decline.js";
 import { handleGetIntroductions } from "../handlers/get-introductions.js";
 import { handleReportOutcome } from "../handlers/report-outcome.js";
+import { handleWithdraw } from "../handlers/withdraw.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -23,12 +24,13 @@ function toMcpResponse(result: HandlerResult<unknown>) {
 }
 
 export function bindTools(server: McpServer, ctx: HandlerContext): void {
-  // 1. match.register
+  // 1. schelling.register
   server.tool(
-    "match.register",
+    "schelling.register",
     "Register a user for matchmaking with a personality embedding and profile data",
     {
-      protocol_version: z.string().describe("Must be 'schelling-1.0'"),
+      protocol_version: z.string().describe("Must be 'schelling-2.0'"),
+      vertical_id: z.string().default("matchmaking").describe("Vertical to register in"),
       agent_model: z.string().optional().describe("AI model used, e.g. 'claude-opus-4-6'"),
       embedding_method: z.string().optional().describe("How embedding was generated, e.g. 'anchor-rated'"),
       embedding: z.array(z.number()).length(50).describe("50-dim personality embedding, each value in [-1, 1]"),
@@ -65,20 +67,33 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         })
         .optional()
         .describe("Identity revealed only on mutual introduction"),
+      deal_breakers: z
+        .object({
+          no_smoking: z.boolean().optional(),
+          no_pets: z.boolean().optional(),
+          max_distance_miles: z.number().optional(),
+        })
+        .optional()
+        .describe("Hard constraints for filtering"),
       user_token: z
         .string()
         .optional()
         .describe("Existing token for re-registration"),
+      idempotency_key: z
+        .string()
+        .optional()
+        .describe("Client-generated key for request deduplication"),
     },
     async (params) => toMcpResponse(await handleRegister(params, ctx))
   );
 
-  // 2. match.search
+  // 2. schelling.search
   server.tool(
-    "match.search",
+    "schelling.search",
     "Tier 1: Fast coarse search using embedding similarity and metadata filters",
     {
       user_token: z.string().describe("Your user token from registration"),
+      vertical_id: z.string().default("matchmaking").describe("Vertical to search in"),
       top_k: z
         .number()
         .int()
@@ -100,13 +115,21 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .string()
         .optional()
         .describe("Filter to users in this city"),
+      cursor: z
+        .string()
+        .optional()
+        .describe("Pagination cursor for subsequent pages"),
+      idempotency_key: z
+        .string()
+        .optional()
+        .describe("Client-generated key for request deduplication"),
     },
     async (params) => toMcpResponse(await handleSearch(params, ctx))
   );
 
-  // 3. match.compare
+  // 3. schelling.evaluate
   server.tool(
-    "match.compare",
+    "schelling.evaluate",
     "Tier 2: Detailed comparison with per-dimension breakdown, shared interests, and complementary traits",
     {
       user_token: z.string().describe("Your user token"),
@@ -119,9 +142,9 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handleCompare(params, ctx))
   );
 
-  // 4. match.request_profile
+  // 4. schelling.exchange
   server.tool(
-    "match.request_profile",
+    "schelling.exchange",
     "Tier 3: Request full profile (requires mutual tier-2 interest)",
     {
       user_token: z.string().describe("Your user token"),
@@ -130,9 +153,9 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handleRequestProfile(params, ctx))
   );
 
-  // 5. match.propose
+  // 5. schelling.commit
   server.tool(
-    "match.propose",
+    "schelling.commit",
     "Propose a match after reviewing the profile. If mutual, identities are revealed",
     {
       user_token: z.string().describe("Your user token"),
@@ -141,9 +164,9 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handlePropose(params, ctx))
   );
 
-  // 6. match.decline
+  // 6. schelling.decline
   server.tool(
-    "match.decline",
+    "schelling.decline",
     "Decline a candidate at any stage. Permanent — prevents re-surfacing in future searches",
     {
       user_token: z.string().describe("Your user token"),
@@ -156,9 +179,9 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handleDecline(params, ctx))
   );
 
-  // 7. match.get_introductions
+  // 7. schelling.connections
   server.tool(
-    "match.get_introductions",
+    "schelling.connections",
     "Get all mutual introductions and count of pending proposals",
     {
       user_token: z.string().describe("Your user token"),
@@ -166,9 +189,9 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handleGetIntroductions(params, ctx))
   );
 
-  // 8. match.report_outcome
+  // 8. schelling.report
   server.tool(
-    "match.report_outcome",
+    "schelling.report",
     "Report the outcome of a mutual introduction for the feedback loop",
     {
       user_token: z.string().describe("Your user token"),
@@ -182,5 +205,24 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .describe("Optional notes about the outcome"),
     },
     async (params) => toMcpResponse(await handleReportOutcome(params, ctx))
+  );
+
+  // 9. schelling.withdraw
+  server.tool(
+    "schelling.withdraw",
+    "Withdraw from a committed stage (back out before connection)",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate ID to withdraw from"),
+      reason: z
+        .string()
+        .optional()
+        .describe("Optional reason for withdrawal"),
+      idempotency_key: z
+        .string()
+        .optional()
+        .describe("Client-generated key for request deduplication"),
+    },
+    async (params) => toMcpResponse(await handleWithdraw(params, ctx))
   );
 }

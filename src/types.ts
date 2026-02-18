@@ -3,6 +3,17 @@ import type { Database } from "bun:sqlite";
 // --- Funnel Stages ---
 
 export const Stage = {
+  UNDISCOVERED: 0,
+  DISCOVERED: 1,
+  EVALUATED: 2,
+  EXCHANGED: 3,
+  COMMITTED: 4,
+  CONNECTED: 5,
+  COMPLETED: 6,
+} as const;
+
+// Legacy stage aliases for backward compatibility
+export const LegacyStage = {
   NONE: 0,
   SEARCHED: 1,
   COMPARED: 2,
@@ -173,8 +184,76 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   debate_enjoyment: ["harmony-seeking", "debate-enjoying"],
 };
 
+// --- Vertical System Types ---
+
+export interface VerticalDescriptor {
+  vertical_id: string;
+  version: string;
+  display_name: string;
+  description: string;
+  roles: Record<string, VerticalRole>;
+  symmetric: boolean; // true for matchmaking, false for marketplace
+  embedding_schema: EmbeddingSchema;
+  funnel_config: FunnelConfig;
+  negotiation?: NegotiationConfig;
+  exclusive_commitment?: boolean;
+}
+
+export interface VerticalRole {
+  data_schema: string;
+  required_fields: string[];
+  optional_fields?: string[];
+}
+
+export interface EmbeddingSchema {
+  dimensions: number;
+  groups: Record<string, { start: number; end: number }>;
+  anchors?: string; // reference to anchor definitions
+}
+
+export interface FunnelConfig {
+  discovery_fields: string[];
+  evaluation_fields: string[];
+  exchange_fields: string[];
+  connection_fields: string[];
+  mutual_gate_stage: string;
+}
+
+export interface NegotiationConfig {
+  enabled: boolean;
+  max_rounds: number;
+  timeout_hours: number;
+  proposal_schema: Record<string, string>;
+}
+
 // --- Database Record Interfaces ---
 
+export interface IdentityRecord {
+  id: string;
+  token: string;
+  verification_level: "anonymous" | "verified" | "attested";
+  phone_hash?: string;
+  created_at: string;
+  last_active_at: string;
+}
+
+export interface RegistrationRecord {
+  id: string;
+  identity_id: string;
+  vertical_id: string;
+  role?: string;
+  embedding?: string; // JSON array
+  profile_data: string; // JSON object
+  identity_data?: string; // JSON object {name, contact}
+  noise_epsilon?: number;
+  agent_model?: string;
+  embedding_method?: string;
+  registered_at: string;
+  expires_at: string;
+  deal_breakers?: string; // JSON object
+}
+
+// Legacy UserRecord for backward compatibility
 export interface UserRecord {
   user_token: string;
   protocol_version: string;
@@ -195,13 +274,18 @@ export interface UserRecord {
 
 export interface CandidateRecord {
   id: string;
-  user_a_token: string;
-  user_b_token: string;
+  vertical_id: string;
+  identity_a: string;
+  identity_b: string;
   score: number;
   shared_categories: string; // JSON array
   stage_a: number;
   stage_b: number;
   created_at: string;
+  updated_at: string;
+  // Legacy fields for backward compatibility
+  user_a_token?: string;
+  user_b_token?: string;
 }
 
 export interface DeclineRecord {
@@ -221,6 +305,54 @@ export interface OutcomeRecord {
   met_in_person: number;
   notes: string | null;
   created_at: string;
+}
+
+export interface ReputationEventRecord {
+  id: string;
+  identity_id: string;
+  reporter_id: string;
+  reporter_reputation: number;
+  vertical_id: string;
+  event_type: "outcome" | "dispute" | "completion" | "abandonment";
+  rating?: "positive" | "neutral" | "negative";
+  dimensions?: string; // JSON object
+  notes?: string;
+  created_at: string;
+}
+
+export interface DisputeRecord {
+  id: string;
+  candidate_id: string;
+  filed_by: string;
+  filed_against: string;
+  vertical_id: string;
+  stage_at_filing: number;
+  reason: string;
+  evidence?: string; // JSON object
+  status: "open" | "resolved_for_filer" | "resolved_for_defendant" | "dismissed";
+  resolved_at?: string;
+  resolution_notes?: string;
+  created_at: string;
+}
+
+export interface NegotiationRecord {
+  id: string;
+  candidate_id: string;
+  from_identity: string;
+  round: number;
+  proposal: string; // JSON object
+  status: "pending" | "accepted" | "countered" | "expired";
+  created_at: string;
+  expires_at: string;
+}
+
+export interface PendingActionRecord {
+  id: string;
+  identity_id: string;
+  candidate_id: string;
+  action_type: "evaluate" | "exchange" | "respond_proposal" | "review_commitment";
+  created_at: string;
+  consumed_at?: string;
 }
 
 // --- Candidate Pair Helpers ---
@@ -252,7 +384,7 @@ export function otherToken(
 
 // --- Protocol Constants ---
 
-export const PROTOCOL_VERSION = "schelling-1.0";
+export const PROTOCOL_VERSION = "schelling-2.0";
 export const VALID_AGE_RANGES = [
   "18-24",
   "25-34",

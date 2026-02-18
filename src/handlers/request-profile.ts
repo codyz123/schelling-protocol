@@ -103,8 +103,8 @@ export async function handleRequestProfile(
   const myStage = side === "a" ? candidate.stage_a : candidate.stage_b;
   const theirStage = otherSide === "a" ? candidate.stage_a : candidate.stage_b;
 
-  // Mutual tier-2 gate: both must be at COMPARED or higher
-  if (theirStage < Stage.COMPARED) {
+  // Mutual tier-2 gate: both must be at EVALUATED or higher
+  if (theirStage < Stage.EVALUATED) {
     return {
       ok: true,
       data: {
@@ -113,16 +113,16 @@ export async function handleRequestProfile(
         your_stage: myStage,
         their_stage: theirStage,
         message:
-          "The other party has not yet compared you. Profile available once mutual tier-2 interest is established.",
+          "The other party has not yet evaluated you. Profile available once mutual tier-2 interest is established.",
       },
     };
   }
 
-  // Advance caller's stage to PROFILED
+  // Advance caller's stage to EXCHANGED
   const col = side === "a" ? "stage_a" : "stage_b";
   ctx.db
-    .prepare(`UPDATE candidates SET ${col} = MAX(${col}, ?) WHERE id = ?`)
-    .run(Stage.PROFILED, input.candidate_id);
+    .prepare(`UPDATE candidates SET ${col} = MAX(${col}, ?), updated_at = datetime('now') WHERE id = ?`)
+    .run(Stage.EXCHANGED, input.candidate_id);
 
   // Fetch the other user's full profile
   const otherUser = ctx.db

@@ -54,16 +54,16 @@ export async function handleReportOutcome(
     };
   }
 
-  // Must be at INTRODUCED stage
+  // Must be at CONNECTED stage
   if (
-    candidate.stage_a < Stage.INTRODUCED ||
-    candidate.stage_b < Stage.INTRODUCED
+    candidate.stage_a < Stage.CONNECTED ||
+    candidate.stage_b < Stage.CONNECTED
   ) {
     return {
       ok: false,
       error: {
         code: "STAGE_VIOLATION",
-        message: "Outcome can only be reported after mutual introduction (stage 5)",
+        message: "Outcome can only be reported after mutual connection (stage 5)",
       },
     };
   }
@@ -85,19 +85,31 @@ export async function handleReportOutcome(
     };
   }
 
-  ctx.db
-    .prepare(
-      `INSERT INTO outcomes (id, candidate_id, reporter_token, outcome, met_in_person, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      randomUUID(),
-      input.candidate_id,
-      input.user_token,
-      input.outcome,
-      input.met_in_person ? 1 : 0,
-      input.notes ?? null
-    );
+  // Record outcome and advance reporter to COMPLETED stage
+  const recordOutcome = ctx.db.transaction(() => {
+    ctx.db
+      .prepare(
+        `INSERT INTO outcomes (id, candidate_id, reporter_token, outcome, met_in_person, notes)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        randomUUID(),
+        input.candidate_id,
+        input.user_token,
+        input.outcome,
+        input.met_in_person ? 1 : 0,
+        input.notes ?? null
+      );
+
+    // Advance the reporter's stage to COMPLETED
+    const side = input.user_token === candidate.user_a_token ? "a" : "b";
+    const col = side === "a" ? "stage_a" : "stage_b";
+    ctx.db
+      .prepare(`UPDATE candidates SET ${col} = MAX(${col}, ?), updated_at = datetime('now') WHERE id = ?`)
+      .run(Stage.COMPLETED, input.candidate_id);
+  });
+
+  recordOutcome();
 
   return { ok: true, data: { recorded: true } };
 }
