@@ -22,6 +22,15 @@ export interface RegisterInput {
     no_pets?: boolean;
     max_distance_miles?: number;
   };
+  // v2 identity tier additions
+  verification_level?: "anonymous" | "verified" | "attested";
+  phone_hash?: string;
+  agent_attestation?: {
+    model: string;
+    method: string;
+    interaction_hours: number;
+    generated_at: string;
+  };
   user_token?: string;
   idempotency_key?: string;
 }
@@ -81,8 +90,9 @@ export async function handleRegister(
         `INSERT INTO users (
           user_token, protocol_version, vertical_id, agent_model, embedding_method,
           embedding, city, age_range, intent,
-          interests, values_text, description, seeking, identity, deal_breakers
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          interests, values_text, description, seeking, identity, deal_breakers,
+          verification_level, phone_hash, agent_attestation
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         token,
@@ -99,7 +109,10 @@ export async function handleRegister(
         input.description ?? null,
         input.seeking ?? null,
         input.identity ? JSON.stringify(input.identity) : null,
-        input.deal_breakers ? JSON.stringify(input.deal_breakers) : null
+        input.deal_breakers ? JSON.stringify(input.deal_breakers) : null,
+        input.verification_level ?? "anonymous",
+        input.phone_hash ?? null,
+        input.agent_attestation ? JSON.stringify(input.agent_attestation) : null
       );
   });
 

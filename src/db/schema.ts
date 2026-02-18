@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS users (
   identity         TEXT,
   vertical_id      TEXT NOT NULL DEFAULT 'matchmaking',
   deal_breakers    TEXT, -- JSON object for two-pass filtering
+  -- v2 identity tiers
+  verification_level TEXT NOT NULL DEFAULT 'anonymous' CHECK (verification_level IN ('anonymous','verified','attested')),
+  phone_hash       TEXT, -- for Sybil resistance
+  agent_attestation TEXT, -- JSON: {model, method, interaction_hours, generated_at}
   created_at       TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -101,6 +105,25 @@ CREATE TRIGGER IF NOT EXISTS cleanup_idempotency_keys
     DELETE FROM idempotency_keys 
     WHERE created_at < datetime('now', '-1 day');
   END;
+
+-- Reputation events for reputation system
+CREATE TABLE IF NOT EXISTS reputation_events (
+  id TEXT PRIMARY KEY,
+  identity_id TEXT NOT NULL, -- who this event is about
+  reporter_id TEXT NOT NULL, -- who reported it
+  reporter_reputation REAL, -- reporter's rep at time of rating
+  vertical_id TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('outcome','dispute','completion','abandonment')),
+  rating TEXT CHECK (rating IN ('positive','neutral','negative')), -- NULL for non-outcome events
+  dimensions TEXT, -- JSON: per-dimension ratings
+  notes TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_reputation_events_identity ON reputation_events(identity_id);
+CREATE INDEX IF NOT EXISTS idx_reputation_events_vertical ON reputation_events(vertical_id);
+CREATE INDEX IF NOT EXISTS idx_reputation_events_type ON reputation_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_reputation_events_created ON reputation_events(created_at);
 `;
 
 export function initSchema(db: Database): void {

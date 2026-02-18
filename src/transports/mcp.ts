@@ -10,6 +10,7 @@ import { handleDecline } from "../handlers/decline.js";
 import { handleGetIntroductions } from "../handlers/get-introductions.js";
 import { handleReportOutcome } from "../handlers/report-outcome.js";
 import { handleWithdraw } from "../handlers/withdraw.js";
+import { handleGetReputation } from "../handlers/get-reputation.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -75,6 +76,23 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         })
         .optional()
         .describe("Hard constraints for filtering"),
+      verification_level: z
+        .enum(["anonymous", "verified", "attested"])
+        .default("anonymous")
+        .describe("Identity verification level"),
+      phone_hash: z
+        .string()
+        .optional()
+        .describe("Hashed phone number for Sybil resistance"),
+      agent_attestation: z
+        .object({
+          model: z.string(),
+          method: z.string(),
+          interaction_hours: z.number(),
+          generated_at: z.string(),
+        })
+        .optional()
+        .describe("Agent attestation metadata"),
       user_token: z
         .string()
         .optional()
@@ -115,6 +133,12 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .string()
         .optional()
         .describe("Filter to users in this city"),
+      min_reputation: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe("Minimum reputation score filter"),
       cursor: z
         .string()
         .optional()
@@ -224,5 +248,23 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .describe("Client-generated key for request deduplication"),
     },
     async (params) => toMcpResponse(await handleWithdraw(params, ctx))
+  );
+
+  // 10. schelling.reputation
+  server.tool(
+    "schelling.reputation",
+    "Get reputation details for yourself or another user",
+    {
+      user_token: z.string().describe("Your user token"),
+      target_token: z
+        .string()
+        .optional()
+        .describe("Token of user to get reputation for (omit for self)"),
+      vertical_id: z
+        .string()
+        .optional()
+        .describe("Get vertical-specific reputation (omit for global)"),
+    },
+    async (params) => toMcpResponse(handleGetReputation(ctx, params))
   );
 }

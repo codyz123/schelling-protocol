@@ -5,6 +5,7 @@ import type {
   CandidateRecord,
 } from "../types.js";
 import { Stage } from "../types.js";
+import { computeReputation, recordReputationEvent } from "../core/reputation.js";
 
 export interface ReportOutcomeInput {
   user_token: string;
@@ -107,6 +108,21 @@ export async function handleReportOutcome(
     ctx.db
       .prepare(`UPDATE candidates SET ${col} = MAX(${col}, ?), updated_at = datetime('now') WHERE id = ?`)
       .run(Stage.COMPLETED, input.candidate_id);
+
+    // Create reputation event for the other party
+    const reporterReputation = computeReputation(ctx.db, input.user_token, candidate.vertical_id);
+    const otherToken = input.user_token === candidate.user_a_token ? 
+      candidate.user_b_token : candidate.user_a_token;
+
+    recordReputationEvent(ctx.db, {
+      identity_id: otherToken,
+      reporter_id: input.user_token,
+      reporter_reputation: reporterReputation.score,
+      vertical_id: candidate.vertical_id,
+      event_type: "outcome",
+      rating: input.outcome,
+      notes: input.notes,
+    });
   });
 
   recordOutcome();

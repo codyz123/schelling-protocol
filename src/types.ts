@@ -253,7 +253,7 @@ export interface RegistrationRecord {
   deal_breakers?: string; // JSON object
 }
 
-// Legacy UserRecord for backward compatibility
+// Legacy UserRecord for backward compatibility with v2 identity extensions
 export interface UserRecord {
   user_token: string;
   protocol_version: string;
@@ -268,6 +268,9 @@ export interface UserRecord {
   description: string | null;
   seeking: string | null;
   identity: string | null; // JSON object
+  verification_level: "anonymous" | "verified" | "attested";
+  phone_hash: string | null;
+  agent_attestation: string | null; // JSON: {model, method, interaction_hours, generated_at}
   created_at: string;
   updated_at: string;
 }
@@ -317,7 +320,47 @@ export interface ReputationEventRecord {
   rating?: "positive" | "neutral" | "negative";
   dimensions?: string; // JSON object
   notes?: string;
-  created_at: string;
+  created_at: number;
+}
+
+// Agent attestation structure
+export interface AgentAttestation {
+  model: string;
+  method: string;
+  interaction_hours: number;
+  generated_at: string;
+}
+
+// Reputation computation results
+export interface ReputationScore {
+  score: number; // Overall reputation score 0-1
+  vertical_scores: Record<string, number>; // Per-vertical scores
+  breakdown: {
+    outcome: number;
+    completion: number;
+    consistency: number;
+    dispute: number;
+    tenure: number;
+  };
+  interaction_count: number;
+  verification_level: "anonymous" | "verified" | "attested";
+  member_since: string;
+}
+
+// Reputation API response (different for self vs others)
+export interface ReputationResponse {
+  score: number;
+  vertical_scores?: Record<string, number>; // Only for self queries
+  breakdown?: {
+    outcome: number;
+    completion: number;
+    consistency: number;
+    dispute: number;
+    tenure: number;
+  }; // Only for self queries
+  interaction_count: number;
+  verification_level: "anonymous" | "verified" | "attested";
+  member_since: string;
 }
 
 export interface DisputeRecord {

@@ -7,6 +7,7 @@ import type {
 import { Stage, orderTokens } from "../types.js";
 import { computeCompatibility } from "../matching/compatibility.js";
 import { getVertical } from "../verticals/registry.js";
+import { computeReputation } from "../core/reputation.js";
 
 export interface SearchInput {
   user_token: string;
@@ -15,6 +16,7 @@ export interface SearchInput {
   threshold?: number;
   intent_filter?: string;
   city_filter?: string;
+  min_reputation?: number; // Filter candidates by minimum reputation score
   cursor?: string; // For pagination
   idempotency_key?: string;
 }
@@ -26,6 +28,9 @@ export interface SearchCandidate {
   intent: string[];
   city: string;
   age_range: string;
+  reputation_score: number;
+  verification_level: "anonymous" | "verified" | "attested";
+  interaction_count: number;
 }
 
 export interface SearchOutput {
@@ -67,9 +72,9 @@ export async function handleSearch(
     };
   }
 
-  // Get vertical configuration
+  // Get vertical configuration - use defaults for matchmaking if not found
   const vertical = getVertical(verticalId);
-  if (!vertical) {
+  if (!vertical && verticalId !== "matchmaking") {
     return {
       ok: false,
       error: { code: "INVALID_VERTICAL", message: `Vertical ${verticalId} not found` }
@@ -101,14 +106,14 @@ export async function handleSearch(
   ];
 
   // Apply hard filters based on vertical configuration
-  if (vertical.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("intent")) {
+  if (vertical?.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("intent")) {
     if (input.intent_filter) {
       sql += ` AND EXISTS (SELECT 1 FROM json_each(u.intent) WHERE value = ?)`;
       params.push(input.intent_filter);
     }
   }
 
-  if (vertical.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("city")) {
+  if (vertical?.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("city")) {
     if (input.city_filter) {
       sql += ` AND u.city = ?`;
       params.push(input.city_filter);
@@ -126,11 +131,16 @@ export async function handleSearch(
 
   const others = ctx.db.prepare(sql).all(...params) as UserRecord[];
 
-  // Pass 2: Score candidates that passed hard filters
+  // Pass 2: Score candidates that passed hard filters and apply reputation filter
   const scored: {
     user: UserRecord;
     score: number;
     categories: string[];
+    reputation: {
+      score: number;
+      verification_level: "anonymous" | "verified" | "attested";
+      interaction_count: number;
+    };
   }[] = [];
 
   for (const other of others) {
@@ -138,12 +148,25 @@ export async function handleSearch(
     const result = computeCompatibility(callerEmbedding, otherEmbedding);
 
     if (result.overall_score >= threshold) {
+      // Get reputation for this candidate
+      const reputation = computeReputation(ctx.db, other.user_token, verticalId);
+      
+      // Apply minimum reputation filter
+      if (input.min_reputation && reputation.score < input.min_reputation) {
+        continue; // Skip this candidate
+      }
+
       scored.push({
         user: other,
         score: result.overall_score,
         categories: result.shared_categories.map(
           (sc) => `${sc.direction}_${sc.dimension}`
         ),
+        reputation: {
+          score: reputation.score,
+          verification_level: reputation.verification_level,
+          interaction_count: reputation.interaction_count,
+        },
       });
     }
   }
@@ -207,6 +230,9 @@ export async function handleSearch(
       intent: JSON.parse(item.user.intent),
       city: item.user.city,
       age_range: item.user.age_range,
+      reputation_score: item.reputation.score,
+      verification_level: item.reputation.verification_level,
+      interaction_count: item.reputation.interaction_count,
     });
   }
 
