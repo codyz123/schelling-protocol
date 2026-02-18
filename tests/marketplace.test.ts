@@ -250,7 +250,7 @@ describe("marketplace vertical", () => {
 
       const preference = {
         category: "electronics",
-        budget: { min: 0, max: 600 },
+        budget: { max_price: 600, preferred_price: 500 },
         location: "San Francisco, CA",
       };
 
@@ -273,7 +273,7 @@ describe("marketplace vertical", () => {
 
       const preference = {
         category: "electronics", 
-        budget: { min: 0, max: 600 },
+        budget: { max_price: 600 },
         location: "San Francisco, CA",
       };
 
