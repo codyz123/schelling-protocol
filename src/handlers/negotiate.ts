@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { HandlerContext, HandlerResult, UserRecord } from "../types.js";
 import { Stage, orderTokens } from "../types.js";
-import { getVertical } from "../verticals/registry.js";
+import { getCluster as getVertical } from "../clusters/registry.js";
 
 export interface NegotiateInput {
   user_token: string;

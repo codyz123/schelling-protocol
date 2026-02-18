@@ -1,6 +1,7 @@
 import type { VerticalDescriptor, VerticalRegistry } from "./types.js";
 import { matchmakingVertical } from "./matchmaking/descriptor.js";
 import { marketplaceVertical } from "./marketplace/descriptor.js";
+import { initClusterRegistry } from "../clusters/registry.js";
 
 // Global vertical registry
 let _registry: VerticalRegistry = {};
@@ -16,6 +17,9 @@ export function initVerticalRegistry(): void {
   // Load built-in verticals
   registerVertical(matchmakingVertical);
   registerVertical(marketplaceVertical);
+  
+  // Also initialize cluster registry for v2 compatibility
+  initClusterRegistry();
   
   // TODO: Load external verticals from config/plugins
 }

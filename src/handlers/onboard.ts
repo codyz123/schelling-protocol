@@ -1,5 +1,5 @@
 import type { HandlerContext, HandlerResult } from "../types.js";
-import { getVertical } from "../verticals/registry.js";
+import { getCluster as getVertical } from "../clusters/registry.js";
 
 interface OnboardParams {
   vertical_id: string;

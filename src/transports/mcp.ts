@@ -408,10 +408,10 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handleDeleteAccount(params, ctx))
   );
 
-  // 16. schelling.verticals
+  // 16. schelling.verticals (alias: schelling.clusters)
   server.tool(
     "schelling.verticals",
-    "List all available verticals with metadata and live statistics",
+    "List all available clusters (formerly verticals) with metadata and live statistics",
     {},
     async (params) => toMcpResponse(await handleListVerticals(params, ctx))
   );

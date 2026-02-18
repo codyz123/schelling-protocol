@@ -1,20 +1,14 @@
 import type { HandlerContext, HandlerResult } from "../types.js";
-import { listVerticals } from "../verticals/registry.js";
+import { listClusters } from "../clusters/registry.js";
 
-interface ListVerticalsParams {
-  // No parameters needed - this is an unauthenticated operation
-}
+interface ListVerticalsParams {}
 
 interface VerticalInfo {
   id: string;
   display_name: string;
   description: string;
   version: string;
-  roles: Array<{
-    id: string;
-    name: string;
-    description: string;
-  }>;
+  roles: Array<{ id: string; name: string; description: string }>;
   user_count: number;
   active_candidates: number;
 }
@@ -25,27 +19,24 @@ interface ListVerticalsResult {
 }
 
 export function handleListVerticals(
-  params: ListVerticalsParams,
+  _params: ListVerticalsParams,
   ctx: HandlerContext
 ): HandlerResult<ListVerticalsResult> {
   try {
-    const verticalDescriptors = listVerticals();
+    const clusters = listClusters();
     const verticals: VerticalInfo[] = [];
 
-    for (const descriptor of verticalDescriptors) {
-      const verticalId = descriptor.vertical_id;
-      // Query live stats for this vertical
-      const userCountQuery = ctx.db.query(
-        "SELECT COUNT(*) as count FROM users WHERE vertical_id = ?"
-      );
-      const userCount = (userCountQuery.get(verticalId) as { count: number })?.count || 0;
+    for (const descriptor of clusters) {
+      const clusterId = descriptor.cluster_id;
 
-      const candidateCountQuery = ctx.db.query(
-        "SELECT COUNT(*) as count FROM candidates WHERE (stage_a > 0 OR stage_b > 0)"
-      );
-      const candidateCount = (candidateCountQuery.get() as { count: number })?.count || 0;
+      const userCount = (ctx.db
+        .prepare("SELECT COUNT(*) as count FROM users WHERE vertical_id = ? OR primary_cluster = ?")
+        .get(clusterId, clusterId) as { count: number })?.count || 0;
 
-      // Convert roles to the simpler format
+      const candidateCount = (ctx.db
+        .prepare("SELECT COUNT(*) as count FROM candidates WHERE vertical_id = ? AND (stage_a > 0 OR stage_b > 0)")
+        .get(clusterId) as { count: number })?.count || 0;
+
       const roles = Object.entries(descriptor.roles).map(([roleId, role]) => ({
         id: roleId,
         name: role.name,
@@ -53,7 +44,7 @@ export function handleListVerticals(
       }));
 
       verticals.push({
-        id: verticalId,
+        id: clusterId,
         display_name: descriptor.display_name,
         description: descriptor.description,
         version: descriptor.version,
@@ -65,18 +56,12 @@ export function handleListVerticals(
 
     return {
       ok: true,
-      data: {
-        verticals,
-        protocol_version: "schelling-2.0",
-      },
+      data: { verticals, protocol_version: "schelling-2.0" },
     };
   } catch (error: unknown) {
     return {
       ok: false,
-      error: {
-        code: "INVALID_INPUT",
-        message: error instanceof Error ? error.message : String(error),
-      },
+      error: { code: "INVALID_INPUT", message: error instanceof Error ? error.message : String(error) },
     };
   }
 }

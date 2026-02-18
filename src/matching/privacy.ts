@@ -12,15 +12,18 @@ export function addLaplaceNoise(
   embedding: number[],
   epsilon: number = 1.0
 ): number[] {
-  const sensitivity = 2.0; // max change per dimension: from -1 to +1
+  const sensitivity = 2.0;
   const scale = sensitivity / epsilon;
-
   return embedding.map((value) => {
     const noisy = value + sampleLaplace(scale);
     return Math.max(-1, Math.min(1, noisy));
   });
 }
 
+/**
+ * Validate a 50-dimension trait embedding.
+ * Returns null on success or a string error message.
+ */
 export function validateEmbedding(embedding: number[]): string | null {
   if (embedding.length !== DIMENSION_COUNT) {
     return `Expected ${DIMENSION_COUNT} dimensions, got ${embedding.length}`;

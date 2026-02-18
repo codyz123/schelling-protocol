@@ -14,6 +14,9 @@ export function getDatabase(): Database {
   const db = new Database(DB_PATH);
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");
+  db.exec("PRAGMA synchronous = NORMAL");
+  db.exec("PRAGMA cache_size = 10000");
+  db.exec("PRAGMA temp_store = MEMORY");
 
   instance = db;
   return db;

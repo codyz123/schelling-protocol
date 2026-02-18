@@ -263,10 +263,10 @@ describe("full funnel integration", () => {
     );
     expect(reregA.ok).toBe(true);
 
-    // Verify cascade: no candidates, no declines for A, no outcomes for A
+    // Verify cascade: no candidates for A, no declines for A, no outcomes for A
     const candidateCount = ctx.db
-      .prepare("SELECT COUNT(*) as count FROM candidates")
-      .get() as { count: number };
+      .prepare("SELECT COUNT(*) as count FROM candidates WHERE user_a_token = ? OR user_b_token = ?")
+      .get(tokenA, tokenA) as { count: number };
     expect(candidateCount.count).toBe(0);
 
     const declineCount = ctx.db

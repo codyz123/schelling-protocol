@@ -175,6 +175,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               result = await handleDeleteAccount(params, ctx);
               break;
             case 'verticals':
+            case 'clusters':
               result = await handleListVerticals(params, ctx);
               break;
             case 'onboard':

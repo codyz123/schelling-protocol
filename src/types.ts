@@ -12,7 +12,6 @@ export const Stage = {
   COMPLETED: 6,
 } as const;
 
-// Legacy stage aliases for backward compatibility
 export const LegacyStage = {
   NONE: 0,
   SEARCHED: 1,
@@ -24,19 +23,75 @@ export const LegacyStage = {
 
 export type Stage = (typeof Stage)[keyof typeof Stage];
 
-// --- Error Types ---
+// --- Error Types (§14 — all 44+ error codes) ---
 
 export type ErrorCode =
   | "INVALID_INPUT"
   | "USER_NOT_FOUND"
   | "CANDIDATE_NOT_FOUND"
   | "STAGE_VIOLATION"
+  | "STAGE_TOO_EARLY"
   | "MUTUAL_REQUIRED"
   | "UNAUTHORIZED"
   | "VERSION_MISMATCH"
   | "ALREADY_REPORTED"
   | "ALREADY_DECLINED"
-  | "IDENTITY_NOT_PROVIDED";
+  | "NO_ACTIVE_DECLINE"
+  | "IDENTITY_NOT_PROVIDED"
+  | "INVALID_INTENT_EMBEDDING"
+  | "UNKNOWN_CLUSTER"
+  | "INVALID_ROLE"
+  | "MISSING_REQUIRED_FIELD"
+  | "MODULE_FIELD_NOT_ACTIVE"
+  | "IMMUTABLE_FIELD"
+  | "NEGOTIATION_NOT_ENABLED"
+  | "INVALID_STAGE"
+  | "MAX_ROUNDS_EXCEEDED"
+  | "NO_PROPOSAL_TO_ACCEPT"
+  | "CANNOT_ACCEPT_OWN_PROPOSAL"
+  | "PROPOSAL_NOT_PENDING"
+  | "MISSING_PROPOSAL"
+  | "INVALID_PROPOSAL_FIELD"
+  | "NOT_PARTICIPANT"
+  | "DUPLICATE_DISPUTE"
+  | "DISPUTE_NOT_FOUND"
+  | "NOT_JUROR"
+  | "ALREADY_VOTED"
+  | "VERDICT_DEADLINE_PASSED"
+  | "NO_PENDING_REQUEST"
+  | "ARTIFACTS_REQUIRED"
+  | "INVALID_TYPE"
+  | "CONFIRMATION_REQUIRED"
+  | "MESSAGE_TOO_LONG"
+  | "RELAY_DISABLED"
+  | "RELAY_BLOCKED"
+  | "ACTIVE_COMMITMENT"
+  | "PERMANENT_DECLINE"
+  | "RATE_LIMITED"
+  | "USER_PAUSED"
+  | "VERIFICATION_EXPIRED"
+  | "JUROR_REPLACED"
+  | "QUESTION_TOO_LONG"
+  | "ANSWER_TOO_LONG"
+  | "INQUIRY_NOT_FOUND"
+  | "ALREADY_ANSWERED"
+  | "MAX_SUBSCRIPTIONS"
+  | "SUBSCRIPTION_NOT_FOUND"
+  | "CONTRACT_NOT_FOUND"
+  | "CONTRACT_EXPIRED"
+  | "CONTRACT_NOT_PENDING"
+  | "CONTRACT_NOT_ACTIVE"
+  | "CANNOT_RESPOND_OWN_PROPOSAL"
+  | "INVALID_CONTRACT_TYPE"
+  | "INVALID_CONTRACT_ACTION"
+  | "EVENT_NOT_FOUND"
+  | "ACK_DEADLINE_PASSED"
+  | "INVALID_EVENT_TYPE"
+  | "EVENT_ALREADY_ACKED"
+  | "CONTRACT_ALREADY_TERMINAL"
+  | "INTERNAL_ERROR"
+  // Legacy codes kept for backward compat
+  | "INVALID_VERTICAL";
 
 export interface ErrorResponse {
   code: ErrorCode;
@@ -57,64 +112,28 @@ export type HandlerResult<T> =
 
 export const DIMENSION_NAMES = [
   // Personality (0-9)
-  "openness",
-  "intellectual_curiosity",
-  "aesthetic_sensitivity",
-  "conscientiousness",
-  "self_discipline",
-  "extraversion",
-  "social_energy",
-  "assertiveness",
-  "agreeableness",
-  "emotional_stability",
+  "openness", "intellectual_curiosity", "aesthetic_sensitivity",
+  "conscientiousness", "self_discipline", "extraversion",
+  "social_energy", "assertiveness", "agreeableness", "emotional_stability",
   // Values (10-19)
-  "autonomy",
-  "tradition",
-  "achievement",
-  "benevolence",
-  "universalism",
-  "security",
-  "stimulation",
-  "hedonism",
-  "power",
-  "conformity",
+  "autonomy", "tradition", "achievement", "benevolence", "universalism",
+  "security", "stimulation", "hedonism", "power", "conformity",
   // Aesthetic (20-27)
-  "minimalism",
-  "nature_affinity",
-  "urban_preference",
-  "visual",
-  "auditory",
-  "tactile",
-  "symmetry",
-  "novelty_seeking",
+  "minimalism", "nature_affinity", "urban_preference", "visual",
+  "auditory", "tactile", "symmetry", "novelty_seeking",
   // Intellectual (28-35)
-  "systematic",
-  "abstract",
-  "verbal",
-  "depth_focused",
-  "theoretical",
-  "analytical",
-  "creative",
-  "critical",
+  "systematic", "abstract", "verbal", "depth_focused",
+  "theoretical", "analytical", "creative", "critical",
   // Social (36-43)
-  "introversion",
-  "depth_preference",
-  "leadership",
-  "empathy",
-  "humor",
-  "conflict_tolerance",
-  "formality",
-  "spontaneity",
+  "introversion", "depth_preference", "leadership", "empathy",
+  "humor", "conflict_tolerance", "formality", "spontaneity",
   // Communication (44-49)
-  "directness",
-  "verbosity",
-  "emotional_expression",
-  "listener_vs_talker",
-  "written_preference",
-  "debate_enjoyment",
+  "directness", "verbosity", "emotional_expression",
+  "listener_vs_talker", "written_preference", "debate_enjoyment",
 ] as const;
 
 export const DIMENSION_COUNT = 50;
+export const INTENT_DIMENSION_COUNT = 16;
 
 export const DIMENSION_GROUPS: Record<string, { start: number; end: number }> = {
   personality: { start: 0, end: 10 },
@@ -125,8 +144,14 @@ export const DIMENSION_GROUPS: Record<string, { start: number; end: number }> = 
   communication: { start: 44, end: 50 },
 };
 
+export const INTENT_DIMENSION_NAMES = [
+  "romantic_intent", "social_bonding", "professional_context", "material_exchange",
+  "commitment_depth", "urgency", "symmetry_preference", "skill_relevance",
+  "compatibility_weight", "trust_requirement", "privacy_sensitivity", "geographic_scope",
+  "formality_level", "duration_expectation", "exclusivity", "scope_breadth",
+] as const;
+
 export const POLE_LABELS: Record<string, [string, string]> = {
-  // Personality
   openness: ["routine-oriented", "novelty-seeking"],
   intellectual_curiosity: ["practically focused", "intellectually curious"],
   aesthetic_sensitivity: ["aesthetically indifferent", "aesthetically sensitive"],
@@ -137,7 +162,6 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   assertiveness: ["deferential", "assertive"],
   agreeableness: ["challenging and direct", "warm and accommodating"],
   emotional_stability: ["emotionally reactive", "emotionally stable"],
-  // Values
   autonomy: ["prefers guidance and structure", "fiercely independent"],
   tradition: ["progressive and change-seeking", "tradition-oriented"],
   achievement: ["process-oriented", "achievement-driven"],
@@ -148,7 +172,6 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   hedonism: ["ascetic and restrained", "pleasure-seeking"],
   power: ["egalitarian", "status-seeking"],
   conformity: ["nonconformist", "rule-following"],
-  // Aesthetic
   minimalism: ["maximalist", "minimalist"],
   nature_affinity: ["urban-oriented", "nature-oriented"],
   urban_preference: ["rural preference", "urban preference"],
@@ -157,7 +180,6 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   tactile: ["tactilely indifferent", "tactilely oriented"],
   symmetry: ["asymmetry-tolerant", "symmetry-seeking"],
   novelty_seeking: ["familiarity-seeking", "novelty-seeking"],
-  // Intellectual
   systematic: ["intuitive thinker", "systematic thinker"],
   abstract: ["concrete thinker", "abstract thinker"],
   verbal: ["non-verbal processor", "verbal processor"],
@@ -166,7 +188,6 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   analytical: ["holistic thinker", "analytical thinker"],
   creative: ["conventional thinker", "creative thinker"],
   critical: ["accepting thinker", "critical thinker"],
-  // Social
   introversion: ["extraverted", "introverted"],
   depth_preference: ["breadth in relationships", "depth in relationships"],
   leadership: ["follower", "leader"],
@@ -175,7 +196,6 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   conflict_tolerance: ["conflict-avoidant", "conflict-tolerant"],
   formality: ["casual", "formal"],
   spontaneity: ["planner", "spontaneous"],
-  // Communication
   directness: ["indirect communicator", "direct communicator"],
   verbosity: ["concise", "verbose"],
   emotional_expression: ["emotionally reserved", "emotionally expressive"],
@@ -184,119 +204,75 @@ export const POLE_LABELS: Record<string, [string, string]> = {
   debate_enjoyment: ["harmony-seeking", "debate-enjoying"],
 };
 
-// --- Vertical System Types ---
-
-export interface VerticalDescriptor {
-  vertical_id: string;
-  version: string;
-  display_name: string;
-  description: string;
-  roles: Record<string, VerticalRole>;
-  symmetric: boolean; // true for matchmaking, false for marketplace
-  embedding_schema: EmbeddingSchema;
-  funnel_config: FunnelConfig;
-  negotiation?: NegotiationConfig;
-  exclusive_commitment?: boolean;
-}
-
-export interface VerticalRole {
-  data_schema: string;
-  required_fields: string[];
-  optional_fields?: string[];
-}
-
-export interface EmbeddingSchema {
-  dimensions: number;
-  groups: Record<string, { start: number; end: number }>;
-  anchors?: string; // reference to anchor definitions
-}
-
-export interface FunnelConfig {
-  discovery_fields: string[];
-  evaluation_fields: string[];
-  exchange_fields: string[];
-  connection_fields: string[];
-  mutual_gate_stage: string;
-}
-
-export interface NegotiationConfig {
-  enabled: boolean;
-  max_rounds: number;
-  timeout_hours: number;
-  proposal_schema: Record<string, string>;
-}
-
 // --- Database Record Interfaces ---
 
-export interface IdentityRecord {
-  id: string;
-  token: string;
-  verification_level: "anonymous" | "verified" | "attested";
-  phone_hash?: string;
-  created_at: string;
-  last_active_at: string;
-}
-
-export interface RegistrationRecord {
-  id: string;
-  identity_id: string;
-  vertical_id: string;
-  role?: string;
-  embedding?: string; // JSON array
-  profile_data: string; // JSON object
-  identity_data?: string; // JSON object {name, contact}
-  noise_epsilon?: number;
-  agent_model?: string;
-  embedding_method?: string;
-  registered_at: string;
-  expires_at: string;
-  deal_breakers?: string; // JSON object
-}
-
-// Legacy UserRecord for backward compatibility with v2 identity extensions
 export interface UserRecord {
   user_token: string;
   protocol_version: string;
   agent_model: string | null;
   embedding_method: string | null;
-  embedding: string; // JSON array
-  city: string;
-  age_range: string;
-  intent: string; // JSON array
-  interests: string | null; // JSON array
+  embedding: string; // JSON array (50-dim)
+  intent_embedding: string | null; // JSON array (16-dim)
+  intents: string | null; // JSON array of strings
+  intent_tags: string | null; // JSON object
+  primary_cluster: string | null;
+  cluster_affinities: string | null; // JSON object
+  city: string | null;
+  age_range: string | null;
+  intent: string | null; // Legacy — JSON array
+  interests: string | null;
   values_text: string | null;
   description: string | null;
   seeking: string | null;
-  identity: string | null; // JSON object
+  identity: string | null;
+  vertical_id: string;
+  deal_breakers: string | null;
   verification_level: "anonymous" | "verified" | "attested";
   phone_hash: string | null;
-  agent_attestation: string | null; // JSON: {model, method, interaction_hours, generated_at}
+  agent_attestation: string | null;
+  role: string | null;
+  status: "active" | "paused" | "suspended" | "delisted";
+  media_refs: string | null;
+  marketplace_data: string | null;
+  structured_attributes: string | null;
+  reputation_score: number;
+  interaction_count: number;
+  last_registered_at: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface CandidateRecord {
   id: string;
+  user_a_token: string;
+  user_b_token: string;
   vertical_id: string;
-  identity_a: string;
-  identity_b: string;
   score: number;
   shared_categories: string; // JSON array
   stage_a: number;
   stage_b: number;
+  score_your_fit: number | null;
+  score_their_fit: number | null;
+  intent_similarity: number | null;
+  combined_score: number | null;
+  computed_at: string;
+  algorithm_variant: string | null;
   created_at: string;
   updated_at: string;
-  // Legacy fields for backward compatibility
-  user_a_token?: string;
-  user_b_token?: string;
 }
 
 export interface DeclineRecord {
   id: string;
   decliner_token: string;
   declined_token: string;
+  vertical_id: string;
   stage_at_decline: number;
   reason: string | null;
+  expiry_at: string | null;
+  reconsidered: number;
+  reconsidered_at: string | null;
+  feedback: string | null;
+  repeat_count: number;
   created_at: string;
 }
 
@@ -318,12 +294,36 @@ export interface ReputationEventRecord {
   vertical_id: string;
   event_type: "outcome" | "dispute" | "completion" | "abandonment";
   rating?: "positive" | "neutral" | "negative";
-  dimensions?: string; // JSON object
+  dimensions?: string;
   notes?: string;
   created_at: number;
 }
 
-// Agent attestation structure
+export interface IdentityRecord {
+  id: string;
+  token: string;
+  verification_level: "anonymous" | "verified" | "attested";
+  phone_hash?: string;
+  created_at: string;
+  last_active_at: string;
+}
+
+export interface RegistrationRecord {
+  id: string;
+  identity_id: string;
+  vertical_id: string;
+  role?: string;
+  embedding?: string;
+  profile_data: string;
+  identity_data?: string;
+  noise_epsilon?: number;
+  agent_model?: string;
+  embedding_method?: string;
+  registered_at: string;
+  expires_at: string;
+  deal_breakers?: string;
+}
+
 export interface AgentAttestation {
   model: string;
   method: string;
@@ -331,10 +331,9 @@ export interface AgentAttestation {
   generated_at: string;
 }
 
-// Reputation computation results
 export interface ReputationScore {
-  score: number; // Overall reputation score 0-1
-  vertical_scores: Record<string, number>; // Per-vertical scores
+  score: number;
+  vertical_scores: Record<string, number>;
   breakdown: {
     outcome: number;
     completion: number;
@@ -347,17 +346,16 @@ export interface ReputationScore {
   member_since: string;
 }
 
-// Reputation API response (different for self vs others)
 export interface ReputationResponse {
   score: number;
-  vertical_scores?: Record<string, number>; // Only for self queries
+  vertical_scores?: Record<string, number>;
   breakdown?: {
     outcome: number;
     completion: number;
     consistency: number;
     dispute: number;
     tenure: number;
-  }; // Only for self queries
+  };
   interaction_count: number;
   verification_level: "anonymous" | "verified" | "attested";
   member_since: string;
@@ -371,7 +369,7 @@ export interface DisputeRecord {
   vertical_id: string;
   stage_at_filing: number;
   reason: string;
-  evidence?: string; // JSON object
+  evidence?: string;
   status: "open" | "resolved_for_filer" | "resolved_for_defendant" | "dismissed";
   resolved_at?: string;
   resolution_notes?: string;
@@ -383,7 +381,7 @@ export interface NegotiationRecord {
   candidate_id: string;
   from_identity: string;
   round: number;
-  proposal: string; // JSON object
+  proposal: string;
   status: "pending" | "accepted" | "countered" | "expired";
   created_at: string;
   expires_at: string;
@@ -393,10 +391,66 @@ export interface PendingActionRecord {
   id: string;
   identity_id: string;
   candidate_id: string;
-  action_type: "evaluate" | "exchange" | "respond_proposal" | "review_commitment";
+  action_type: "evaluate" | "exchange" | "respond_proposal" | "review_commitment" |
+    "review_dispute" | "provide_verification" | "new_message" | "direct_request" |
+    "jury_duty" | "profile_refresh" | "mutual_gate_expired";
   created_at: string;
   consumed_at?: string;
 }
+
+export interface ScoreBreakdown {
+  trait_similarity: number;
+  intent_similarity: number;
+  preference_alignment: number;
+  deal_breaker_pass: number;
+  collaborative_signal: number;
+  shared_categories: string[];
+  complementary_traits: Array<{
+    dimension: string;
+    your_value: number;
+    their_value: number;
+    difference: number;
+  }>;
+  strongest_alignments: string[];
+}
+
+export interface FeedbackData {
+  dimension_scores?: Record<string, number>;
+  rejection_reason?: string;
+  rejection_freeform?: string;
+  what_i_wanted?: string;
+  satisfaction?: "very_satisfied" | "satisfied" | "neutral" | "dissatisfied" | "very_dissatisfied";
+  would_recommend?: boolean;
+}
+
+export interface BackgroundJob {
+  id: string;
+  job_type: "score_recompute" | "reputation_update" | "collaborative_filter" | "stale_cleanup";
+  payload: Record<string, unknown>;
+  status: "pending" | "processing" | "completed" | "failed";
+  scheduled_at: string;
+  started_at?: string;
+  completed_at?: string;
+  error_message?: string;
+  retry_count: number;
+  max_retries: number;
+}
+
+// --- Rate Limiting ---
+
+export const RATE_LIMITS: Record<string, { limit: number; window_seconds: number }> = {
+  "schelling.register":   { limit: 5,   window_seconds: 86400 },  // per day
+  "schelling.search":     { limit: 10,  window_seconds: 3600 },
+  "schelling.evaluate":   { limit: 50,  window_seconds: 3600 },
+  "schelling.exchange":   { limit: 20,  window_seconds: 3600 },
+  "schelling.message":    { limit: 100, window_seconds: 3600 },
+  "schelling.update":     { limit: 20,  window_seconds: 3600 },
+  "schelling.commit":     { limit: 10,  window_seconds: 3600 },
+  "schelling.feedback":   { limit: 50,  window_seconds: 3600 },
+  "schelling.dispute":    { limit: 3,   window_seconds: 86400 },
+  "schelling.reconsider": { limit: 10,  window_seconds: 86400 },
+  "schelling.relay_block":{ limit: 20,  window_seconds: 3600 },
+};
 
 // --- Candidate Pair Helpers ---
 
@@ -429,11 +483,48 @@ export function otherToken(
 
 export const PROTOCOL_VERSION = "schelling-2.0";
 export const VALID_AGE_RANGES = [
-  "18-24",
-  "25-34",
-  "35-44",
-  "45-54",
-  "55-64",
-  "65+",
+  "18-24", "25-34", "35-44", "45-54", "55-64", "65+",
 ] as const;
 export const VALID_INTENTS = ["friends", "romance", "collaborators"] as const;
+
+// --- Vertical System Types (kept for backward compatibility) ---
+
+export interface VerticalDescriptor {
+  vertical_id: string;
+  version: string;
+  display_name: string;
+  description: string;
+  roles: Record<string, VerticalRole>;
+  symmetric: boolean;
+  embedding_schema: EmbeddingSchema;
+  funnel_config: FunnelConfig;
+  negotiation?: NegotiationConfig;
+  exclusive_commitment?: boolean;
+}
+
+export interface VerticalRole {
+  data_schema: string;
+  required_fields: string[];
+  optional_fields?: string[];
+}
+
+export interface EmbeddingSchema {
+  dimensions: number;
+  groups: Record<string, { start: number; end: number }>;
+  anchors?: string;
+}
+
+export interface FunnelConfig {
+  discovery_fields: string[];
+  evaluation_fields: string[];
+  exchange_fields: string[];
+  connection_fields: string[];
+  mutual_gate_stage: string;
+}
+
+export interface NegotiationConfig {
+  enabled: boolean;
+  max_rounds: number;
+  timeout_hours: number;
+  proposal_schema: Record<string, string>;
+}
