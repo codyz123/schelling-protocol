@@ -343,9 +343,150 @@ CREATE TABLE IF NOT EXISTS similar_users (
   computed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
   PRIMARY KEY (user_token, similar_token)
 );
+
+-- Phase 14: Multi-party groups
+CREATE TABLE IF NOT EXISTS groups (
+  id TEXT PRIMARY KEY,
+  cluster_id TEXT NOT NULL,
+  created_by TEXT NOT NULL REFERENCES users(user_token),
+  status TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'complete', 'dissolved')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS group_members (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  user_token TEXT NOT NULL REFERENCES users(user_token),
+  committed INTEGER NOT NULL DEFAULT 0,
+  committed_at TEXT,
+  UNIQUE (group_id, user_token)
+);
+CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_token);
+
+-- Phase 16: Pre-commitment dialogue
+CREATE TABLE IF NOT EXISTS inquiries (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  asker_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  category TEXT,
+  required INTEGER NOT NULL DEFAULT 0,
+  asked_at TEXT NOT NULL DEFAULT (datetime('now')),
+  answer TEXT,
+  confidence REAL,
+  source TEXT CHECK (source IS NULL OR source IN ('agent_knowledge', 'human_confirmed')),
+  answered_at TEXT,
+  expired INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_inquiries_candidate ON inquiries(candidate_id, asked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_inquiries_asker ON inquiries(asker_token, asked_at);
+
+-- Phase 17: Subscriptions and notifications
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id TEXT PRIMARY KEY,
+  user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  intent_embedding TEXT NOT NULL,
+  hard_filters TEXT,
+  capability_filters TEXT,
+  threshold REAL NOT NULL,
+  max_notifications_per_day INTEGER NOT NULL DEFAULT 10,
+  ttl_days INTEGER NOT NULL DEFAULT 30,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'expired')),
+  notifications_today INTEGER NOT NULL DEFAULT 0,
+  last_notification_date TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_token, status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_active ON subscriptions(status, expires_at);
+
+CREATE TABLE IF NOT EXISTS subscription_notifications (
+  id TEXT PRIMARY KEY,
+  subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+  matched_user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  combined_score REAL NOT NULL,
+  intent_similarity REAL NOT NULL,
+  matched_at TEXT NOT NULL DEFAULT (datetime('now')),
+  read INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_sub_notifications_sub ON subscription_notifications(subscription_id, matched_at DESC);
+
+-- Phase 18: Agent capabilities
+CREATE TABLE IF NOT EXISTS agent_capabilities (
+  user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  capability TEXT NOT NULL,
+  parameters TEXT,
+  confidence REAL NOT NULL DEFAULT 1.0,
+  PRIMARY KEY (user_token, capability)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_caps_capability ON agent_capabilities(capability);
+
+-- Phase 19: Contracts
+CREATE TABLE IF NOT EXISTS contracts (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  proposer_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  responder_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('match', 'service', 'task', 'custom')),
+  terms TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN (
+    'proposed', 'counter_proposed', 'accepted', 'active',
+    'completed', 'expired', 'terminated', 'rejected'
+  )),
+  version INTEGER NOT NULL DEFAULT 1,
+  proposed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  accepted_at TEXT,
+  completed_at TEXT,
+  terminated_at TEXT,
+  terminated_by TEXT,
+  termination_reason TEXT,
+  expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_contracts_candidate ON contracts(candidate_id, status);
+CREATE INDEX IF NOT EXISTS idx_contracts_proposer ON contracts(proposer_token, status);
+CREATE INDEX IF NOT EXISTS idx_contracts_responder ON contracts(responder_token, status);
+
+CREATE TABLE IF NOT EXISTS contract_amendments (
+  id TEXT PRIMARY KEY,
+  contract_id TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+  proposer_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  updated_terms TEXT NOT NULL,
+  reason TEXT,
+  status TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'accepted', 'rejected')),
+  proposed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_amendments_contract ON contract_amendments(contract_id, status);
+
+-- Phase 20: Lifecycle events
+CREATE TABLE IF NOT EXISTS lifecycle_events (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  contract_id TEXT,
+  emitter_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('milestone', 'update', 'completion', 'issue', 'custom')),
+  data TEXT NOT NULL,
+  requires_ack INTEGER NOT NULL DEFAULT 0,
+  ack_deadline TEXT,
+  status TEXT NOT NULL DEFAULT 'emitted' CHECK (status IN ('emitted', 'pending_ack', 'acknowledged', 'ack_overdue')),
+  emitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+  acknowledged_at TEXT,
+  ack_note TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_events_candidate ON lifecycle_events(candidate_id, emitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_events_contract ON lifecycle_events(contract_id, emitted_at DESC);
 `;
 
 export function initSchema(db: Database): void {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec(DDL);
+
+  // Phase 18: Add agent_capabilities column to users table (safe migration)
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN agent_capabilities TEXT");
+  } catch (_) {
+    // Column already exists
+  }
 }

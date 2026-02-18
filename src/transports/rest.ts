@@ -31,6 +31,15 @@ import { handleMyInsights } from "../handlers/my-insights.js";
 import { handleJuryDuty } from "../handlers/jury-duty.js";
 import { handleJuryVerdict } from "../handlers/jury-verdict.js";
 import { handleAnalytics } from "../handlers/analytics.js";
+import { handleGroupEvaluate } from "../handlers/group-evaluate.js";
+import { handleGroupCommit } from "../handlers/group-commit.js";
+import { handleInquire } from "../handlers/inquire.js";
+import { handleSubscribe } from "../handlers/subscribe.js";
+import { handleUnsubscribe } from "../handlers/unsubscribe.js";
+import { handleNotifications } from "../handlers/notifications.js";
+import { handleContract } from "../handlers/contract.js";
+import { handleContractUpdate } from "../handlers/contract-update.js";
+import { handleEvent } from "../handlers/event.js";
 import { logger } from "../core/logger.js";
 
 interface RestServer {
@@ -236,6 +245,35 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               break;
             case 'server_info':
               result = await handleServerInfo(params, ctx);
+              break;
+            case 'group_evaluate':
+              result = await handleGroupEvaluate(params, ctx);
+              break;
+            case 'group_commit':
+              result = await handleGroupCommit(params, ctx);
+              break;
+            case 'inquire':
+            case 'inquiries':
+              result = await handleInquire(params, ctx);
+              break;
+            case 'subscribe':
+              result = await handleSubscribe(params, ctx);
+              break;
+            case 'unsubscribe':
+              result = await handleUnsubscribe(params, ctx);
+              break;
+            case 'notifications':
+              result = await handleNotifications(params, ctx);
+              break;
+            case 'contract':
+              result = await handleContract(params, ctx);
+              break;
+            case 'contract_update':
+              result = await handleContractUpdate(params, ctx);
+              break;
+            case 'event':
+            case 'events':
+              result = await handleEvent(params, ctx);
               break;
             default:
               return Response.json(

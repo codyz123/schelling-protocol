@@ -32,6 +32,15 @@ import { handleMyInsights } from "../handlers/my-insights.js";
 import { handleJuryDuty } from "../handlers/jury-duty.js";
 import { handleJuryVerdict } from "../handlers/jury-verdict.js";
 import { handleAnalytics } from "../handlers/analytics.js";
+import { handleGroupEvaluate } from "../handlers/group-evaluate.js";
+import { handleGroupCommit } from "../handlers/group-commit.js";
+import { handleInquire } from "../handlers/inquire.js";
+import { handleSubscribe } from "../handlers/subscribe.js";
+import { handleUnsubscribe } from "../handlers/unsubscribe.js";
+import { handleNotifications } from "../handlers/notifications.js";
+import { handleContract } from "../handlers/contract.js";
+import { handleContractUpdate } from "../handlers/contract-update.js";
+import { handleEvent } from "../handlers/event.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -634,5 +643,142 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     "Get server metadata including protocol version, capabilities, and statistics",
     {},
     async (params) => toMcpResponse(await handleServerInfo(params, ctx))
+  );
+
+  // Phase 14: schelling.group_evaluate
+  server.tool(
+    "schelling.group_evaluate",
+    "Compute pairwise compatibility matrix for a proposed group of N candidates",
+    {
+      user_token: z.string().describe("Your user token"),
+      cluster_id: z.string().describe("Cluster ID (must support groups)"),
+      member_tokens: z.array(z.string()).min(2).max(10).describe("User tokens of proposed group members"),
+    },
+    async (params) => toMcpResponse(await handleGroupEvaluate(params, ctx))
+  );
+
+  // Phase 14: schelling.group_commit
+  server.tool(
+    "schelling.group_commit",
+    "Create, join, or leave a group. Group completes when all members commit.",
+    {
+      user_token: z.string().describe("Your user token"),
+      action: z.enum(["create", "join", "leave"]).describe("Action to perform"),
+      cluster_id: z.string().optional().describe("Cluster ID (required for create)"),
+      group_id: z.string().optional().describe("Group ID (required for join/leave)"),
+      member_tokens: z.array(z.string()).optional().describe("Member tokens (required for create)"),
+    },
+    async (params) => toMcpResponse(await handleGroupCommit(params, ctx))
+  );
+
+  // Phase 16: schelling.inquire
+  server.tool(
+    "schelling.inquire",
+    "Ask/answer structured questions at EVALUATED stage for pre-commitment dialogue",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate pair ID"),
+      action: z.enum(["ask", "answer", "list"]).describe("Action: ask a question, answer one, or list Q&A"),
+      question: z.string().max(2000).optional().describe("Question text (for ask)"),
+      category: z.string().optional().describe("Question category"),
+      required: z.boolean().optional().describe("Whether answer is required"),
+      inquiry_id: z.string().optional().describe("Inquiry ID (for answer)"),
+      answer: z.string().max(5000).optional().describe("Answer text (for answer)"),
+      confidence: z.number().min(0).max(1).optional().describe("Confidence in answer"),
+      source: z.enum(["agent_knowledge", "human_confirmed"]).optional(),
+    },
+    async (params) => toMcpResponse(await handleInquire(params, ctx))
+  );
+
+  // Phase 17: schelling.subscribe
+  server.tool(
+    "schelling.subscribe",
+    "Register a standing query to get notified when matching users register",
+    {
+      user_token: z.string().describe("Your user token"),
+      intent_embedding: z.array(z.number()).length(16).describe("16-dim intent embedding for matching"),
+      hard_filters: z.record(z.any()).optional().describe("Hard attribute filters"),
+      capability_filters: z.array(z.string()).optional().describe("Required capabilities"),
+      threshold: z.number().min(0).max(1).describe("Minimum similarity threshold"),
+      max_notifications_per_day: z.number().int().optional().default(10),
+      ttl_days: z.number().int().optional().default(30),
+    },
+    async (params) => toMcpResponse(await handleSubscribe(params, ctx))
+  );
+
+  // Phase 17: schelling.unsubscribe
+  server.tool(
+    "schelling.unsubscribe",
+    "Cancel an active subscription",
+    {
+      user_token: z.string().describe("Your user token"),
+      subscription_id: z.string().describe("Subscription ID to cancel"),
+    },
+    async (params) => toMcpResponse(await handleUnsubscribe(params, ctx))
+  );
+
+  // Phase 17: schelling.notifications
+  server.tool(
+    "schelling.notifications",
+    "Retrieve subscription match notifications",
+    {
+      user_token: z.string().describe("Your user token"),
+      subscription_id: z.string().optional(),
+      since: z.string().optional(),
+      limit: z.number().int().optional().default(50),
+    },
+    async (params) => toMcpResponse(await handleNotifications(params, ctx))
+  );
+
+  // Phase 19: schelling.contract
+  server.tool(
+    "schelling.contract",
+    "Propose, accept, reject, counter, complete, or terminate structured agreements",
+    {
+      user_token: z.string().describe("Your user token"),
+      action: z.enum(["propose", "accept", "reject", "counter", "complete", "terminate", "list"]),
+      candidate_id: z.string().optional(),
+      contract_id: z.string().optional(),
+      terms: z.record(z.any()).optional(),
+      type: z.enum(["match", "service", "task", "custom"]).optional(),
+      expires_at: z.string().optional(),
+      reason: z.string().optional(),
+      status: z.string().optional(),
+    },
+    async (params) => toMcpResponse(await handleContract(params, ctx))
+  );
+
+  // Phase 19: schelling.contract_update
+  server.tool(
+    "schelling.contract_update",
+    "Propose an amendment to an active contract",
+    {
+      user_token: z.string().describe("Your user token"),
+      contract_id: z.string().describe("Contract ID"),
+      updated_terms: z.record(z.any()).describe("Updated terms"),
+      reason: z.string().optional(),
+    },
+    async (params) => toMcpResponse(await handleContractUpdate(params, ctx))
+  );
+
+  // Phase 20: schelling.event
+  server.tool(
+    "schelling.event",
+    "Emit, acknowledge, or list lifecycle events on matches/contracts",
+    {
+      user_token: z.string().describe("Your user token"),
+      action: z.enum(["emit", "ack", "list"]),
+      candidate_id: z.string().optional(),
+      contract_id: z.string().optional(),
+      type: z.enum(["milestone", "update", "completion", "issue", "custom"]).optional(),
+      data: z.record(z.any()).optional(),
+      requires_ack: z.boolean().optional(),
+      ack_window_hours: z.number().optional(),
+      event_id: z.string().optional(),
+      ack_note: z.string().optional(),
+      since: z.string().optional(),
+      limit: z.number().int().optional(),
+    },
+    async (params) => toMcpResponse(await handleEvent(params, ctx))
   );
 }

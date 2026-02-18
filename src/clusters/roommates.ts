@@ -32,4 +32,7 @@ export const roommatesCluster: IntentClusterConfig = {
   mutual_gate: true,
   recommended_attributes: ["city", "budget_range", "pet_policy", "smoking_policy"],
   decline_ttl_days: 60,
+  group_size: { min: 2, max: 6 },
+  group_min_pairwise: 0.4,
+  suggested_inquiry_categories: ["lifestyle", "schedule", "budget", "pets", "guests"],
 };

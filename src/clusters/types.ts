@@ -28,6 +28,9 @@ export interface IntentClusterConfig {
   peer_roles?: string[];
   recommended_attributes?: string[];
   decline_ttl_days?: number;
+  group_size?: { min: number; max: number };
+  group_min_pairwise?: number;
+  suggested_inquiry_categories?: string[];
 }
 
 export interface ClusterRole {

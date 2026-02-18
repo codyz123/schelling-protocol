@@ -21,6 +21,7 @@ export interface UpdateInput {
   intents?: string[];
   intent_tags?: Record<number, string[]>;
   structured_attributes?: Record<string, unknown>;
+  agent_capabilities?: Array<{ capability: string; parameters?: Record<string, any>; confidence?: number }>;
   recompute_scores?: boolean;
 }
 
@@ -121,6 +122,9 @@ export async function handleUpdate(
   addField("intents", input.intents, true);
   addField("intent_tags", input.intent_tags, true);
   addField("structured_attributes", input.structured_attributes, true);
+  if (input.agent_capabilities !== undefined) {
+    updatedFields.push("agent_capabilities");
+  }
 
   if (input.embedding) {
     addField("embedding", input.embedding, true);
@@ -138,7 +142,7 @@ export async function handleUpdate(
     }
   }
 
-  if (sets.length === 0) {
+  if (sets.length === 0 && !input.agent_capabilities) {
     return { ok: false, error: { code: "INVALID_INPUT", message: "No fields to update" } };
   }
 
@@ -146,7 +150,25 @@ export async function handleUpdate(
   params.push(input.user_token);
 
   const updateUser = ctx.db.transaction(() => {
-    ctx.db.prepare(`UPDATE users SET ${sets.join(", ")} WHERE user_token = ?`).run(...params);
+    if (sets.length > 1 || !input.agent_capabilities) { // >1 because updated_at is always added
+      ctx.db.prepare(`UPDATE users SET ${sets.join(", ")} WHERE user_token = ?`).run(...params);
+    } else {
+      // Only agent_capabilities changed — still update timestamp
+      ctx.db.prepare("UPDATE users SET updated_at = datetime('now') WHERE user_token = ?").run(input.user_token);
+    }
+
+    // Update agent_capabilities if changed
+    if (input.agent_capabilities) {
+      ctx.db.prepare("DELETE FROM agent_capabilities WHERE user_token = ?").run(input.user_token);
+      ctx.db.prepare("UPDATE users SET agent_capabilities = ? WHERE user_token = ?")
+        .run(JSON.stringify(input.agent_capabilities), input.user_token);
+      const insertCap = ctx.db.prepare(
+        "INSERT OR REPLACE INTO agent_capabilities (user_token, capability, parameters, confidence) VALUES (?, ?, ?, ?)"
+      );
+      for (const cap of input.agent_capabilities) {
+        insertCap.run(input.user_token, cap.capability, cap.parameters ? JSON.stringify(cap.parameters) : null, cap.confidence ?? 1.0);
+      }
+    }
 
     // Update user_attributes table if structured_attributes changed
     if (input.structured_attributes) {

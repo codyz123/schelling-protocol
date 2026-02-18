@@ -17,6 +17,7 @@ export interface SearchInput {
   city_filter?: string;
   min_reputation?: number;
   hard_filters?: Record<string, string | string[]>;
+  capability_filters?: string[];
   cursor?: string;
   idempotency_key?: string;
 }
@@ -161,6 +162,14 @@ export async function handleSearch(
       const placeholders = valArr.map(() => "?").join(",");
       sql += ` AND EXISTS (SELECT 1 FROM user_attributes ua WHERE ua.user_token = u.user_token AND ua.attr_key = ? AND ua.attr_value IN (${placeholders}))`;
       params.push(key, ...valArr);
+    }
+  }
+
+  // Capability filters
+  if (input.capability_filters) {
+    for (const filter of input.capability_filters) {
+      sql += ` AND EXISTS (SELECT 1 FROM agent_capabilities ac WHERE ac.user_token = u.user_token AND (ac.capability = ? OR ac.capability LIKE ?))`;
+      params.push(filter, filter + ":%");
     }
   }
 

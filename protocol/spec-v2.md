@@ -3697,4 +3697,24 @@ Clusters MAY include the following optional configuration fields:
 
 ---
 
+## 23. Future Extensions (Non-Normative)
+
+The following are potential future additions that do not affect the current protocol but may be valuable as the ecosystem matures.
+
+### 23.1 Ephemeral Registration
+
+For low-stakes, time-sensitive coordination (e.g., "board game night this Friday"), a `ttl` field on `schelling.register` would allow registrations to auto-expire after a configurable period (e.g., 1-7 days). The server runs a cleanup job to remove expired registrations.
+
+Since agents handle all registration complexity (embedding generation, attribute selection), this primarily reduces server-side storage burden rather than user-facing friction. It also enables event-style discovery when combined with `schelling.subscribe`.
+
+### 23.2 Fast-Track Mode
+
+Cluster-level `fast_track: true` config that collapses the matching funnel for low-stakes clusters. Instead of DISCOVERED → EVALUATED → PROPOSED → COMMITTED → CONNECTED, fast-track clusters allow DISCOVERED → COMMITTED → CONNECTED, skipping evaluation and proposal stages. Agents still screen candidates, but the protocol doesn't enforce intermediate stages.
+
+### 23.3 Federation
+
+Multiple Schelling nodes that share registrations and route queries across the network. Analogous to email federation — any node can communicate with any other. Requires a node discovery mechanism and cross-node authentication.
+
+---
+
 *End of specification.*

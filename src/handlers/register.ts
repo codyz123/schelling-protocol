@@ -37,6 +37,7 @@ export interface RegisterInput {
   user_token?: string;
   idempotency_key?: string;
   status?: "active" | "paused" | "delisted";
+  agent_capabilities?: Array<{ capability: string; parameters?: Record<string, any>; confidence?: number }>;
   // Marketplace-specific fields (legacy compat)
   category?: string;
   condition?: "new" | "like-new" | "good" | "fair" | "parts";
@@ -142,6 +143,11 @@ export async function handleRegister(
     }
   }
 
+  // Validate agent_capabilities
+  if (input.agent_capabilities && input.agent_capabilities.length > 50) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: "Maximum 50 agent capabilities allowed" } };
+  }
+
   const token = input.user_token ?? randomUUID();
   const verticalId = input.vertical_id ?? primaryCluster;
 
@@ -209,6 +215,20 @@ export async function handleRegister(
         marketplaceData
       );
 
+    // Store agent_capabilities
+    if (input.agent_capabilities) {
+      // Update users column
+      ctx.db.prepare("UPDATE users SET agent_capabilities = ? WHERE user_token = ?")
+        .run(JSON.stringify(input.agent_capabilities), token);
+      // Populate normalized table
+      const insertCap = ctx.db.prepare(
+        "INSERT OR REPLACE INTO agent_capabilities (user_token, capability, parameters, confidence) VALUES (?, ?, ?, ?)"
+      );
+      for (const cap of input.agent_capabilities) {
+        insertCap.run(token, cap.capability, cap.parameters ? JSON.stringify(cap.parameters) : null, cap.confidence ?? 1.0);
+      }
+    }
+
     // Populate user_attributes for structured attribute filtering
     if (input.structured_attributes) {
       const insertAttr = ctx.db.prepare(
@@ -227,6 +247,72 @@ export async function handleRegister(
   });
 
   register();
+
+  // Phase 17: Evaluate new registration against active subscriptions
+  try {
+    const activeSubs = ctx.db.prepare(
+      "SELECT * FROM subscriptions WHERE status = 'active' AND expires_at > datetime('now') AND user_token != ?"
+    ).all(token) as any[];
+
+    for (const sub of activeSubs) {
+      const subIntentEmb: number[] = JSON.parse(sub.intent_embedding);
+      // Compute intent similarity
+      let dot = 0, normA = 0, normB = 0;
+      for (let i = 0; i < 16; i++) {
+        dot += intentEmbedding[i] * subIntentEmb[i];
+        normA += intentEmbedding[i] ** 2;
+        normB += subIntentEmb[i] ** 2;
+      }
+      const intentSim = (normA > 0 && normB > 0) ? dot / (Math.sqrt(normA) * Math.sqrt(normB)) : 0;
+      const combined = (intentSim + 1) / 2; // map to [0,1]
+
+      if (combined < sub.threshold) continue;
+
+      // Check hard_filters
+      if (sub.hard_filters) {
+        const filters = JSON.parse(sub.hard_filters);
+        let pass = true;
+        for (const [key, values] of Object.entries(filters)) {
+          const valArr = Array.isArray(values) ? values : [values as string];
+          const hasMatch = ctx.db.prepare(
+            `SELECT 1 FROM user_attributes WHERE user_token = ? AND attr_key = ? AND attr_value IN (${valArr.map(() => "?").join(",")})`
+          ).get(token, key, ...valArr);
+          if (!hasMatch) { pass = false; break; }
+        }
+        if (!pass) continue;
+      }
+
+      // Check capability_filters
+      if (sub.capability_filters) {
+        const capFilters: string[] = JSON.parse(sub.capability_filters);
+        let pass = true;
+        for (const filter of capFilters) {
+          const hasMatch = ctx.db.prepare(
+            "SELECT 1 FROM agent_capabilities WHERE user_token = ? AND (capability = ? OR capability LIKE ?)"
+          ).get(token, filter, filter + ":%");
+          if (!hasMatch) { pass = false; break; }
+        }
+        if (!pass) continue;
+      }
+
+      // Check daily notification limit
+      const today = new Date().toISOString().split("T")[0];
+      if (sub.last_notification_date !== today) {
+        ctx.db.prepare("UPDATE subscriptions SET notifications_today = 0, last_notification_date = ? WHERE id = ?").run(today, sub.id);
+        sub.notifications_today = 0;
+      }
+      if (sub.notifications_today >= sub.max_notifications_per_day) continue;
+
+      // Create notification
+      const genUUID = randomUUID;
+      ctx.db.prepare(
+        "INSERT INTO subscription_notifications (id, subscription_id, matched_user_token, combined_score, intent_similarity) VALUES (?, ?, ?, ?, ?)"
+      ).run(genUUID(), sub.id, token, combined, intentSim);
+      ctx.db.prepare("UPDATE subscriptions SET notifications_today = notifications_today + 1 WHERE id = ?").run(sub.id);
+    }
+  } catch (_) {
+    // Subscription evaluation is best-effort; don't fail registration
+  }
 
   const result: RegisterOutput = {
     user_token: token,
