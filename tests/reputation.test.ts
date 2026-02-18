@@ -279,8 +279,13 @@ describe("reputation system", () => {
       const tokenA = await createUser("userA");
       const tokenB = await createUser("userB");
       
-      // Create a candidate pair that reaches CONNECTED
-      const candidateId = await createCandidatePair(tokenA, tokenB, Stage.CONNECTED);
+      // Create candidate pair directly at CONNECTED stage
+      const candidateId = `completion-test-${Date.now()}`;
+      const [a, b] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA];
+      db.prepare(`
+        INSERT INTO candidates (id, user_a_token, user_b_token, vertical_id, score, shared_categories, stage_a, stage_b, created_at, updated_at)
+        VALUES (?, ?, ?, 'matchmaking', 0.8, '[]', ?, ?, datetime('now'), datetime('now'))
+      `).run(candidateId, a, b, Stage.CONNECTED, Stage.CONNECTED);
       
       // Report outcome (which advances to COMPLETED)
       const result = await handleReportOutcome({
@@ -419,8 +424,13 @@ describe("reputation system", () => {
       const tokenA = await createUser("userA");
       const tokenB = await createUser("userB");
       
-      // Create candidate pair at CONNECTED stage
-      const candidateId = await createCandidatePair(tokenA, tokenB, Stage.CONNECTED);
+      // Create candidate pair directly at CONNECTED stage (bypass search to avoid flakiness)
+      const candidateId = `abandoned-test-${Date.now()}`;
+      const [a, b] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA];
+      db.prepare(`
+        INSERT INTO candidates (id, user_a_token, user_b_token, vertical_id, score, shared_categories, stage_a, stage_b, created_at, updated_at)
+        VALUES (?, ?, ?, 'matchmaking', 0.8, '[]', ?, ?, datetime('now'), datetime('now'))
+      `).run(candidateId, a, b, Stage.CONNECTED, Stage.CONNECTED);
       
       // Manually set the updated_at to be old (35 days ago)
       const oldDate = new Date();
