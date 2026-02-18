@@ -22,6 +22,13 @@ export const talentCluster: IntentClusterConfig = {
       required_fields: ["intent_embedding"],
       optional_fields: ["description", "structured_attributes"],
     },
+    peer: {
+      name: "Peer Collaborator",
+      description: "Someone seeking a peer/co-founder/equal partnership",
+      data_schema: "talent_peer",
+      required_fields: ["intent_embedding"],
+      optional_fields: ["description", "seeking", "structured_attributes"],
+    },
   },
   symmetric: false,
   embedding_schema: { dimensions: 50, groups: {} },
@@ -37,4 +44,7 @@ export const talentCluster: IntentClusterConfig = {
   deal_breakers: { enabled: true, hard_filters: ["skills", "location", "rate_range"], filter_before_scoring: true },
   identity_required: true,
   mutual_gate: true,
+  peer_roles: ["peer"],
+  recommended_attributes: ["skills", "experience_years", "languages_spoken", "location"],
+  decline_ttl_days: 90,
 };

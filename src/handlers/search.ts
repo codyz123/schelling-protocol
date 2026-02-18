@@ -103,11 +103,17 @@ export async function handleSearch(
   const callerRole = caller.role ?? "seeker";
   const callerMarketplaceData = caller.marketplace_data ? JSON.parse(caller.marketplace_data) : {};
 
-  // For asymmetric clusters, search for opposite role
+  // For asymmetric clusters, search for opposite role (unless peer role)
   let targetRole = callerRole;
-  if (cluster && !cluster.symmetric) {
+  const isPeerRole = cluster?.peer_roles?.includes(callerRole);
+  if (cluster && !cluster.symmetric && !isPeerRole) {
     if (verticalId === "marketplace") {
       targetRole = callerRole === "seller" ? "buyer" : "seller";
+    } else {
+      // Generic asymmetric: find the other role
+      const clusterRoles = Object.keys(cluster.roles);
+      const otherRoles = clusterRoles.filter(r => r !== callerRole && !cluster.peer_roles?.includes(r));
+      if (otherRoles.length > 0) targetRole = otherRoles[0];
     }
   }
 
@@ -130,9 +136,13 @@ export async function handleSearch(
   sql += ` AND (u.vertical_id = ? OR u.primary_cluster = ?)`;
   params.push(verticalId, verticalId);
 
-  if (cluster && !cluster.symmetric) {
+  if (cluster && !cluster.symmetric && !isPeerRole) {
     sql += ` AND u.role = ?`;
     params.push(targetRole);
+  } else if (isPeerRole) {
+    // Peer roles match same role
+    sql += ` AND u.role = ?`;
+    params.push(callerRole);
   }
 
   if (input.intent_filter) {

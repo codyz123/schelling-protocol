@@ -31,4 +31,6 @@ export const matchmakingCluster: IntentClusterConfig = {
   deal_breakers: { enabled: true, hard_filters: ["city", "age_range"], filter_before_scoring: true },
   identity_required: false,
   mutual_gate: true,
+  recommended_attributes: ["city", "age_range", "languages_spoken"],
+  decline_ttl_days: 90,
 };

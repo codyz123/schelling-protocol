@@ -25,6 +25,9 @@ export interface IntentClusterConfig {
   deal_breakers?: ClusterDealBreakerConfig;
   identity_required: boolean;
   mutual_gate: boolean;
+  peer_roles?: string[];
+  recommended_attributes?: string[];
+  decline_ttl_days?: number;
 }
 
 export interface ClusterRole {

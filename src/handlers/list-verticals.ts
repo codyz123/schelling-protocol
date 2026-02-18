@@ -3,18 +3,25 @@ import { listClusters } from "../clusters/registry.js";
 
 interface ListVerticalsParams {}
 
-interface VerticalInfo {
+interface ClusterInfo {
   id: string;
   display_name: string;
   description: string;
   version: string;
+  centroid: number[];
   roles: Array<{ id: string; name: string; description: string }>;
+  symmetric: boolean;
+  exclusive_commitment: boolean;
+  peer_roles?: string[];
+  recommended_attributes?: string[];
+  decline_ttl_days?: number;
   user_count: number;
   active_candidates: number;
 }
 
 interface ListVerticalsResult {
-  verticals: VerticalInfo[];
+  verticals: ClusterInfo[];  // backward compat
+  clusters: ClusterInfo[];
   protocol_version: string;
 }
 
@@ -24,7 +31,7 @@ export function handleListVerticals(
 ): HandlerResult<ListVerticalsResult> {
   try {
     const clusters = listClusters();
-    const verticals: VerticalInfo[] = [];
+    const clusterInfos: ClusterInfo[] = [];
 
     for (const descriptor of clusters) {
       const clusterId = descriptor.cluster_id;
@@ -43,12 +50,18 @@ export function handleListVerticals(
         description: role.description,
       }));
 
-      verticals.push({
+      clusterInfos.push({
         id: clusterId,
         display_name: descriptor.display_name,
         description: descriptor.description,
         version: descriptor.version,
+        centroid: descriptor.centroid,
         roles,
+        symmetric: descriptor.symmetric,
+        exclusive_commitment: descriptor.exclusive_commitment,
+        peer_roles: descriptor.peer_roles,
+        recommended_attributes: descriptor.recommended_attributes,
+        decline_ttl_days: descriptor.decline_ttl_days,
         user_count: userCount,
         active_candidates: candidateCount,
       });
@@ -56,7 +69,7 @@ export function handleListVerticals(
 
     return {
       ok: true,
-      data: { verticals, protocol_version: "schelling-2.0" },
+      data: { verticals: clusterInfos, clusters: clusterInfos, protocol_version: "schelling-2.0" },
     };
   } catch (error: unknown) {
     return {

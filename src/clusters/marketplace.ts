@@ -37,4 +37,6 @@ export const marketplaceCluster: IntentClusterConfig = {
   deal_breakers: { enabled: true, hard_filters: ["category", "location", "price_range"], filter_before_scoring: true },
   identity_required: true,
   mutual_gate: true,
+  recommended_attributes: ["category", "location", "condition"],
+  decline_ttl_days: 30,
 };

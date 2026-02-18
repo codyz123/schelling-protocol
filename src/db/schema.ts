@@ -236,6 +236,35 @@ CREATE TABLE IF NOT EXISTS user_attributes (
 );
 CREATE INDEX IF NOT EXISTS idx_user_attrs_kv ON user_attributes(attr_key, attr_value);
 
+-- Phase 6: Message relay tables
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  sender_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  content_type TEXT NOT NULL DEFAULT 'text' CHECK (content_type IN ('text', 'markdown')),
+  read INTEGER NOT NULL DEFAULT 0,
+  sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_messages_candidate ON messages(candidate_id, sent_at);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_token);
+
+CREATE TABLE IF NOT EXISTS direct_optins (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  opted_in_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (candidate_id, user_token)
+);
+
+CREATE TABLE IF NOT EXISTS relay_blocks (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  blocker_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  blocked_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (candidate_id, blocker_token)
+);
+
 CREATE TABLE IF NOT EXISTS similar_users (
   user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
   similar_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,

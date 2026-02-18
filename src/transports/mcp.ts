@@ -19,6 +19,14 @@ import { handleDeleteAccount } from "../handlers/delete-account.js";
 import { handleListVerticals } from "../handlers/list-verticals.js";
 import { handleOnboard } from "../handlers/onboard.js";
 import { handleServerInfo } from "../handlers/server-info.js";
+import { handleReconsider } from "../handlers/reconsider.js";
+import { handleUpdate } from "../handlers/update.js";
+import { handleRefresh } from "../handlers/refresh.js";
+import { handleMessage } from "../handlers/message.js";
+import { handleMessages } from "../handlers/messages.js";
+import { handleDirect } from "../handlers/direct.js";
+import { handleRelayBlock } from "../handlers/relay-block.js";
+import { handlePending } from "../handlers/pending.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -245,6 +253,15 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .string()
         .optional()
         .describe("Optional reason for decline"),
+      feedback: z
+        .object({
+          dimension_scores: z.record(z.number()).optional(),
+          rejection_reason: z.string().optional(),
+          rejection_freeform: z.string().optional(),
+          satisfaction: z.enum(["very_satisfied", "satisfied", "neutral", "dissatisfied", "very_dissatisfied"]).optional(),
+        })
+        .optional()
+        .describe("Optional structured feedback about the decline"),
     },
     async (params) => toMcpResponse(await handleDecline(params, ctx))
   );
@@ -408,12 +425,30 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
     async (params) => toMcpResponse(await handleDeleteAccount(params, ctx))
   );
 
-  // 16. schelling.verticals (alias: schelling.clusters)
+  // 16. schelling.verticals (alias: schelling.clusters, schelling.intents)
   server.tool(
     "schelling.verticals",
     "List all available clusters (formerly verticals) with metadata and live statistics",
     {},
     async (params) => toMcpResponse(await handleListVerticals(params, ctx))
+  );
+
+  server.tool(
+    "schelling.intents",
+    "List all intent clusters with centroids, roles, modules, and onboarding guidance",
+    {},
+    async (params) => toMcpResponse(await handleListVerticals(params, ctx))
+  );
+
+  // schelling.reconsider
+  server.tool(
+    "schelling.reconsider",
+    "Reconsider a previous decline, allowing the declined user to appear in search again",
+    {
+      user_token: z.string().describe("Your user token"),
+      declined_token: z.string().describe("Token of the user whose decline to reconsider"),
+    },
+    async (params) => toMcpResponse(await handleReconsider(params, ctx))
   );
 
   // 17. schelling.onboard
@@ -424,6 +459,102 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
       vertical_id: z.string().describe("Vertical to get onboarding guide for (e.g. 'matchmaking', 'marketplace')"),
     },
     async (params) => toMcpResponse(await handleOnboard(params, ctx))
+  );
+
+  // schelling.update
+  server.tool(
+    "schelling.update",
+    "Update user profile fields without re-registration. Optionally update embeddings with recompute_scores.",
+    {
+      user_token: z.string().describe("Your user token"),
+      description: z.string().max(1000).optional(),
+      seeking: z.string().max(500).optional(),
+      interests: z.array(z.string()).optional(),
+      values_text: z.string().max(500).optional(),
+      city: z.string().optional(),
+      age_range: z.enum(["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]).optional(),
+      status: z.enum(["active", "paused"]).optional(),
+      agent_model: z.string().optional(),
+      deal_breakers: z.record(z.any()).optional(),
+      media_refs: z.array(z.string()).optional(),
+      identity: z.object({ name: z.string(), contact: z.string() }).optional(),
+      embedding: z.array(z.number()).optional().describe("New 50-dim embedding (requires recompute_scores: true)"),
+      intent_embedding: z.array(z.number()).optional().describe("New 16-dim intent embedding (requires recompute_scores: true)"),
+      intents: z.array(z.string()).optional(),
+      structured_attributes: z.record(z.any()).optional(),
+      recompute_scores: z.boolean().optional().describe("Set true when updating embeddings"),
+    },
+    async (params) => toMcpResponse(await handleUpdate(params, ctx))
+  );
+
+  // schelling.refresh
+  server.tool(
+    "schelling.refresh",
+    "Reset the staleness clock without modifying any profile data. Max once per 30 days.",
+    {
+      user_token: z.string().describe("Your user token"),
+    },
+    async (params) => toMcpResponse(await handleRefresh(params, ctx))
+  );
+
+  // schelling.message
+  server.tool(
+    "schelling.message",
+    "Send a message to the other party in a CONNECTED match via the relay",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate pair ID"),
+      content: z.string().max(5000).describe("Message content"),
+      content_type: z.enum(["text", "markdown"]).default("text").optional(),
+    },
+    async (params) => toMcpResponse(await handleMessage(params, ctx))
+  );
+
+  // schelling.messages
+  server.tool(
+    "schelling.messages",
+    "Retrieve message history for a CONNECTED match. Marks received messages as read.",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate pair ID"),
+      limit: z.number().int().min(1).max(100).default(50).optional(),
+      before: z.string().optional().describe("ISO timestamp — return messages before this time"),
+      after: z.string().optional().describe("ISO timestamp — return messages after this time"),
+    },
+    async (params) => toMcpResponse(await handleMessages(params, ctx))
+  );
+
+  // schelling.direct
+  server.tool(
+    "schelling.direct",
+    "Opt into sharing direct contact info with your match. When both opt in, real contact info is shared.",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate pair ID"),
+    },
+    async (params) => toMcpResponse(await handleDirect(params, ctx))
+  );
+
+  // schelling.relay_block
+  server.tool(
+    "schelling.relay_block",
+    "Block or unblock message relay from the other party in a match",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate pair ID"),
+      block: z.boolean().describe("true to block, false to unblock"),
+    },
+    async (params) => toMcpResponse(await handleRelayBlock(params, ctx))
+  );
+
+  // schelling.pending
+  server.tool(
+    "schelling.pending",
+    "Get all pending actions for your account (evaluate, exchange, messages, disputes, etc.)",
+    {
+      user_token: z.string().describe("Your user token"),
+    },
+    async (params) => toMcpResponse(await handlePending(params, ctx))
   );
 
   // 18. schelling.server_info

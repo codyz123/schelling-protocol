@@ -30,4 +30,6 @@ export const roommatesCluster: IntentClusterConfig = {
   deal_breakers: { enabled: true, hard_filters: ["city", "budget_range", "pet_policy"], filter_before_scoring: true },
   identity_required: false,
   mutual_gate: true,
+  recommended_attributes: ["city", "budget_range", "pet_policy", "smoking_policy"],
+  decline_ttl_days: 60,
 };

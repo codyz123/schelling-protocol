@@ -18,6 +18,14 @@ import { handleDeleteAccount } from "../handlers/delete-account.js";
 import { handleListVerticals } from "../handlers/list-verticals.js";
 import { handleOnboard } from "../handlers/onboard.js";
 import { handleServerInfo } from "../handlers/server-info.js";
+import { handleReconsider } from "../handlers/reconsider.js";
+import { handleUpdate } from "../handlers/update.js";
+import { handleRefresh } from "../handlers/refresh.js";
+import { handleMessage } from "../handlers/message.js";
+import { handleMessages } from "../handlers/messages.js";
+import { handleDirect } from "../handlers/direct.js";
+import { handleRelayBlock } from "../handlers/relay-block.js";
+import { handlePending } from "../handlers/pending.js";
 import { logger } from "../core/logger.js";
 
 interface RestServer {
@@ -174,8 +182,33 @@ export function createRestServer(ctx: HandlerContext): RestServer {
             case 'delete_account':
               result = await handleDeleteAccount(params, ctx);
               break;
+            case 'reconsider':
+              result = await handleReconsider(params, ctx);
+              break;
+            case 'update':
+              result = await handleUpdate(params, ctx);
+              break;
+            case 'refresh':
+              result = await handleRefresh(params, ctx);
+              break;
+            case 'message':
+              result = await handleMessage(params, ctx);
+              break;
+            case 'messages':
+              result = await handleMessages(params, ctx);
+              break;
+            case 'direct':
+              result = await handleDirect(params, ctx);
+              break;
+            case 'relay_block':
+              result = await handleRelayBlock(params, ctx);
+              break;
+            case 'pending':
+              result = await handlePending(params, ctx);
+              break;
             case 'verticals':
             case 'clusters':
+            case 'intents':
               result = await handleListVerticals(params, ctx);
               break;
             case 'onboard':
