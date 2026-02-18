@@ -4,6 +4,7 @@ import { initSchema } from "../src/db/schema.js";
 import { computeReputation, recordReputationEvent, checkAbandonedConnections } from "../src/core/reputation.js";
 import { handleRegister } from "../src/handlers/register.js";
 import { handleSearch } from "../src/handlers/search.js";
+import { initVerticalRegistry } from "../src/verticals/registry.js";
 import { handleGetReputation } from "../src/handlers/get-reputation.js";
 import { handleReportOutcome } from "../src/handlers/report-outcome.js";
 import { addLaplaceNoise } from "../src/matching/privacy.js";
@@ -87,6 +88,7 @@ describe("reputation system", () => {
   beforeEach(() => {
     db = new Database(":memory:");
     initSchema(db);
+    initVerticalRegistry();
     ctx = { db };
   });
 
