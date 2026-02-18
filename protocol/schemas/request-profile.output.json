@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.request_profile output",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["status", "candidate_id", "profile"],
+      "properties": {
+        "status": { "const": "available" },
+        "candidate_id": { "type": "string" },
+        "profile": {
+          "type": "object",
+          "required": ["description", "seeking", "interests", "values_text", "compatibility_score", "breakdown", "shared_interests", "complementary_traits"],
+          "properties": {
+            "description": { "type": ["string", "null"] },
+            "seeking": { "type": ["string", "null"] },
+            "interests": { "type": ["array", "null"], "items": { "type": "string" } },
+            "values_text": { "type": ["string", "null"] },
+            "compatibility_score": { "type": "number" },
+            "breakdown": { "type": "object" },
+            "shared_interests": { "type": "array", "items": { "type": "string" } },
+            "complementary_traits": { "type": "array" }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["status", "candidate_id", "your_stage", "their_stage", "message"],
+      "properties": {
+        "status": { "const": "pending_mutual" },
+        "candidate_id": { "type": "string" },
+        "your_stage": { "type": "integer" },
+        "their_stage": { "type": "integer" },
+        "message": { "type": "string" }
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.report_outcome input",
+  "type": "object",
+  "required": ["user_token", "candidate_id", "outcome"],
+  "properties": {
+    "user_token": { "type": "string" },
+    "candidate_id": { "type": "string" },
+    "outcome": { "type": "string", "enum": ["positive", "neutral", "negative"] },
+    "met_in_person": { "type": "boolean", "default": false },
+    "notes": { "type": "string", "maxLength": 200 }
+  }
+}

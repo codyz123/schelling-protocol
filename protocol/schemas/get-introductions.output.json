@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.get_introductions output",
+  "type": "object",
+  "required": ["introductions", "pending_proposals"],
+  "properties": {
+    "introductions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "name", "contact", "compatibility_score", "shared_interests", "suggested_opener"],
+        "properties": {
+          "candidate_id": { "type": "string" },
+          "name": { "type": "string" },
+          "contact": { "type": "string" },
+          "compatibility_score": { "type": "number" },
+          "shared_interests": { "type": "array", "items": { "type": "string" } },
+          "suggested_opener": { "type": "string" }
+        }
+      }
+    },
+    "pending_proposals": { "type": "integer" }
+  }
+}

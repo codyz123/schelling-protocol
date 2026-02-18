@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.register output",
+  "type": "object",
+  "required": ["user_token", "protocol_version", "dimensions"],
+  "properties": {
+    "user_token": { "type": "string" },
+    "protocol_version": { "type": "string" },
+    "dimensions": { "type": "integer" }
+  }
+}

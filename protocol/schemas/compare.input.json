@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.compare input",
+  "type": "object",
+  "required": ["user_token", "candidate_ids"],
+  "properties": {
+    "user_token": { "type": "string" },
+    "candidate_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 20
+    }
+  }
+}

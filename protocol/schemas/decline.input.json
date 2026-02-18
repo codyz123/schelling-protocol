@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "match.decline input",
+  "type": "object",
+  "required": ["user_token", "candidate_id"],
+  "properties": {
+    "user_token": { "type": "string" },
+    "candidate_id": { "type": "string" },
+    "reason": { "type": "string" }
+  }
+}
