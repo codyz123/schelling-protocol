@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { Stage } from "../types.js";
-import type { CandidateRecord } from "../types.js";
+import type { CandidateRecord, HandlerResult } from "../types.js";
 
 export interface FunnelTransition {
   from_stage: number;
@@ -166,4 +166,38 @@ export function getStageNames(): Record<number, string> {
 export function getStageName(stage: number): string {
   const names = getStageNames();
   return names[stage] || `UNKNOWN_STAGE_${stage}`;
+}
+
+/**
+ * Check if an idempotency key has been used before
+ */
+export function checkIdempotency<T>(
+  db: Database, 
+  idempotency_key: string
+): HandlerResult<T> | null {
+  const existing = db
+    .prepare("SELECT response FROM idempotency_keys WHERE key = ?")
+    .get(idempotency_key) as { response: string } | undefined;
+    
+  if (existing) {
+    return JSON.parse(existing.response);
+  }
+  
+  return null;
+}
+
+/**
+ * Record an idempotency key and response
+ */
+export function recordIdempotency<T>(
+  db: Database,
+  idempotency_key: string,
+  operation: string,
+  user_token: string,
+  result: HandlerResult<T>
+): void {
+  db.prepare(`
+    INSERT INTO idempotency_keys (key, operation, user_token, response, created_at)
+    VALUES (?, ?, ?, ?, datetime('now'))
+  `).run(idempotency_key, operation, user_token, JSON.stringify(result));
 }

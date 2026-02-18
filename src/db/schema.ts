@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS pending_actions (
   id TEXT PRIMARY KEY,
   user_token TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
   candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
-  action_type TEXT NOT NULL CHECK (action_type IN ('evaluate','exchange','respond_proposal','review_commitment')),
+  action_type TEXT NOT NULL CHECK (action_type IN ('evaluate','exchange','respond_proposal','review_commitment','review_dispute','provide_verification')),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   consumed_at TEXT
 );
@@ -149,6 +149,47 @@ CREATE INDEX IF NOT EXISTS idx_negotiations_candidate ON negotiations(candidate_
 CREATE INDEX IF NOT EXISTS idx_negotiations_from ON negotiations(from_identity);
 CREATE INDEX IF NOT EXISTS idx_negotiations_status ON negotiations(status);
 CREATE INDEX IF NOT EXISTS idx_negotiations_expires ON negotiations(expires_at);
+
+-- Disputes table for Phase 4
+CREATE TABLE IF NOT EXISTS disputes (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  filed_by TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  filed_against TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  vertical_id TEXT NOT NULL,
+  stage_at_filing INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  evidence TEXT, -- JSON: verification artifacts, screenshots, etc.
+  status TEXT DEFAULT 'open' CHECK (status IN ('open','resolved_for_filer','resolved_for_defendant','dismissed')),
+  resolved_at INTEGER,
+  resolution_notes TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_disputes_candidate ON disputes(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_disputes_filed_by ON disputes(filed_by);
+CREATE INDEX IF NOT EXISTS idx_disputes_filed_against ON disputes(filed_against);
+CREATE INDEX IF NOT EXISTS idx_disputes_vertical ON disputes(vertical_id);
+CREATE INDEX IF NOT EXISTS idx_disputes_status ON disputes(status);
+CREATE INDEX IF NOT EXISTS idx_disputes_created ON disputes(created_at);
+
+-- Verifications table for verification requests/artifacts  
+CREATE TABLE IF NOT EXISTS verifications (
+  id TEXT PRIMARY KEY,
+  candidate_id TEXT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+  requested_by TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  requested_from TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
+  verification_type TEXT NOT NULL CHECK (verification_type IN ('request','provide')),
+  artifacts TEXT, -- JSON: photos, receipts, etc.
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','provided','expired')),
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_verifications_candidate ON verifications(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_verifications_requested_by ON verifications(requested_by);
+CREATE INDEX IF NOT EXISTS idx_verifications_requested_from ON verifications(requested_from);
+CREATE INDEX IF NOT EXISTS idx_verifications_status ON verifications(status);
 `;
 
 export function initSchema(db: Database): void {

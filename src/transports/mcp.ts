@@ -12,6 +12,10 @@ import { handleReportOutcome } from "../handlers/report-outcome.js";
 import { handleWithdraw } from "../handlers/withdraw.js";
 import { handleGetReputation } from "../handlers/get-reputation.js";
 import { handleNegotiate } from "../handlers/negotiate.js";
+import { handleFileDispute } from "../handlers/file-dispute.js";
+import { handleVerify } from "../handlers/verify.js";
+import { handleExportData } from "../handlers/export-data.js";
+import { handleDeleteAccount } from "../handlers/delete-account.js";
 
 function toMcpResponse(result: HandlerResult<unknown>) {
   if (!result.ok) {
@@ -334,5 +338,70 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
         .describe("Client-generated key for request deduplication"),
     },
     async (params) => toMcpResponse(await handleNegotiate(params, ctx))
+  );
+
+  // 12. schelling.dispute
+  server.tool(
+    "schelling.dispute",
+    "File a dispute against a counterparty for misrepresentation or bad faith behavior",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate ID to file dispute against"),
+      reason: z.string().min(10).max(1000).describe("Reason for the dispute"),
+      evidence: z
+        .string()
+        .optional()
+        .describe("JSON evidence: screenshots, chat logs, verification artifacts"),
+      idempotency_key: z
+        .string()
+        .optional()
+        .describe("Client-generated key for request deduplication"),
+    },
+    async (params) => toMcpResponse(await handleFileDispute(params, ctx))
+  );
+
+  // 13. schelling.verify
+  server.tool(
+    "schelling.verify",
+    "Request or provide verification artifacts (photos, receipts, proof of item)",
+    {
+      user_token: z.string().describe("Your user token"),
+      candidate_id: z.string().describe("Candidate ID for verification"),
+      verification_type: z
+        .enum(["request", "provide"])
+        .describe("Whether requesting verification or providing it"),
+      artifacts: z
+        .string()
+        .optional()
+        .describe("JSON metadata for verification artifacts (required for 'provide' type)"),
+      idempotency_key: z
+        .string()
+        .optional()
+        .describe("Client-generated key for request deduplication"),
+    },
+    async (params) => toMcpResponse(await handleVerify(params, ctx))
+  );
+
+  // 14. schelling.export
+  server.tool(
+    "schelling.export",
+    "Export all user data in JSON format for GDPR/CCPA compliance",
+    {
+      user_token: z.string().describe("Your user token"),
+    },
+    async (params) => toMcpResponse(await handleExportData(params, ctx))
+  );
+
+  // 15. schelling.delete_account
+  server.tool(
+    "schelling.delete_account",
+    "Permanently delete user account and all associated data",
+    {
+      user_token: z.string().describe("Your user token"),
+      confirmation: z
+        .string()
+        .describe("Must be exactly 'DELETE_ALL_DATA' to confirm deletion"),
+    },
+    async (params) => toMcpResponse(await handleDeleteAccount(params, ctx))
   );
 }
