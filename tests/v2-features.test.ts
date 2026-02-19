@@ -209,7 +209,7 @@ describe("v2 features", () => {
       
       expect(searchResult.ok).toBe(false);
       if (!searchResult.ok) {
-        expect(searchResult.error.code).toBe("INVALID_VERTICAL");
+        expect(searchResult.error.code).toBe("UNKNOWN_CLUSTER");
       }
     });
   });

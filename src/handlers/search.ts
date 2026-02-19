@@ -96,7 +96,7 @@ export async function handleSearch(
 
   const cluster = getCluster(verticalId);
   if (!cluster) {
-    return { ok: false, error: { code: "INVALID_VERTICAL", message: `Unknown vertical/cluster: ${verticalId}` } };
+    return { ok: false, error: { code: "UNKNOWN_CLUSTER", message: `Unknown vertical/cluster: ${verticalId}` } };
   }
   const callerEmbedding: number[] = caller.embedding ? JSON.parse(caller.embedding) : [];
   const callerIntentEmbedding: number[] = caller.intent_embedding ? JSON.parse(caller.intent_embedding) : [];
