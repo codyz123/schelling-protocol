@@ -18,10 +18,15 @@ export default function AuthGate() {
     try {
       // Update API base URL
       setStoreServerUrl(serverUrl);
+      api.setBaseUrl(serverUrl);
       api.setAdminToken(token);
       
-      // Test the connection
-      await api.getHealth();
+      // Test the connection with the health endpoint
+      const health = await api.getHealth();
+      
+      if (health.status !== 'healthy') {
+        throw new Error(`Server reports status: ${health.status}`);
+      }
       
       // If successful, save token
       setAdminToken(token);
@@ -79,9 +84,12 @@ export default function AuthGate() {
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Enter admin token"
+                  placeholder="Enter a registered user token"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Use a registered user&apos;s token. Analytics requires valid user auth.
+              </p>
             </div>
 
             {error && (

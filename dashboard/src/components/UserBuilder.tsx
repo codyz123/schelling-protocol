@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { CLUSTER_CENTROIDS, INTENT_DIMENSIONS, type SyntheticUser, type IntentCluster } from '../types';
+import { CLUSTER_CENTROIDS, INTENT_DIMENSIONS, TRAIT_GROUPS, type SyntheticUser, type IntentCluster } from '../types';
 
 interface UserBuilderProps {
   onUserRegistered: (user: SyntheticUser) => void;
@@ -12,6 +12,7 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
   const [intents, setIntents] = useState<string[]>(['']);
   const [intentEmbedding, setIntentEmbedding] = useState<number[]>(new Array(16).fill(0));
   const [traitEmbedding, setTraitEmbedding] = useState<number[]>(new Array(50).fill(0));
+  const [showTraits, setShowTraits] = useState(false);
   const [profile, setProfile] = useState({
     city: 'Brooklyn',
     age_range: '25-34',
@@ -26,21 +27,19 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
   const [verificationLevel, setVerificationLevel] = useState<'anonymous' | 'verified' | 'attested'>('anonymous');
 
   const registerMutation = useMutation({
-    mutationFn: async (userData: any) => {
-      const response = await api.register(userData);
-      return response;
+    mutationFn: async (userData: Parameters<typeof api.register>[0]) => {
+      return await api.register(userData);
     },
     onSuccess: (response) => {
-      // Compute primary cluster
       const primaryCluster = computePrimaryCluster(intentEmbedding);
       
       const user: SyntheticUser = {
         user_token: response.user_token,
-        intent_embedding: intentEmbedding,
-        trait_embedding: traitEmbedding,
-        intents,
+        intent_embedding: [...intentEmbedding],
+        trait_embedding: [...traitEmbedding],
+        intents: intents.filter(Boolean),
         primary_cluster: primaryCluster,
-        reputation_score: 0.5, // New users start at 0.5
+        reputation_score: 0.5,
         status: 'active',
         last_registered_at: new Date().toISOString(),
         profile: {
@@ -85,25 +84,24 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
 
   const handleQuickFill = (clusterId: string) => {
     if (CLUSTER_CENTROIDS[clusterId]) {
-      setIntentEmbedding(CLUSTER_CENTROIDS[clusterId]);
+      setIntentEmbedding([...CLUSTER_CENTROIDS[clusterId]]);
       
-      // Also set appropriate intent text
-      const intentTexts = {
+      const intentTexts: Record<string, string[]> = {
         matchmaking: ['Find me a meaningful romantic relationship'],
         marketplace: ['Looking to buy or sell items locally'],
         talent: ['Seeking professional opportunities and networking'],
         roommates: ['Looking for compatible roommates to share living space'],
       };
       
-      if (intentTexts[clusterId as keyof typeof intentTexts]) {
-        setIntents(intentTexts[clusterId as keyof typeof intentTexts]);
+      if (intentTexts[clusterId]) {
+        setIntents(intentTexts[clusterId]);
       }
     }
   };
 
   const handleRandomFill = () => {
-    setIntentEmbedding(intentEmbedding.map(() => (Math.random() - 0.5) * 1.6)); // Random in [-0.8, 0.8]
-    setTraitEmbedding(traitEmbedding.map(() => Math.random() * 0.6 - 0.3)); // Random normal-ish in [-0.3, 0.3]
+    setIntentEmbedding(Array.from({length: 16}, () => +(Math.random() * 1.6 - 0.8).toFixed(2)));
+    setTraitEmbedding(Array.from({length: 50}, () => +(Math.random() * 0.6 - 0.3).toFixed(2)));
   };
 
   const handleRegister = async () => {
@@ -121,11 +119,14 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
       contact: profile.contact,
       agent_model: agentModel,
       verification_level: verificationLevel,
-      status: 'active',
+      status: 'active' as const,
     };
     
     registerMutation.mutate(userData);
   };
+
+  // Show computed cluster for current embedding
+  const currentCluster = computePrimaryCluster(intentEmbedding);
 
   return (
     <div className="space-y-6">
@@ -176,6 +177,10 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
               Random
             </button>
           </div>
+          {/* Show detected cluster */}
+          <p className="mt-2 text-xs text-gray-500">
+            Detected cluster: <span className="font-medium capitalize">{currentCluster}</span>
+          </p>
         </div>
 
         {/* Intent Embedding Sliders */}
@@ -186,7 +191,7 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
           <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3">
             {intentEmbedding.map((value, index) => (
               <div key={index} className="flex items-center space-x-3">
-                <span className="text-xs font-mono w-24 truncate">
+                <span className="text-xs font-mono w-36 truncate" title={INTENT_DIMENSIONS[index]}>
                   {INTENT_DIMENSIONS[index]}
                 </span>
                 <input
@@ -209,6 +214,57 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Trait Embedding Section */}
+      <div>
+        <button
+          onClick={() => setShowTraits(!showTraits)}
+          className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
+        >
+          <span className="mr-2">{showTraits ? '▼' : '▶'}</span>
+          Trait Embedding (50 dimensions)
+        </button>
+        
+        {showTraits && (
+          <div className="mt-3 space-y-4">
+            {Object.entries(TRAIT_GROUPS).map(([groupName, group]) => (
+              <div key={groupName} className="border border-gray-200 rounded-md p-3">
+                <h4 className="text-sm font-medium text-gray-800 mb-2">
+                  {groupName} ({group.start}–{group.end - 1})
+                </h4>
+                <div className="space-y-1">
+                  {group.dimensions.map((dimName, i) => {
+                    const globalIdx = group.start + i;
+                    return (
+                      <div key={globalIdx} className="flex items-center space-x-2">
+                        <span className="text-xs font-mono w-36 truncate" title={dimName}>
+                          {dimName}
+                        </span>
+                        <input
+                          type="range"
+                          min="-1"
+                          max="1"
+                          step="0.05"
+                          value={traitEmbedding[globalIdx]}
+                          onChange={(e) => {
+                            const newEmb = [...traitEmbedding];
+                            newEmb[globalIdx] = parseFloat(e.target.value);
+                            setTraitEmbedding(newEmb);
+                          }}
+                          className="flex-1"
+                        />
+                        <span className="text-xs font-mono w-12 text-right">
+                          {traitEmbedding[globalIdx].toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Profile Section */}
@@ -245,6 +301,21 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
               <option>65+</option>
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Verification Level
+            </label>
+            <select
+              value={verificationLevel}
+              onChange={(e) => setVerificationLevel(e.target.value as typeof verificationLevel)}
+              className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            >
+              <option value="anonymous">Anonymous</option>
+              <option value="verified">Verified</option>
+              <option value="attested">Attested</option>
+            </select>
+          </div>
         </div>
         
         <div className="mt-4">
@@ -255,6 +326,19 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
             value={profile.description}
             onChange={(e) => setProfile({ ...profile, description: e.target.value })}
             rows={3}
+            className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Interests (comma-separated)
+          </label>
+          <input
+            type="text"
+            value={profile.interests}
+            onChange={(e) => setProfile({ ...profile, interests: e.target.value })}
+            placeholder="hiking, cooking, music"
             className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
           />
         </div>
@@ -273,6 +357,12 @@ export default function UserBuilder({ onUserRegistered, clusters }: UserBuilderP
         {registerMutation.error && (
           <p className="mt-2 text-sm text-red-600">
             Error: {registerMutation.error.message}
+          </p>
+        )}
+
+        {registerMutation.isSuccess && (
+          <p className="mt-2 text-sm text-green-600">
+            ✓ User registered successfully
           </p>
         )}
       </div>

@@ -23,7 +23,16 @@ export default function FunnelDiagram({ metrics }: FunnelDiagramProps) {
     { name: 'Completed', count: metrics.completed, key: 'completed' },
   ];
 
-  const maxCount = Math.max(...stages.map(s => s.count));
+  const maxCount = Math.max(1, ...stages.map(s => s.count)); // At least 1 to avoid division by zero
+
+  if (stages.every(s => s.count === 0)) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <p>No funnel data yet</p>
+        <p className="text-sm mt-2">Register users and run searches to see funnel metrics.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -31,9 +40,9 @@ export default function FunnelDiagram({ metrics }: FunnelDiagramProps) {
         const prevStage = index > 0 ? stages[index - 1] : null;
         const conversionRate = prevStage && prevStage.count > 0 
           ? (stage.count / prevStage.count) * 100 
-          : 100;
+          : (index === 0 ? 100 : 0);
         
-        const widthPercent = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
+        const widthPercent = (stage.count / maxCount) * 100;
         const isLowConversion = prevStage && conversionRate < 50;
 
         return (

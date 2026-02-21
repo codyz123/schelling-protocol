@@ -5,7 +5,6 @@ import type {
   IntentCluster,
   SearchResult,
   EvaluateResult,
-  User,
 } from '../types';
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
@@ -18,11 +17,20 @@ export class SchellingAPI {
     this.baseUrl = baseUrl;
   }
 
+  setBaseUrl(url: string) {
+    this.baseUrl = url.replace(/\/+$/, ''); // Strip trailing slashes
+  }
+
   setAdminToken(token: string) {
     this.adminToken = token;
   }
 
-  private async request<T>(endpoint: string, data?: any, userToken?: string): Promise<T> {
+  private async request<T>(
+    endpoint: string, 
+    data?: Record<string, unknown>, 
+    userToken?: string
+  ): Promise<T> {
+    const isHealthEndpoint = endpoint === '/health';
     const url = endpoint.startsWith('/') 
       ? `${this.baseUrl}${endpoint}`
       : `${this.baseUrl}/schelling/${endpoint}`;
@@ -35,15 +43,21 @@ export class SchellingAPI {
       headers['Authorization'] = `Bearer ${userToken}`;
     }
 
-    const requestData = data ? { ...data } : {};
-    if (this.adminToken && !userToken) {
-      requestData.admin_token = this.adminToken;
+    const method = isHealthEndpoint ? 'GET' : 'POST';
+
+    let body: string | undefined;
+    if (method === 'POST') {
+      const requestData: Record<string, unknown> = data ? { ...data } : {};
+      if (this.adminToken && !userToken) {
+        requestData.admin_token = this.adminToken;
+      }
+      body = JSON.stringify(requestData);
     }
 
     const response = await fetch(url, {
-      method: endpoint.startsWith('/health') ? 'GET' : 'POST',
+      method,
       headers,
-      body: requestData ? JSON.stringify(requestData) : undefined,
+      body,
     });
 
     if (!response.ok) {
@@ -54,7 +68,7 @@ export class SchellingAPI {
     return response.json();
   }
 
-  // Health endpoint
+  // Health endpoint (GET /health — no body)
   async getHealth(): Promise<HealthResponse> {
     return this.request<HealthResponse>('/health');
   }
@@ -64,23 +78,23 @@ export class SchellingAPI {
     return this.request<ServerInfo>('server_info');
   }
 
-  // Analytics
+  // Analytics — uses admin_token for auth, no user_token needed
   async getAnalytics(options: {
     cluster_id?: string;
     time_range?: { start?: string; end?: string };
     include_embeddings?: boolean;
   } = {}): Promise<AnalyticsResponse> {
+    // Use the admin token as the user_token since the analytics handler
+    // validates user existence. The admin token should be a registered user.
     return this.request<AnalyticsResponse>('analytics', {
-      user_token: 'admin', // Required by the API but not used for admin calls
+      user_token: this.adminToken ?? '',
       ...options,
     });
   }
 
-  // Clusters/Intents
+  // Clusters/Intents — handleListVerticals does not require user_token
   async getClusters(): Promise<{ clusters: IntentCluster[] }> {
-    return this.request<{ clusters: IntentCluster[] }>('intents', {
-      user_token: 'admin',
-    });
+    return this.request<{ clusters: IntentCluster[] }>('intents', {});
   }
 
   // User operations (for synthetic users)
@@ -114,27 +128,21 @@ export class SchellingAPI {
     }, userToken);
   }
 
+  // Server returns { comparisons: ComparisonResult[] } for evaluate
   async evaluate(userToken: string, candidateIds: string[]): Promise<EvaluateResult[]> {
-    const results: EvaluateResult[] = [];
-    
-    // API only supports one candidate at a time
-    for (const candidateId of candidateIds) {
-      const result = await this.request<EvaluateResult>('evaluate', {
-        candidate_ids: [candidateId],
-      }, userToken);
-      results.push(result);
-    }
-    
-    return results;
+    const result = await this.request<{ comparisons: EvaluateResult[] }>('evaluate', {
+      candidate_ids: candidateIds,
+    }, userToken);
+    return result.comparisons;
   }
 
-  async exchange(userToken: string, candidateId: string): Promise<any> {
+  async exchange(userToken: string, candidateId: string): Promise<Record<string, unknown>> {
     return this.request('exchange', {
       candidate_id: candidateId,
     }, userToken);
   }
 
-  async commit(userToken: string, candidateId: string): Promise<any> {
+  async commit(userToken: string, candidateId: string): Promise<Record<string, unknown>> {
     return this.request('commit', {
       candidate_id: candidateId,
     }, userToken);
@@ -151,21 +159,21 @@ export class SchellingAPI {
         rejection_reason?: string;
       };
     } = {}
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     return this.request('decline', {
       candidate_id: candidateId,
       ...options,
     }, userToken);
   }
 
-  async sendMessage(userToken: string, candidateId: string, message: string): Promise<any> {
+  async sendMessage(userToken: string, candidateId: string, message: string): Promise<Record<string, unknown>> {
     return this.request('message', {
       candidate_id: candidateId,
       message,
     }, userToken);
   }
 
-  async getMessages(userToken: string, candidateId: string): Promise<any> {
+  async getMessages(userToken: string, candidateId: string): Promise<Record<string, unknown>> {
     return this.request('messages', {
       candidate_id: candidateId,
     }, userToken);
@@ -176,7 +184,7 @@ export class SchellingAPI {
     candidateId: string, 
     outcome: 'positive' | 'neutral' | 'negative',
     notes?: string
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     return this.request('report', {
       candidate_id: candidateId,
       outcome,
@@ -184,8 +192,21 @@ export class SchellingAPI {
     }, userToken);
   }
 
-  async getInsights(userToken: string): Promise<any> {
+  async getInsights(userToken: string): Promise<Record<string, unknown>> {
     return this.request('my_insights', {}, userToken);
+  }
+
+  // Events endpoint for the event log
+  async getEvents(options: {
+    limit?: number;
+    offset?: number;
+    event_type?: string;
+    cluster_id?: string;
+  } = {}): Promise<Record<string, unknown>> {
+    return this.request('events', {
+      user_token: this.adminToken ?? '',
+      ...options,
+    });
   }
 }
 

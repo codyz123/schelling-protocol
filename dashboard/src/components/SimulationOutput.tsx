@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import React, { useState, useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { SyntheticUser, SearchResult, EvaluateResult } from '../types';
 
@@ -7,11 +7,26 @@ interface SimulationOutputProps {
   user: SyntheticUser;
 }
 
+interface LogEntry {
+  id: number;
+  timestamp: Date;
+  type: 'search' | 'evaluate' | 'exchange' | 'commit' | 'decline' | 'error';
+  message: string;
+}
+
+let logIdCounter = 0;
+
 export default function SimulationOutput({ user }: SimulationOutputProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [evaluations, setEvaluations] = useState<EvaluateResult[]>([]);
-  const [currentStep, setCurrentStep] = useState<'search' | 'evaluate' | 'exchange' | 'commit' | 'message' | 'report'>('search');
+  const [exchangedCandidates, setExchangedCandidates] = useState<Set<string>>(new Set());
+  const [committedCandidates, setCommittedCandidates] = useState<Set<string>>(new Set());
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  const addLog = useCallback((type: LogEntry['type'], message: string) => {
+    setLogs(prev => [...prev, { id: ++logIdCounter, timestamp: new Date(), type, message }]);
+  }, []);
 
   // Search mutation
   const searchMutation = useMutation({
@@ -21,7 +36,14 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
     },
     onSuccess: (candidates) => {
       setSearchResults(candidates);
-      setCurrentStep('evaluate');
+      setSelectedCandidates([]);
+      setEvaluations([]);
+      setExchangedCandidates(new Set());
+      setCommittedCandidates(new Set());
+      addLog('search', `Found ${candidates.length} candidates`);
+    },
+    onError: (err: Error) => {
+      addLog('error', `Search failed: ${err.message}`);
     },
   });
 
@@ -32,44 +54,62 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
     },
     onSuccess: (results) => {
       setEvaluations(results);
-      setCurrentStep('exchange');
+      addLog('evaluate', `Evaluated ${results.length} candidates`);
+    },
+    onError: (err: Error) => {
+      addLog('error', `Evaluate failed: ${err.message}`);
     },
   });
 
   // Exchange mutation
   const exchangeMutation = useMutation({
     mutationFn: async (candidateId: string) => {
-      return await api.exchange(user.user_token, candidateId);
+      await api.exchange(user.user_token, candidateId);
+      return candidateId;
     },
-    onSuccess: () => {
-      setCurrentStep('commit');
+    onSuccess: (candidateId) => {
+      setExchangedCandidates(prev => new Set(prev).add(candidateId));
+      addLog('exchange', `Exchange requested for ${candidateId.slice(0, 12)}...`);
+    },
+    onError: (err: Error) => {
+      addLog('error', `Exchange failed: ${err.message}`);
     },
   });
 
   // Commit mutation
   const commitMutation = useMutation({
     mutationFn: async (candidateId: string) => {
-      return await api.commit(user.user_token, candidateId);
+      await api.commit(user.user_token, candidateId);
+      return candidateId;
     },
-    onSuccess: () => {
-      setCurrentStep('message');
+    onSuccess: (candidateId) => {
+      setCommittedCandidates(prev => new Set(prev).add(candidateId));
+      addLog('commit', `Commitment made for ${candidateId.slice(0, 12)}...`);
+    },
+    onError: (err: Error) => {
+      addLog('error', `Commit failed: ${err.message}`);
     },
   });
 
   // Decline mutation
   const declineMutation = useMutation({
     mutationFn: async ({ candidateId, reason, notes }: { candidateId: string; reason: string; notes: string }) => {
-      return await api.decline(user.user_token, candidateId, { reason, notes });
+      await api.decline(user.user_token, candidateId, { reason, notes });
+      return candidateId;
     },
-    onSuccess: () => {
-      // Remove declined candidate from results
-      setSearchResults(prev => prev.filter(r => !selectedCandidates.includes(r.candidate_id)));
-      setSelectedCandidates([]);
+    onSuccess: (candidateId) => {
+      setSearchResults(prev => prev.filter(r => r.candidate_id !== candidateId));
+      setEvaluations(prev => prev.filter(e => e.candidate_id !== candidateId));
+      setSelectedCandidates(prev => prev.filter(id => id !== candidateId));
+      addLog('decline', `Declined ${candidateId.slice(0, 12)}...`);
+    },
+    onError: (err: Error) => {
+      addLog('error', `Decline failed: ${err.message}`);
     },
   });
 
   const handleRunSearch = () => {
-    searchMutation.mutate({ topK: 10, threshold: 0.5 });
+    searchMutation.mutate({ topK: 10, threshold: 0.3 });
   };
 
   const handleEvaluateSelected = () => {
@@ -84,6 +124,10 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
     } else {
       setSelectedCandidates(prev => prev.filter(id => id !== candidateId));
     }
+  };
+
+  const formatScore = (value: number | undefined): string => {
+    return value !== undefined ? value.toFixed(3) : 'N/A';
   };
 
   return (
@@ -103,7 +147,7 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
         </div>
         <div className="mt-2 text-sm">
           <span className="text-gray-600">Intent:</span>
-          <span className="ml-2">{user.intents[0]}</span>
+          <span className="ml-2">{user.intents[0] || 'No intent specified'}</span>
         </div>
       </div>
 
@@ -145,19 +189,20 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
                       <span className="font-medium">#{index + 1}</span>
                       <div className="flex space-x-2 text-sm">
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                          Combined: {candidate.combined_score.toFixed(3)}
+                          Score: {formatScore(candidate.compatibility_score)}
                         </span>
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          Your: {candidate.your_fit.toFixed(3)}
-                        </span>
-                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                          Their: {candidate.their_fit.toFixed(3)}
-                        </span>
+                        {candidate.your_fit !== undefined && (
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            Your: {formatScore(candidate.your_fit)}
+                          </span>
+                        )}
+                        {candidate.their_fit !== undefined && (
+                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            Their: {formatScore(candidate.their_fit)}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {candidate.intents[0] || 'No intent specified'}
-                    </p>
                     <p className="text-xs text-gray-500 mt-1">
                       ID: {candidate.candidate_id}
                     </p>
@@ -166,6 +211,12 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
               ))}
             </div>
           </div>
+        )}
+
+        {searchMutation.isSuccess && searchResults.length === 0 && (
+          <p className="mt-4 text-sm text-gray-500">
+            No candidates found. Try registering more users or adjusting the threshold.
+          </p>
         )}
       </div>
 
@@ -184,31 +235,34 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
             </button>
           </div>
 
+          {evaluateMutation.error && (
+            <p className="mt-2 text-sm text-red-600">
+              Error: {evaluateMutation.error.message}
+            </p>
+          )}
+
           {evaluations.length > 0 && (
             <div className="space-y-4">
-              {evaluations.map((evaluation, index) => (
-                <div key={index} className="border border-gray-200 rounded-md p-4">
+              {evaluations.map((evaluation) => (
+                <div key={evaluation.candidate_id} className="border border-gray-200 rounded-md p-4">
                   <div className="flex justify-between items-start mb-3">
-                    <h5 className="font-medium">Evaluation {index + 1}</h5>
+                    <h5 className="font-medium text-sm">{evaluation.candidate_id.slice(0, 16)}...</h5>
                     <div className="text-right text-sm">
-                      <div>Combined: {evaluation.combined_score.toFixed(3)}</div>
-                      <div className="text-gray-600">
-                        {evaluation.your_fit.toFixed(3)} × {evaluation.their_fit.toFixed(3)}
-                      </div>
+                      <div>Score: {formatScore(evaluation.compatibility_score)}</div>
                     </div>
                   </div>
 
                   {/* Breakdown */}
-                  <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                    <div>
-                      <span className="text-gray-600">Trait Similarity:</span>
-                      <span className="ml-2">{evaluation.breakdown.trait_similarity.toFixed(3)}</span>
+                  {evaluation.breakdown && (
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      {Object.entries(evaluation.breakdown).map(([key, value]) => (
+                        <div key={key}>
+                          <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}:</span>
+                          <span className="ml-2">{typeof value === 'number' ? value.toFixed(3) : String(value)}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <span className="text-gray-600">Intent Similarity:</span>
-                      <span className="ml-2">{evaluation.breakdown.intent_similarity.toFixed(3)}</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Narrative */}
                   {evaluation.narrative_summary && (
@@ -219,7 +273,7 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
                   )}
 
                   {/* Shared Interests */}
-                  {evaluation.shared_interests?.length > 0 && (
+                  {evaluation.shared_interests && evaluation.shared_interests.length > 0 && (
                     <div className="mb-3">
                       <h6 className="font-medium text-sm text-gray-900 mb-1">Shared Interests</h6>
                       <div className="flex flex-wrap gap-1">
@@ -232,15 +286,53 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
                     </div>
                   )}
 
+                  {/* Predicted Friction */}
+                  {evaluation.predicted_friction && evaluation.predicted_friction.length > 0 && (
+                    <div className="mb-3">
+                      <h6 className="font-medium text-sm text-gray-900 mb-1">Predicted Friction</h6>
+                      <ul className="text-sm text-gray-700 list-disc list-inside">
+                        {evaluation.predicted_friction.map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Conversation Starters */}
+                  {evaluation.conversation_starters && evaluation.conversation_starters.length > 0 && (
+                    <div className="mb-3">
+                      <h6 className="font-medium text-sm text-gray-900 mb-1">Conversation Starters</h6>
+                      <ul className="text-sm text-gray-700 list-disc list-inside">
+                        {evaluation.conversation_starters.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="flex space-x-2 mt-4">
-                    <button
-                      onClick={() => exchangeMutation.mutate(evaluation.candidate_id)}
-                      disabled={exchangeMutation.isPending}
-                      className="bg-blue-600 text-white px-3 py-1 text-sm rounded-md hover:bg-blue-700"
-                    >
-                      Exchange
-                    </button>
+                    {!exchangedCandidates.has(evaluation.candidate_id) && (
+                      <button
+                        onClick={() => exchangeMutation.mutate(evaluation.candidate_id)}
+                        disabled={exchangeMutation.isPending}
+                        className="bg-blue-600 text-white px-3 py-1 text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        Exchange
+                      </button>
+                    )}
+                    {exchangedCandidates.has(evaluation.candidate_id) && !committedCandidates.has(evaluation.candidate_id) && (
+                      <button
+                        onClick={() => commitMutation.mutate(evaluation.candidate_id)}
+                        disabled={commitMutation.isPending}
+                        className="bg-purple-600 text-white px-3 py-1 text-sm rounded-md hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        Commit
+                      </button>
+                    )}
+                    {committedCandidates.has(evaluation.candidate_id) && (
+                      <span className="text-sm text-green-600 font-medium py-1">✓ Committed</span>
+                    )}
                     <button
                       onClick={() => declineMutation.mutate({
                         candidateId: evaluation.candidate_id,
@@ -248,7 +340,7 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
                         notes: 'Testing decline functionality'
                       })}
                       disabled={declineMutation.isPending}
-                      className="bg-red-600 text-white px-3 py-1 text-sm rounded-md hover:bg-red-700"
+                      className="bg-red-600 text-white px-3 py-1 text-sm rounded-md hover:bg-red-700 disabled:opacity-50"
                     >
                       Decline
                     </button>
@@ -263,32 +355,25 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
       {/* Operation Log */}
       <div className="border rounded-lg p-4">
         <h3 className="font-medium text-gray-900 mb-4">Operation Log</h3>
-        <div className="space-y-2 text-sm font-mono bg-gray-50 p-3 rounded max-h-64 overflow-y-auto">
-          {searchMutation.isSuccess && (
-            <div className="text-green-700">
-              ✓ Search completed: {searchResults.length} candidates found
-            </div>
+        <div className="space-y-1 text-sm font-mono bg-gray-50 p-3 rounded max-h-48 overflow-y-auto">
+          {logs.length === 0 && (
+            <div className="text-gray-400">No operations yet. Start by running a search.</div>
           )}
-          {evaluateMutation.isSuccess && (
-            <div className="text-blue-700">
-              ✓ Evaluation completed: {evaluations.length} evaluations
-            </div>
-          )}
-          {exchangeMutation.isSuccess && (
-            <div className="text-purple-700">
-              ✓ Exchange requested
-            </div>
-          )}
-          {commitMutation.isSuccess && (
-            <div className="text-yellow-700">
-              ✓ Commitment made
-            </div>
-          )}
-          {declineMutation.isSuccess && (
-            <div className="text-red-700">
-              ✓ Candidate declined
-            </div>
-          )}
+          {logs.map((log) => {
+            const colors: Record<string, string> = {
+              search: 'text-green-700',
+              evaluate: 'text-blue-700',
+              exchange: 'text-purple-700',
+              commit: 'text-yellow-700',
+              decline: 'text-red-700',
+              error: 'text-red-600 font-bold',
+            };
+            return (
+              <div key={log.id} className={colors[log.type] || 'text-gray-600'}>
+                [{log.timestamp.toLocaleTimeString()}] {log.type === 'error' ? '✗' : '✓'} {log.message}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

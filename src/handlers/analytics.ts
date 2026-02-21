@@ -4,6 +4,7 @@ import { getVariantStats } from "../core/ab-testing.js";
 
 export interface AnalyticsInput {
   user_token: string;
+  admin_token?: string;
   cluster_id?: string;
   time_range?: { start?: string; end?: string };
   include_embeddings?: boolean;
@@ -53,9 +54,13 @@ export async function handleAnalytics(
 ): Promise<HandlerResult<AnalyticsOutput>> {
   const { db } = ctx;
 
-  // Validate user exists
+  // Validate caller: accept either a valid user_token or an admin_token that matches a registered user
+  const tokenToCheck = input.user_token || input.admin_token;
+  if (!tokenToCheck) {
+    return { ok: false, error: { code: "MISSING_TOKEN", message: "user_token or admin_token required" } };
+  }
   const user = db.prepare("SELECT user_token FROM users WHERE user_token = ?")
-    .get(input.user_token) as { user_token: string } | undefined;
+    .get(tokenToCheck) as { user_token: string } | undefined;
   if (!user) {
     return { ok: false, error: { code: "USER_NOT_FOUND", message: "User not found" } };
   }

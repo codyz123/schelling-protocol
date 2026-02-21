@@ -6,21 +6,23 @@ import { api } from '../lib/api';
 
 export default function TopNav() {
   const location = useLocation();
-  const { serverHealth, setServerHealth } = useAppStore();
+  const { serverHealth, setServerHealth, clearAdminToken } = useAppStore();
   
   // Health check query
-  const { data: health } = useQuery({
+  const { data: health, error: healthError } = useQuery({
     queryKey: ['health'],
     queryFn: () => api.getHealth(),
-    refetchInterval: 10000, // Check every 10 seconds
+    refetchInterval: 10000,
     retry: 1,
   });
 
   useEffect(() => {
-    if (health) {
+    if (healthError) {
+      setServerHealth('unhealthy');
+    } else if (health) {
       setServerHealth(health.status === 'healthy' ? 'healthy' : 'unhealthy');
     }
-  }, [health, setServerHealth]);
+  }, [health, healthError, setServerHealth]);
 
   const navItems = [
     { path: '/', label: 'Dashboard' },
@@ -79,7 +81,7 @@ export default function TopNav() {
               <span className={`text-sm font-medium ${getStatusColor()}`}>
                 {serverHealth === 'healthy' && health ? (
                   <>
-                    {health.total_users} users, {health.total_candidates} candidates
+                    {health.total_users ?? 0} users, {health.total_candidates ?? 0} candidates
                   </>
                 ) : serverHealth === 'unhealthy' ? (
                   'Server Error'
@@ -88,11 +90,15 @@ export default function TopNav() {
                 )}
               </span>
             </div>
-            
-            {/* Current Time */}
-            <div className="text-sm text-gray-500">
-              {new Date().toLocaleTimeString()}
-            </div>
+
+            {/* Logout */}
+            <button
+              onClick={() => clearAdminToken()}
+              className="text-sm text-gray-500 hover:text-gray-700"
+              title="Disconnect"
+            >
+              ✕
+            </button>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ interface StatsCardsProps {
 
 export default function StatsCards({ analytics, serverInfo }: StatsCardsProps) {
   const formatUptime = (seconds: number) => {
+    if (!seconds || seconds < 0) return '—';
     if (seconds < 3600) {
       return `${Math.floor(seconds / 60)}m`;
     } else if (seconds < 86400) {
@@ -17,34 +18,35 @@ export default function StatsCards({ analytics, serverInfo }: StatsCardsProps) {
     }
   };
 
+  const safePercent = (val: number | undefined | null): string => {
+    if (val === undefined || val === null || isNaN(val)) return '0%';
+    return `${Math.round(val * 100)}%`;
+  };
+
   const cards = [
     {
       title: 'Active Users',
-      value: analytics.funnel_metrics.total_users,
-      subtitle: serverInfo ? `Uptime: ${formatUptime(serverInfo.uptime_seconds)}` : 'Last 30 days',
+      value: analytics.funnel_metrics?.total_users ?? 0,
+      subtitle: serverInfo ? `Uptime: ${formatUptime(serverInfo.uptime_seconds)}` : '—',
       color: 'blue',
-      trend: null, // TODO: Add sparkline data
     },
     {
       title: 'Active Candidates', 
-      value: serverInfo?.total_candidates || 0,
-      subtitle: `Discovery rate: ${Math.round(analytics.response_rate * 100)}%`,
+      value: serverInfo?.total_candidates ?? 0,
+      subtitle: `Discovery rate: ${safePercent(analytics.response_rate)}`,
       color: 'green',
-      trend: null,
     },
     {
       title: 'Match Rate',
-      value: `${Math.round(analytics.match_rate * 100)}%`,
+      value: safePercent(analytics.match_rate),
       subtitle: 'Connected / Discovered',
       color: 'purple',
-      trend: null,
     },
     {
       title: 'Positive Outcomes',
-      value: `${Math.round(analytics.outcome_metrics.positive_rate * 100)}%`,
-      subtitle: `${analytics.outcome_metrics.total} total reports`,
+      value: safePercent(analytics.outcome_metrics?.positive_rate),
+      subtitle: `${analytics.outcome_metrics?.total ?? 0} total reports`,
       color: 'yellow',
-      trend: null,
     },
   ];
 
@@ -79,20 +81,12 @@ export default function StatsCards({ analytics, serverInfo }: StatsCardsProps) {
                 {card.value}
               </p>
             </div>
-            {/* TODO: Add trend indicator icon */}
           </div>
           
           <div className="mt-4">
             <p className="text-sm opacity-75">
               {card.subtitle}
             </p>
-            
-            {/* TODO: Add sparkline chart */}
-            {card.trend && (
-              <div className="mt-2 h-8">
-                {/* Sparkline would go here */}
-              </div>
-            )}
           </div>
         </div>
       ))}
