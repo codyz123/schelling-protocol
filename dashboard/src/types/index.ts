@@ -74,6 +74,7 @@ export interface IntentCluster {
   active_candidates: number;
 }
 
+// Matches server's SearchCandidate from handleSearch
 export interface SearchResult {
   candidate_id: string;
   compatibility_score: number;
@@ -81,8 +82,15 @@ export interface SearchResult {
   your_fit?: number;
   their_fit?: number;
   intent_similarity?: number;
-  primary_cluster?: string;
-  intents?: string[];
+  shared_categories?: string[];
+  intent?: string[];       // Server uses 'intent' not 'intents'
+  city?: string | null;
+  age_range?: string | null;
+  reputation_score?: number;
+  verification_level?: string;
+  interaction_count?: number;
+  stale?: boolean;
+  computed_at?: string;
 }
 
 // Matches server's ComparisonResult from handleCompare

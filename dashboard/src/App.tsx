@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from './lib/store';
+import { api } from './lib/api';
 import AuthGate from './components/AuthGate';
 import TopNav from './components/TopNav';
 import Dashboard from './pages/Dashboard';
@@ -9,7 +10,17 @@ import MatchInspector from './pages/MatchInspector';
 import EventLog from './pages/EventLog';
 
 function App() {
-  const { adminToken } = useAppStore();
+  const { adminToken, serverUrl } = useAppStore();
+
+  // Sync API client with persisted store values on mount
+  useEffect(() => {
+    if (serverUrl) {
+      api.setBaseUrl(serverUrl);
+    }
+    if (adminToken) {
+      api.setAdminToken(adminToken);
+    }
+  }, [serverUrl, adminToken]);
 
   if (!adminToken) {
     return <AuthGate />;
