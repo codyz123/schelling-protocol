@@ -58,7 +58,7 @@ describe("marketplace vertical", () => {
         const marketplaceData = JSON.parse(user.marketplace_data);
         expect(marketplaceData.category).toBe("electronics");
         expect(marketplaceData.condition).toBe("like-new");
-        expect(marketplaceData.price_range.asking).toBe(1000);
+        expect(marketplaceData.price_range.asking_price).toBe(1000);
       }
     });
 
@@ -91,7 +91,7 @@ describe("marketplace vertical", () => {
 
         expect(user.role).toBe("buyer");
         const marketplaceData = JSON.parse(user.marketplace_data);
-        expect(marketplaceData.budget.max).toBe(900);
+        expect(marketplaceData.budget.max_price).toBe(900);
       }
     });
 
@@ -344,7 +344,7 @@ describe("marketplace vertical", () => {
           {
             user_token: buyerResult.data.user_token,
             candidate_id: candidateId,
-            proposal: { price: 320, notes: "Cash offer, pickup available" },
+            proposal: { price: 320, terms: "Cash offer, pickup available" },
           },
           ctx
         );
@@ -360,7 +360,7 @@ describe("marketplace vertical", () => {
           {
             user_token: sellerResult.data.user_token,
             candidate_id: candidateId,
-            proposal: { price: 380, notes: "Best I can do" },
+            proposal: { price: 380, terms: "Best I can do" },
           },
           ctx
         );

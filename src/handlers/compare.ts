@@ -9,6 +9,12 @@ import {
   computeCompatibility,
   findSharedInterests,
 } from "../matching/compatibility.js";
+import {
+  generateNarrativeSummary,
+  generatePredictedFriction,
+  generateConversationStarters,
+  generateIntentExplanation,
+} from "../matching/explainability.js";
 
 export interface CompareInput {
   user_token: string;
@@ -27,6 +33,10 @@ export interface ComparisonResult {
     label: string;
   }[];
   strongest_alignments: string[];
+  narrative_summary: string;
+  predicted_friction: string[];
+  conversation_starters: string[];
+  intent_explanation?: { aligned: string[]; misaligned: string[] };
 }
 
 export interface CompareOutput {
@@ -136,6 +146,31 @@ export async function handleCompare(
       .slice(0, 3)
       .map((sc) => sc.dimension);
 
+    // Explainability
+    const intentSim = candidate.intent_similarity ?? 0;
+    const narrativeSummary = generateNarrativeSummary(
+      result.group_scores,
+      sharedInterests,
+      result.complementary_traits,
+      intentSim
+    );
+    const predictedFriction = generatePredictedFriction(
+      result.complementary_traits,
+      result.group_scores
+    );
+    const conversationStarters = generateConversationStarters(
+      sharedInterests,
+      strongestAlignments,
+      result.complementary_traits
+    );
+
+    // Intent explanation
+    const callerIntentEmb: number[] = caller.intent_embedding ? JSON.parse(caller.intent_embedding) : [];
+    const otherIntentEmb: number[] = otherUser.intent_embedding ? JSON.parse(otherUser.intent_embedding) : [];
+    const intentExplanation = callerIntentEmb.length === 16 && otherIntentEmb.length === 16
+      ? generateIntentExplanation(callerIntentEmb, otherIntentEmb)
+      : undefined;
+
     comparisons.push({
       candidate_id: candidateId,
       compatibility_score: result.overall_score,
@@ -143,6 +178,10 @@ export async function handleCompare(
       shared_interests: sharedInterests,
       complementary_traits: result.complementary_traits,
       strongest_alignments: strongestAlignments,
+      narrative_summary: narrativeSummary,
+      predicted_friction: predictedFriction,
+      conversation_starters: conversationStarters,
+      intent_explanation: intentExplanation,
     });
   }
 

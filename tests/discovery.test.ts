@@ -72,7 +72,7 @@ describe("Phase 5: Discovery, Onboarding & Observability", () => {
       expect(data.vertical_name).toBe("Romantic Matchmaking");
       expect(Array.isArray(data.required_fields)).toBe(true);
       expect(data.required_fields).toContain("embedding");
-      expect(data.required_fields).toContain("city");
+      expect(data.required_fields).toContain("intent_embedding");
       expect(Array.isArray(data.optional_fields)).toBe(true);
       expect(data.collection_strategies).toBeDefined();
       expect(data.collection_strategies.embedding_generation).toBeDefined();
@@ -134,7 +134,7 @@ describe("Phase 5: Discovery, Onboarding & Observability", () => {
 
       const data = result.data!;
       expect(data.protocol_version).toBe("schelling-2.0");
-      expect(data.server_version).toBe("2.0.0-phase5");
+      expect(data.server_version).toBe("2.0.0-v2phase1");
       expect(Array.isArray(data.supported_verticals)).toBe(true);
       expect(data.supported_verticals).toContain("matchmaking");
       expect(data.supported_verticals).toContain("marketplace");

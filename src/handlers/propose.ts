@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type {
   HandlerContext,
   HandlerResult,
@@ -10,6 +11,7 @@ import {
   findSharedInterests,
   generateOpener,
 } from "../matching/compatibility.js";
+import { getCluster } from "../clusters/registry.js";
 
 export interface ProposeInput {
   user_token: string;
@@ -105,6 +107,29 @@ export async function handlePropose(
     };
   }
 
+  // Check exclusive commitment: use BEGIN IMMEDIATE for serialization
+  const cluster = getCluster(candidate.vertical_id);
+  if (cluster?.exclusive_commitment) {
+    // Use BEGIN IMMEDIATE for exclusive write lock
+    ctx.db.exec("BEGIN IMMEDIATE");
+    try {
+      const commitments = ctx.db
+        .prepare(`SELECT COUNT(*) as count FROM candidates WHERE (user_a_token = ? OR user_b_token = ?) AND (stage_a >= 4 OR stage_b >= 4) AND id != ?`)
+        .get(input.user_token, input.user_token, input.candidate_id) as { count: number };
+      if (commitments.count > 0) {
+        ctx.db.exec("ROLLBACK");
+        return {
+          ok: false,
+          error: { code: "ACTIVE_COMMITMENT", message: "Cannot commit — you have an active commitment in this exclusive cluster" },
+        };
+      }
+      ctx.db.exec("COMMIT");
+    } catch (e) {
+      try { ctx.db.exec("ROLLBACK"); } catch (_) {}
+      throw e;
+    }
+  }
+
   // Atomic advance + mutual detection
   const advanceToCommitted = ctx.db.transaction(() => {
     const col = side === "a" ? "stage_a" : "stage_b";
@@ -122,6 +147,19 @@ export async function handlePropose(
           "UPDATE candidates SET stage_a = ?, stage_b = ?, updated_at = datetime('now') WHERE id = ?"
         )
         .run(Stage.CONNECTED, Stage.CONNECTED, input.candidate_id);
+
+      // Auto-decline other candidates in exclusive-commitment clusters
+      if (cluster?.exclusive_commitment) {
+        const otherCandidates = ctx.db
+          .prepare(`SELECT id, user_a_token, user_b_token FROM candidates WHERE (user_a_token = ? OR user_b_token = ?) AND id != ? AND vertical_id = ?`)
+          .all(input.user_token, input.user_token, input.candidate_id, candidate.vertical_id) as Array<{ id: string; user_a_token: string; user_b_token: string }>;
+        for (const oc of otherCandidates) {
+          const declinedToken = oc.user_a_token === input.user_token ? oc.user_b_token : oc.user_a_token;
+          ctx.db.prepare(`INSERT OR IGNORE INTO declines (id, decliner_token, declined_token, vertical_id, stage_at_decline, reason) VALUES (?, ?, ?, ?, 0, 'exclusive_commitment')`).run(randomUUID(), input.user_token, declinedToken, candidate.vertical_id);
+          ctx.db.prepare("DELETE FROM candidates WHERE id = ?").run(oc.id);
+        }
+      }
+
       return { mutual: true };
     }
     return { mutual: false };

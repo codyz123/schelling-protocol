@@ -298,38 +298,26 @@ describe("disputes and verification system", () => {
     it("should detect frivolous filing pattern", async () => {
       const tokenA = await createUser("user_a");
       
-      // Create multiple users and file 4 disputes that get dismissed
+      // Create multiple users and directly insert dismissed disputes
       for (let i = 0; i < 4; i++) {
-        const tokenB = await createUser(`user_b_${i}`);
+        const tokenB = await createUser(`user_b_fri_${i}`);
         
-        try {
-          const candidateId = await createConnectedPair(tokenA, tokenB);
-          
-          const disputeResult = await handleFileDispute({
-            user_token: tokenA,
-            candidate_id: candidateId,
-            reason: `Frivolous dispute ${i}`
-          }, ctx);
-          
-          if (disputeResult.ok) {
-            // Resolve against the filer (frivolous)
-            resolveDispute(db, disputeResult.data.dispute_id, "for_defendant", "Frivolous filing");
-          }
-        } catch (error) {
-          // If createConnectedPair fails (users not compatible), manually create dispute data
-          console.log(`Skipping pair ${i} due to compatibility issue`);
-          
-          // Create a simple dispute record manually for testing
-          const disputeId = `disp_test_${i}`;
-          const tokenB = `user_b_${i}`;
-          
-          db.query(`
-            INSERT INTO disputes (
-              id, candidate_id, filed_by, filed_against, vertical_id, 
-              stage_at_filing, reason, status, created_at
-            ) VALUES (?, 'fake_candidate', ?, ?, 'matchmaking', 5, ?, 'resolved_for_defendant', ?)
-          `).run(disputeId, tokenA, tokenB, `Frivolous dispute ${i}`, Date.now());
-        }
+        // Create candidate record directly (needed for FK on disputes)
+        const fakeCandidateId = `fake_candidate_fri_${i}`;
+        const [ordA, ordB] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA];
+        db.query(`
+          INSERT INTO candidates (
+            id, user_a_token, user_b_token, vertical_id, score, shared_categories, stage_a, stage_b
+          ) VALUES (?, ?, ?, 'matchmaking', 0.5, '[]', 5, 5)
+        `).run(fakeCandidateId, ordA, ordB);
+
+        const disputeId = `disp_test_fri_${i}`;
+        db.query(`
+          INSERT INTO disputes (
+            id, candidate_id, filed_by, filed_against, vertical_id, 
+            stage_at_filing, reason, status, created_at
+          ) VALUES (?, ?, ?, ?, 'matchmaking', 5, ?, 'resolved_for_defendant', ?)
+        `).run(disputeId, fakeCandidateId, tokenA, tokenB, `Frivolous dispute ${i}`, Date.now());
       }
 
       // Manually trigger frivolous filing check

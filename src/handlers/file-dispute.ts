@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { HandlerContext, HandlerResult } from "../types.js";
 import { disputeExists } from "../core/disputes.js";
 import { checkIdempotency, recordIdempotency } from "../core/funnel.js";
+import { selectJury } from "../core/jury-selection.js";
 
 interface FileDisputeRequest {
   user_token: string;
@@ -13,8 +14,10 @@ interface FileDisputeRequest {
 
 interface FileDisputeResponse {
   dispute_id: string;
-  status: "open";
+  status: "open" | "jury_selection";
   filed_at: number;
+  jury_size?: number;
+  verdict_deadline?: string;
 }
 
 export async function handleFileDispute(
@@ -168,12 +171,38 @@ export async function handleFileDispute(
     const action_id = `action_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     insertPendingAction.run(action_id, filed_against, candidate_id, Date.now());
 
+    // Attempt jury selection
+    let jurySize = 0;
+    let verdictDeadline: string | undefined;
+    const jurors = selectJury(db, dispute_id, user_token, filed_against, 3);
+    if (jurors && jurors.length > 0) {
+      jurySize = jurors.length;
+      verdictDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      
+      for (const jurorToken of jurors) {
+        const juryId = `jury_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        db.query(`
+          INSERT INTO jury_assignments (id, dispute_id, juror_token, deadline_at)
+          VALUES (?, ?, ?, ?)
+        `).run(juryId, dispute_id, jurorToken, verdictDeadline);
+
+        // Create jury_duty pending action
+        const juryActionId = `action_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        db.query(`
+          INSERT INTO pending_actions (id, user_token, candidate_id, action_type)
+          VALUES (?, ?, ?, 'jury_duty')
+        `).run(juryActionId, jurorToken, candidate_id);
+      }
+    }
+
     const result: HandlerResult<FileDisputeResponse> = {
       ok: true,
       data: {
         dispute_id,
-        status: "open",
-        filed_at
+        status: jurySize > 0 ? "jury_selection" : "open",
+        filed_at,
+        jury_size: jurySize > 0 ? jurySize : undefined,
+        verdict_deadline: verdictDeadline,
       }
     };
 

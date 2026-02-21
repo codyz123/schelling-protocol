@@ -18,6 +18,28 @@ import { handleDeleteAccount } from "../handlers/delete-account.js";
 import { handleListVerticals } from "../handlers/list-verticals.js";
 import { handleOnboard } from "../handlers/onboard.js";
 import { handleServerInfo } from "../handlers/server-info.js";
+import { handleReconsider } from "../handlers/reconsider.js";
+import { handleUpdate } from "../handlers/update.js";
+import { handleRefresh } from "../handlers/refresh.js";
+import { handleMessage } from "../handlers/message.js";
+import { handleMessages } from "../handlers/messages.js";
+import { handleDirect } from "../handlers/direct.js";
+import { handleRelayBlock } from "../handlers/relay-block.js";
+import { handlePending } from "../handlers/pending.js";
+import { handleFeedback } from "../handlers/feedback.js";
+import { handleMyInsights } from "../handlers/my-insights.js";
+import { handleJuryDuty } from "../handlers/jury-duty.js";
+import { handleJuryVerdict } from "../handlers/jury-verdict.js";
+import { handleAnalytics } from "../handlers/analytics.js";
+import { handleGroupEvaluate } from "../handlers/group-evaluate.js";
+import { handleGroupCommit } from "../handlers/group-commit.js";
+import { handleInquire } from "../handlers/inquire.js";
+import { handleSubscribe } from "../handlers/subscribe.js";
+import { handleUnsubscribe } from "../handlers/unsubscribe.js";
+import { handleNotifications } from "../handlers/notifications.js";
+import { handleContract } from "../handlers/contract.js";
+import { handleContractUpdate } from "../handlers/contract-update.js";
+import { handleEvent } from "../handlers/event.js";
 import { logger } from "../core/logger.js";
 
 interface RestServer {
@@ -174,7 +196,48 @@ export function createRestServer(ctx: HandlerContext): RestServer {
             case 'delete_account':
               result = await handleDeleteAccount(params, ctx);
               break;
+            case 'reconsider':
+              result = await handleReconsider(params, ctx);
+              break;
+            case 'update':
+              result = await handleUpdate(params, ctx);
+              break;
+            case 'refresh':
+              result = await handleRefresh(params, ctx);
+              break;
+            case 'message':
+              result = await handleMessage(params, ctx);
+              break;
+            case 'messages':
+              result = await handleMessages(params, ctx);
+              break;
+            case 'direct':
+              result = await handleDirect(params, ctx);
+              break;
+            case 'relay_block':
+              result = await handleRelayBlock(params, ctx);
+              break;
+            case 'pending':
+              result = await handlePending(params, ctx);
+              break;
+            case 'feedback':
+              result = await handleFeedback(params, ctx);
+              break;
+            case 'my_insights':
+              result = await handleMyInsights(params, ctx);
+              break;
+            case 'jury_duty':
+              result = await handleJuryDuty(params, ctx);
+              break;
+            case 'jury_verdict':
+              result = await handleJuryVerdict(params, ctx);
+              break;
+            case 'analytics':
+              result = await handleAnalytics(params, ctx);
+              break;
             case 'verticals':
+            case 'clusters':
+            case 'intents':
               result = await handleListVerticals(params, ctx);
               break;
             case 'onboard':
@@ -182,6 +245,35 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               break;
             case 'server_info':
               result = await handleServerInfo(params, ctx);
+              break;
+            case 'group_evaluate':
+              result = await handleGroupEvaluate(params, ctx);
+              break;
+            case 'group_commit':
+              result = await handleGroupCommit(params, ctx);
+              break;
+            case 'inquire':
+            case 'inquiries':
+              result = await handleInquire(params, ctx);
+              break;
+            case 'subscribe':
+              result = await handleSubscribe(params, ctx);
+              break;
+            case 'unsubscribe':
+              result = await handleUnsubscribe(params, ctx);
+              break;
+            case 'notifications':
+              result = await handleNotifications(params, ctx);
+              break;
+            case 'contract':
+              result = await handleContract(params, ctx);
+              break;
+            case 'contract_update':
+              result = await handleContractUpdate(params, ctx);
+              break;
+            case 'event':
+            case 'events':
+              result = await handleEvent(params, ctx);
               break;
             default:
               return Response.json(
