@@ -232,6 +232,48 @@ POST /schelling/report                # Report outcomes
 **Format**: JSON request body → JSON response
 **CORS**: Enabled for web integration
 
+## Testing Dashboard
+
+A comprehensive web-based dashboard for testing and visualizing the Schelling Protocol:
+
+### Setup
+```bash
+# Install dependencies (first time only)
+cd dashboard && npm install && cd ..
+bun add --dev concurrently
+
+# Development mode (starts both server and dashboard)
+npm run dev
+
+# Or run individually
+npm run dev:server    # REST API on port 3000
+npm run dev:dashboard # Dashboard on port 3001
+```
+
+### Features
+- **Dashboard**: Real-time system metrics, funnel analytics, and cluster distribution
+- **Simulator**: Create synthetic users, run through the full matching funnel
+- **Match Inspector**: Deep-dive analysis of candidate pairs with bidirectional scoring
+- **Event Log**: Filterable log of all system operations
+
+### Pages
+- **Dashboard** (`/`) — Live system overview with funnel metrics and stats cards
+- **Simulator** (`/simulator`) — Create and test synthetic users through the complete funnel
+- **Match Inspector** (`/inspector`) — Detailed candidate pair analysis and scoring breakdown
+- **Event Log** (`/events`) — Real-time searchable event stream
+
+The dashboard connects to the REST API and includes:
+- Admin authentication with session persistence
+- Synthetic user pool management with templates
+- Real-time server health monitoring
+- Configurable server URL support
+- Full TypeScript implementation with Tailwind CSS
+
+Build for production:
+```bash
+cd dashboard && npm run build
+```
+
 ## Privacy & Safety
 
 **Privacy Guarantees:**

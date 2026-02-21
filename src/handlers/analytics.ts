@@ -6,6 +6,7 @@ export interface AnalyticsInput {
   user_token: string;
   cluster_id?: string;
   time_range?: { start?: string; end?: string };
+  include_embeddings?: boolean;
 }
 
 export interface AnalyticsOutput {
@@ -36,6 +37,14 @@ export interface AnalyticsOutput {
     avg_score: number;
   }>;
   ab_test_significance?: { z: number; p_value: number; significant: boolean };
+  users?: Array<{
+    user_id_hash: string;
+    intent_embedding: number[];
+    primary_cluster: string;
+    reputation_score: number;
+    status: string;
+    last_registered_at: string;
+  }>;
 }
 
 export async function handleAnalytics(
@@ -109,6 +118,61 @@ export async function handleAnalytics(
     );
   }
 
+  // Include embeddings if requested
+  let users: any[] | undefined;
+  if (input.include_embeddings) {
+    const embeddings = db.prepare(`
+      SELECT 
+        user_token,
+        intent_embedding,
+        primary_cluster,
+        status,
+        last_registered_at
+      FROM users
+      WHERE status = 'active'
+    `).all() as Array<{
+      user_token: string;
+      intent_embedding: string;
+      primary_cluster: string;
+      status: string;
+      last_registered_at: string;
+    }>;
+
+    // Get reputation for each user (simplified)
+    users = embeddings.map(user => {
+      const reputationResult = db.prepare(`
+        SELECT AVG(
+          CASE outcome 
+            WHEN 'positive' THEN 1.0 
+            WHEN 'neutral' THEN 0.5 
+            WHEN 'negative' THEN 0.0 
+            ELSE 0.5 
+          END
+        ) as score
+        FROM outcomes 
+        WHERE user_token = ?
+      `).get(user.user_token) as { score: number } | undefined;
+      
+      const reputation = reputationResult?.score ?? 0.5;
+
+      // Hash the user token for privacy
+      const crypto = require('crypto');
+      const user_id_hash = crypto.createHash('sha256')
+        .update(user.user_token)
+        .digest('hex')
+        .substring(0, 16);
+
+      return {
+        user_id_hash,
+        intent_embedding: JSON.parse(user.intent_embedding),
+        primary_cluster: user.primary_cluster,
+        reputation_score: reputation,
+        status: user.status,
+        last_registered_at: user.last_registered_at,
+      };
+    });
+  }
+
   return {
     ok: true,
     data: {
@@ -137,6 +201,7 @@ export async function handleAnalytics(
         variant_a: variantStats,
       },
       ab_test_significance: abSignificance,
+      users,
     },
   };
 }

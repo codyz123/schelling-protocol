@@ -6,7 +6,10 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "bun src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "dev:server": "bun src/index.ts --rest",
+    "dev:dashboard": "cd dashboard && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:dashboard\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
@@ -14,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
+    "concurrently": "^9.2.1",
     "typescript": "^5.7.3"
   }
 }
