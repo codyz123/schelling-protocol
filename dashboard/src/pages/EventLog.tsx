@@ -40,6 +40,7 @@ export default function EventLog() {
 
   // Derive events from analytics changes
   const deriveEvents = useCallback((current: AnalyticsResponse['funnel_metrics']) => {
+    if (!current) return; // Guard against unexpected null/undefined
     const prev = prevMetricsRef.current;
     if (!prev) {
       prevMetricsRef.current = { ...current };

@@ -28,7 +28,8 @@ export class SchellingAPI {
   private async request<T>(
     endpoint: string, 
     data?: Record<string, unknown>, 
-    userToken?: string
+    userToken?: string,
+    signal?: AbortSignal
   ): Promise<T> {
     const isHealthEndpoint = endpoint === '/health';
     const url = endpoint.startsWith('/') 
@@ -58,14 +59,30 @@ export class SchellingAPI {
       method,
       headers,
       body,
+      signal,
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API Error: ${response.status} ${error}`);
+      let errorMessage: string;
+      try {
+        const errorBody = await response.json();
+        errorMessage = errorBody.message || errorBody.error || JSON.stringify(errorBody);
+      } catch {
+        errorMessage = await response.text().catch(() => `HTTP ${response.status}`);
+      }
+      throw new Error(`API Error (${response.status}): ${errorMessage}`);
     }
 
-    return response.json();
+    const text = await response.text();
+    if (!text) {
+      return {} as T; // Empty response — return empty object
+    }
+    
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error(`Invalid JSON response from server: ${text.slice(0, 200)}`);
+    }
   }
 
   // Health endpoint (GET /health — no body)
@@ -130,9 +147,15 @@ export class SchellingAPI {
 
   // Server returns { comparisons: ComparisonResult[] } for evaluate
   async evaluate(userToken: string, candidateIds: string[]): Promise<EvaluateResult[]> {
+    if (candidateIds.length === 0) return [];
     const result = await this.request<{ comparisons: EvaluateResult[] }>('evaluate', {
       candidate_ids: candidateIds,
     }, userToken);
+    // Defensive: handle missing or non-array comparisons
+    if (!result.comparisons || !Array.isArray(result.comparisons)) {
+      console.warn('Unexpected evaluate response shape:', result);
+      return [];
+    }
     return result.comparisons;
   }
 

@@ -15,6 +15,7 @@ export default function Simulator() {
   const [batchCluster, setBatchCluster] = useState('matchmaking');
   const [batchLog, setBatchLog] = useState<string[]>([]);
   const [batchRunning, setBatchRunning] = useState(false);
+  const batchAbortRef = React.useRef(false);
   
   const { addSyntheticUser, syntheticUsers, removeSyntheticUser, clearSyntheticUsers } = useAppStore();
 
@@ -34,6 +35,7 @@ export default function Simulator() {
     if (batchRunning) return;
     setBatchRunning(true);
     setBatchLog([]);
+    batchAbortRef.current = false;
     
     const centroid = CLUSTER_CENTROIDS[batchCluster];
     if (!centroid) {
@@ -47,6 +49,10 @@ export default function Simulator() {
     const DELAY_MS = 200; // Rate limit: 5 req/sec max
 
     for (let i = 0; i < actualSize; i++) {
+      if (batchAbortRef.current) {
+        setBatchLog(prev => [...prev, `— Batch cancelled at ${i}/${actualSize}`]);
+        break;
+      }
       try {
         // Add noise to centroid
         const intentEmbedding = centroid.map(v => 
@@ -198,13 +204,23 @@ export default function Simulator() {
             </div>
           </div>
 
-          <button
-            onClick={runBatch}
-            disabled={batchRunning}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {batchRunning ? 'Running...' : `Register ${Math.min(batchSize, 20)} Users`}
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={runBatch}
+              disabled={batchRunning}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {batchRunning ? 'Running...' : `Register ${Math.min(batchSize, 20)} Users`}
+            </button>
+            {batchRunning && (
+              <button
+                onClick={() => { batchAbortRef.current = true; }}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
 
           {batchLog.length > 0 && (
             <div className="mt-6 bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">

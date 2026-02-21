@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { SyntheticUser, SearchResult, EvaluateResult } from '../types';
@@ -23,6 +23,20 @@ export default function SimulationOutput({ user }: SimulationOutputProps) {
   const [exchangedCandidates, setExchangedCandidates] = useState<Set<string>>(new Set());
   const [committedCandidates, setCommittedCandidates] = useState<Set<string>>(new Set());
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const prevUserTokenRef = useRef(user.user_token);
+
+  // Reset state when user changes to prevent stale data from previous user
+  useEffect(() => {
+    if (prevUserTokenRef.current !== user.user_token) {
+      prevUserTokenRef.current = user.user_token;
+      setSearchResults([]);
+      setSelectedCandidates([]);
+      setEvaluations([]);
+      setExchangedCandidates(new Set());
+      setCommittedCandidates(new Set());
+      setLogs([]);
+    }
+  }, [user.user_token]);
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
     setLogs(prev => [...prev, { id: ++logIdCounter, timestamp: new Date(), type, message }]);
