@@ -378,9 +378,9 @@ export interface DisputeRecord {
   delivery_claims: string | null;
   status: string;
   jury_size: number | null;
-  resolved_at: number | null;
+  resolved_at: string | null;
   resolution_notes: string | null;
-  created_at: number;
+  created_at: string;
 }
 
 export interface DeclineRecord {
@@ -474,7 +474,7 @@ export interface ReputationEventRecord {
   rating?: string | null;
   dimensions?: string | null;
   notes?: string | null;
-  created_at: number;
+  created_at: string;
 }
 
 export interface PendingActionRecord {

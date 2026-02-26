@@ -5,33 +5,44 @@ import type {
   CandidateRecord,
   UserRecord,
 } from "../types.js";
-import { Stage, callerSide } from "../types.js";
+import { Stage, callerSide, otherToken } from "../types.js";
 import { checkIdempotency, recordIdempotency } from "../core/funnel.js";
 
 // ─── Input / Output ────────────────────────────────────────────────
 
-export interface WithdrawInput {
+export interface MessageInput {
   user_token: string;
   candidate_id: string;
-  reason?: string;
+  content: string;
   idempotency_key?: string;
 }
 
-export interface WithdrawOutput {
-  withdrawn: true;
-  your_stage: number;
+export interface MessageOutput {
+  message_id: string;
+  sent_at: string;
 }
 
 // ─── Handler ───────────────────────────────────────────────────────
 
-export async function handleWithdraw(
-  input: WithdrawInput,
+export async function handleMessage(
+  input: MessageInput,
   ctx: HandlerContext,
-): Promise<HandlerResult<WithdrawOutput>> {
+): Promise<HandlerResult<MessageOutput>> {
   // ── Idempotency ────────────────────────────────────────────────
   if (input.idempotency_key) {
-    const cached = checkIdempotency<WithdrawOutput>(ctx.db, input.idempotency_key);
+    const cached = checkIdempotency<MessageOutput>(ctx.db, input.idempotency_key);
     if (cached) return cached;
+  }
+
+  // ── Validate content length ────────────────────────────────────
+  if (!input.content || input.content.length > 5000) {
+    return {
+      ok: false,
+      error: {
+        code: "MESSAGE_TOO_LONG",
+        message: "Message content must be between 1 and 5000 characters",
+      },
+    };
   }
 
   // ── Verify user exists and is active ──────────────────────────
@@ -82,83 +93,52 @@ export async function handleWithdraw(
     };
   }
 
-  // ── Stage gating: valid at COMMITTED(3) or CONNECTED(4) ───────
-  const side = callerSide(input.user_token, candidate);
-  const callerStage = side === "a" ? candidate.stage_a : candidate.stage_b;
-
-  if (callerStage < Stage.COMMITTED) {
+  // ── Both parties must be at CONNECTED (stage 4) ────────────────
+  if (candidate.stage_a < Stage.CONNECTED || candidate.stage_b < Stage.CONNECTED) {
     return {
       ok: false,
       error: {
         code: "STAGE_VIOLATION",
-        message: `Withdraw is only valid at COMMITTED or CONNECTED stage. Current stage: ${callerStage}`,
+        message: "Both parties must be at CONNECTED stage to send messages",
       },
     };
   }
 
-  const wasConnected = callerStage >= Stage.CONNECTED;
-  const otherToken = side === "a" ? candidate.user_b_token : candidate.user_a_token;
-  const callerCol = side === "a" ? "stage_a" : "stage_b";
-  const otherCol = side === "a" ? "stage_b" : "stage_a";
+  // ── Check relay not blocked by the other party ─────────────────
+  const otherUserToken = otherToken(input.user_token, candidate);
+  const block = ctx.db
+    .prepare(
+      "SELECT 1 FROM relay_blocks WHERE candidate_id = ? AND blocker_token = ?",
+    )
+    .get(input.candidate_id, otherUserToken);
 
-  // ── Atomic: reset stages + create pending action ───────────────
-  const doWithdraw = ctx.db.transaction(() => {
-    // Caller resets to INTERESTED(2)
-    ctx.db
-      .prepare(
-        `UPDATE candidates SET ${callerCol} = ?, updated_at = datetime('now') WHERE id = ?`,
-      )
-      .run(Stage.INTERESTED, input.candidate_id);
-
-    // If was CONNECTED: other party goes back to COMMITTED(3)
-    if (wasConnected) {
-      ctx.db
-        .prepare(
-          `UPDATE candidates SET ${otherCol} = ?, updated_at = datetime('now') WHERE id = ?`,
-        )
-        .run(Stage.COMMITTED, input.candidate_id);
-    }
-
-    // Create pending_action for other party
-    ctx.db
-      .prepare(
-        `INSERT INTO pending_actions (id, user_token, candidate_id, action_type, details, created_at)
-         VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-      )
-      .run(
-        randomUUID(),
-        otherToken,
-        input.candidate_id,
-        "commitment_withdrawn",
-        JSON.stringify({
-          reason: input.reason ?? null,
-          was_connected: wasConnected,
-          their_new_stage: wasConnected ? Stage.COMMITTED : undefined,
-        }),
-      );
-  });
-
-  try {
-    doWithdraw();
-  } catch (err: unknown) {
+  if (block) {
     return {
       ok: false,
-      error: {
-        code: "INTERNAL_ERROR",
-        message: err instanceof Error ? err.message : String(err),
-      },
+      error: { code: "RELAY_BLOCKED", message: "The other party has blocked relay messages" },
     };
   }
 
+  // ── Insert message ─────────────────────────────────────────────
+  const messageId = randomUUID();
+  const sentAt = new Date().toISOString();
+
+  ctx.db
+    .prepare(
+      `INSERT INTO messages (id, candidate_id, sender_token, content, sent_at)
+       VALUES (?, ?, ?, ?, ?)`,
+    )
+    .run(messageId, input.candidate_id, input.user_token, input.content, sentAt);
+
   // ── Build result ───────────────────────────────────────────────
-  const result: WithdrawOutput = {
-    withdrawn: true,
-    your_stage: Stage.INTERESTED,
+  const result: MessageOutput = {
+    message_id: messageId,
+    sent_at: sentAt,
   };
 
   // ── Record idempotency ─────────────────────────────────────────
   if (input.idempotency_key) {
-    recordIdempotency(ctx.db, input.idempotency_key, "withdraw", input.user_token, {
+    recordIdempotency(ctx.db, input.idempotency_key, "message", input.user_token, {
       ok: true,
       data: result,
     });

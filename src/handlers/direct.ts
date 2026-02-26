@@ -5,33 +5,45 @@ import type {
   CandidateRecord,
   UserRecord,
 } from "../types.js";
-import { Stage, callerSide } from "../types.js";
+import { Stage, otherToken } from "../types.js";
 import { checkIdempotency, recordIdempotency } from "../core/funnel.js";
 
 // ─── Input / Output ────────────────────────────────────────────────
 
-export interface WithdrawInput {
+export interface DirectInput {
   user_token: string;
   candidate_id: string;
-  reason?: string;
+  contact_info: string;
   idempotency_key?: string;
 }
 
-export interface WithdrawOutput {
-  withdrawn: true;
-  your_stage: number;
+export interface DirectOutput {
+  shared: true;
+  mutual: boolean;
+  their_contact: string | null;
 }
 
 // ─── Handler ───────────────────────────────────────────────────────
 
-export async function handleWithdraw(
-  input: WithdrawInput,
+export async function handleDirect(
+  input: DirectInput,
   ctx: HandlerContext,
-): Promise<HandlerResult<WithdrawOutput>> {
+): Promise<HandlerResult<DirectOutput>> {
   // ── Idempotency ────────────────────────────────────────────────
   if (input.idempotency_key) {
-    const cached = checkIdempotency<WithdrawOutput>(ctx.db, input.idempotency_key);
+    const cached = checkIdempotency<DirectOutput>(ctx.db, input.idempotency_key);
     if (cached) return cached;
+  }
+
+  // ── Validate contact_info length ───────────────────────────────
+  if (!input.contact_info || input.contact_info.length > 500) {
+    return {
+      ok: false,
+      error: {
+        code: "INVALID_INPUT",
+        message: "Contact info must be between 1 and 500 characters",
+      },
+    };
   }
 
   // ── Verify user exists and is active ──────────────────────────
@@ -82,83 +94,49 @@ export async function handleWithdraw(
     };
   }
 
-  // ── Stage gating: valid at COMMITTED(3) or CONNECTED(4) ───────
-  const side = callerSide(input.user_token, candidate);
-  const callerStage = side === "a" ? candidate.stage_a : candidate.stage_b;
-
-  if (callerStage < Stage.COMMITTED) {
+  // ── Both parties must be at CONNECTED (stage 4) ────────────────
+  if (candidate.stage_a < Stage.CONNECTED || candidate.stage_b < Stage.CONNECTED) {
     return {
       ok: false,
       error: {
         code: "STAGE_VIOLATION",
-        message: `Withdraw is only valid at COMMITTED or CONNECTED stage. Current stage: ${callerStage}`,
+        message: "Both parties must be at CONNECTED stage to share direct contact info",
       },
     };
   }
 
-  const wasConnected = callerStage >= Stage.CONNECTED;
-  const otherToken = side === "a" ? candidate.user_b_token : candidate.user_a_token;
-  const callerCol = side === "a" ? "stage_a" : "stage_b";
-  const otherCol = side === "a" ? "stage_b" : "stage_a";
+  // ── INSERT OR REPLACE caller's contact info ────────────────────
+  const otherUserToken = otherToken(input.user_token, candidate);
 
-  // ── Atomic: reset stages + create pending action ───────────────
-  const doWithdraw = ctx.db.transaction(() => {
-    // Caller resets to INTERESTED(2)
-    ctx.db
-      .prepare(
-        `UPDATE candidates SET ${callerCol} = ?, updated_at = datetime('now') WHERE id = ?`,
-      )
-      .run(Stage.INTERESTED, input.candidate_id);
+  ctx.db
+    .prepare(
+      `INSERT INTO direct_contacts (id, candidate_id, user_token, contact_info, created_at)
+       VALUES (?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(candidate_id, user_token) DO UPDATE SET
+         contact_info = excluded.contact_info,
+         created_at = excluded.created_at`,
+    )
+    .run(randomUUID(), input.candidate_id, input.user_token, input.contact_info);
 
-    // If was CONNECTED: other party goes back to COMMITTED(3)
-    if (wasConnected) {
-      ctx.db
-        .prepare(
-          `UPDATE candidates SET ${otherCol} = ?, updated_at = datetime('now') WHERE id = ?`,
-        )
-        .run(Stage.COMMITTED, input.candidate_id);
-    }
+  // ── Check if the other party also shared contact info ──────────
+  const otherContact = ctx.db
+    .prepare(
+      "SELECT contact_info FROM direct_contacts WHERE candidate_id = ? AND user_token = ?",
+    )
+    .get(input.candidate_id, otherUserToken) as { contact_info: string } | undefined;
 
-    // Create pending_action for other party
-    ctx.db
-      .prepare(
-        `INSERT INTO pending_actions (id, user_token, candidate_id, action_type, details, created_at)
-         VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-      )
-      .run(
-        randomUUID(),
-        otherToken,
-        input.candidate_id,
-        "commitment_withdrawn",
-        JSON.stringify({
-          reason: input.reason ?? null,
-          was_connected: wasConnected,
-          their_new_stage: wasConnected ? Stage.COMMITTED : undefined,
-        }),
-      );
-  });
-
-  try {
-    doWithdraw();
-  } catch (err: unknown) {
-    return {
-      ok: false,
-      error: {
-        code: "INTERNAL_ERROR",
-        message: err instanceof Error ? err.message : String(err),
-      },
-    };
-  }
+  const mutual = !!otherContact;
 
   // ── Build result ───────────────────────────────────────────────
-  const result: WithdrawOutput = {
-    withdrawn: true,
-    your_stage: Stage.INTERESTED,
+  const result: DirectOutput = {
+    shared: true,
+    mutual,
+    their_contact: mutual ? otherContact!.contact_info : null,
   };
 
   // ── Record idempotency ─────────────────────────────────────────
   if (input.idempotency_key) {
-    recordIdempotency(ctx.db, input.idempotency_key, "withdraw", input.user_token, {
+    recordIdempotency(ctx.db, input.idempotency_key, "direct", input.user_token, {
       ok: true,
       data: result,
     });

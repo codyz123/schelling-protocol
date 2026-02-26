@@ -1,262 +1,446 @@
-import { beforeEach, describe, expect, test } from "bun:test";
+import { describe, expect, test, beforeEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { initSchema } from "../src/db/schema.js";
 import type { HandlerContext } from "../src/types.js";
-import { handleListVerticals } from "../src/handlers/list-verticals.js";
-import { handleOnboard } from "../src/handlers/onboard.js";
-import { handleServerInfo } from "../src/handlers/server-info.js";
+import { Stage } from "../src/types.js";
 import { handleRegister } from "../src/handlers/register.js";
-import { initVerticalRegistry } from "../src/verticals/registry.js";
+import { handleSearch } from "../src/handlers/search.js";
+import { handleInterest } from "../src/handlers/interest.js";
+import { handleCommit } from "../src/handlers/commit.js";
+import { handleDescribe } from "../src/handlers/describe.js";
+import { handleServerInfo } from "../src/handlers/server-info.js";
+import { handleOnboard } from "../src/handlers/onboard.js";
+import { handleClusters, handleClusterInfo } from "../src/handlers/clusters.js";
+import { handleExport } from "../src/handlers/export.js";
+import { handleDeleteAccount } from "../src/handlers/delete-account.js";
 
-describe("Phase 5: Discovery, Onboarding & Observability", () => {
-  let db: Database;
-  let ctx: HandlerContext;
+let db: Database;
+let ctx: HandlerContext;
 
-  beforeEach(() => {
-    db = new Database(":memory:");
-    initSchema(db);
-    initVerticalRegistry(); // Initialize the vertical registry
-    ctx = { db };
+beforeEach(() => {
+  db = new Database(":memory:");
+  initSchema(db);
+  ctx = { db };
+});
+
+async function registerUser(overrides = {}) {
+  const result = await handleRegister({
+    protocol_version: "3.0",
+    cluster_id: "dating.general",
+    traits: [
+      { key: "city", value: "San Francisco", value_type: "string", visibility: "public" },
+      { key: "age", value: 30, value_type: "number", visibility: "after_interest" },
+      { key: "name", value: "Test User", value_type: "string", visibility: "after_connect" },
+    ],
+    preferences: [
+      { trait_key: "city", operator: "eq", value: "San Francisco", weight: 0.5 },
+    ],
+    identity: { name: "Test User", contact: "test@example.com" },
+    ...overrides,
+  } as any, ctx);
+  if (!result.ok) throw new Error(result.error.message);
+  return result.data.user_token;
+}
+
+async function connectUsers(tokenA: string, tokenB: string) {
+  const searchA = await handleSearch({ user_token: tokenA }, ctx);
+  if (!searchA.ok) throw new Error(searchA.error.message);
+  await handleSearch({ user_token: tokenB }, ctx);
+  const candidateId = searchA.data.candidates[0].candidate_id;
+  await handleInterest({ user_token: tokenA, candidate_id: candidateId }, ctx);
+  await handleInterest({ user_token: tokenB, candidate_id: candidateId }, ctx);
+  await handleCommit({ user_token: tokenA, candidate_id: candidateId }, ctx);
+  await handleCommit({ user_token: tokenB, candidate_id: candidateId }, ctx);
+  return candidateId;
+}
+
+// ===========================================================================
+// Discovery Tests
+// ===========================================================================
+
+describe("discovery: handleDescribe", () => {
+  test("returns protocol info with correct version 3.0", async () => {
+    const result = await handleDescribe({} as any, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+
+    const data = result.data;
+
+    // Protocol metadata
+    expect(data.protocol.name).toBe("Schelling Protocol");
+    expect(data.protocol.version).toBe("3.0");
+    expect(data.protocol.purpose).toBeTruthy();
+    expect(data.protocol.how_it_works).toBeTruthy();
+
+    // Key concepts should exist
+    expect(data.protocol.key_concepts.trait).toBeTruthy();
+    expect(data.protocol.key_concepts.preference).toBeTruthy();
+    expect(data.protocol.key_concepts.cluster).toBeTruthy();
+    expect(data.protocol.key_concepts.funnel).toBeTruthy();
+    expect(data.protocol.key_concepts.funnel_modes).toBeTruthy();
+
+    // Getting started
+    expect(data.getting_started.steps).toBeInstanceOf(Array);
+    expect(data.getting_started.steps.length).toBeGreaterThan(0);
+    expect(data.getting_started.zero_config).toBeTruthy();
+
+    // Capabilities
+    expect(data.capabilities.natural_language).toBe(true);
+    expect(data.capabilities.funnel_modes).toContain("bilateral");
+    expect(data.capabilities.funnel_modes).toContain("broadcast");
+    expect(data.capabilities.funnel_modes).toContain("group");
+    expect(data.capabilities.funnel_modes).toContain("auction");
+
+    // Server info
+    expect(data.server.name).toBeTruthy();
+    expect(data.server.version).toBeTruthy();
+
+    // Clusters and tools sections exist
+    expect(data.clusters).toBeDefined();
+    expect(data.tools).toBeDefined();
+  });
+});
+
+describe("discovery: handleServerInfo", () => {
+  test("returns server info with correct protocol version and capabilities", async () => {
+    // Register a couple of users to populate the database
+    await registerUser();
+    await registerUser();
+
+    const result = await handleServerInfo({} as any, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+
+    const data = result.data;
+
+    expect(data.protocol_version).toBe("3.0");
+    expect(data.server_name).toBeTruthy();
+    expect(data.server_version).toBeTruthy();
+
+    // Cluster count should include the dating.general cluster
+    expect(data.cluster_count).toBeGreaterThanOrEqual(1);
+
+    // Capabilities
+    expect(data.capabilities.natural_language).toBe(true);
+    expect(data.capabilities.funnel_modes).toContain("bilateral");
+    expect(data.capabilities.disputes).toBe(true);
+    expect(data.capabilities.reputation).toBe(true);
+    expect(data.capabilities.verification).toBe(true);
+    expect(data.capabilities.data_export).toBe(true);
+
+    // Rate limits
+    expect(data.rate_limits.register_per_day).toBeGreaterThan(0);
+    expect(data.rate_limits.search_per_hour).toBeGreaterThan(0);
+  });
+});
+
+describe("discovery: handleOnboard", () => {
+  test("returns onboarding template for a natural language description", async () => {
+    const result = await handleOnboard({
+      natural_language: "I'm looking for a romantic partner in San Francisco",
+    }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+
+    const data = result.data;
+
+    // Should suggest a dating cluster
+    expect(data.suggested_cluster).toBeDefined();
+    expect(data.suggested_cluster.cluster_id).toBeTruthy();
+    expect(data.suggested_cluster.confidence).toBeGreaterThan(0);
+
+    // Should have a registration template
+    expect(data.registration_template).toBeDefined();
+    expect(data.registration_template.protocol_version).toBe("3.0");
+    expect(data.registration_template.cluster_id).toBeTruthy();
+
+    // Parsed traits should include extracted info
+    expect(data.parsed_traits).toBeInstanceOf(Array);
   });
 
-  describe("schelling.verticals", () => {
-    test("returns correct vertical list with stats", async () => {
-      // Register a user in matchmaking to test live stats
-      const registerResult = await handleRegister(
-        {
-          protocol_version: "schelling-2.0",
-          vertical_id: "matchmaking",
-          embedding: Array(50).fill(0.1),
-          city: "San Francisco",
-          age_range: "25-34",
-          intent: ["romance"],
-        },
-        ctx
-      );
-      expect(registerResult.ok).toBe(true);
+  test("returns a template with cluster_hint", async () => {
+    // First register a user to create the cluster in the DB
+    await registerUser({ cluster_id: "dating.general" });
 
-      const result = await handleListVerticals({}, ctx);
-      expect(result.ok).toBe(true);
-      
-      const data = result.data!;
-      expect(data.protocol_version).toBe("schelling-2.0");
-      expect(Array.isArray(data.verticals)).toBe(true);
-      expect(data.verticals.length).toBeGreaterThan(0);
+    const result = await handleOnboard({
+      natural_language: "I want to find someone to date",
+      cluster_hint: "dating.general",
+    }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
 
-      // Check matchmaking vertical exists with expected structure
-      const matchmaking = data.verticals.find(v => v.id === "matchmaking");
-      expect(matchmaking).toBeDefined();
-      expect(matchmaking!.display_name).toBe("Romantic Matchmaking");
-      expect(matchmaking!.description).toContain("personality embedding");
-      expect(matchmaking!.version).toBe("2.0");
-      expect(Array.isArray(matchmaking!.roles)).toBe(true);
-      expect(matchmaking!.roles.length).toBeGreaterThan(0);
-      expect(matchmaking!.user_count).toBe(1); // We registered one user
-      expect(typeof matchmaking!.active_candidates).toBe("number");
-
-      // Check marketplace vertical exists
-      const marketplace = data.verticals.find(v => v.id === "marketplace");
-      expect(marketplace).toBeDefined();
-      expect(marketplace!.display_name).toBe("Buy/Sell Marketplace");
-      expect(marketplace!.roles.length).toBe(2); // seller, buyer
-    });
+    // When cluster_hint is provided and exists, it should be the primary suggestion
+    expect(result.data.suggested_cluster.cluster_id).toBe("dating.general");
+    expect(result.data.suggested_cluster.confidence).toBeGreaterThanOrEqual(0.9);
   });
 
-  describe("schelling.onboard", () => {
-    test("returns collection guide for matchmaking", async () => {
-      const result = await handleOnboard({ vertical_id: "matchmaking" }, ctx);
-      expect(result.ok).toBe(true);
+  test("rejects empty natural_language input", async () => {
+    const result = await handleOnboard({ natural_language: "" }, ctx);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error.code).toBe("INVALID_INPUT");
+  });
+});
 
-      const data = result.data!;
-      expect(data.vertical_id).toBe("matchmaking");
-      expect(data.vertical_name).toBe("Romantic Matchmaking");
-      expect(Array.isArray(data.required_fields)).toBe(true);
-      expect(data.required_fields).toContain("embedding");
-      expect(data.required_fields).toContain("city");
-      expect(Array.isArray(data.optional_fields)).toBe(true);
-      expect(data.collection_strategies).toBeDefined();
-      expect(data.collection_strategies.embedding_generation).toBeDefined();
-      expect(data.collection_strategies.embedding_generation.minimum_hours).toBe(10);
-      expect(Array.isArray(data.red_flags)).toBe(true);
-      expect(data.red_flags).toContain("user_requests_embedding_manipulation");
-      expect(data.minimum_interaction_hours).toBe(10);
-      expect(data.roles).toBeDefined();
-    });
+describe("discovery: handleClusters", () => {
+  test("lists clusters after registering users", async () => {
+    await registerUser({ cluster_id: "dating.general" });
+    await registerUser({ cluster_id: "hiring.engineering" });
 
-    test("returns collection guide for marketplace", async () => {
-      const result = await handleOnboard({ vertical_id: "marketplace" }, ctx);
-      expect(result.ok).toBe(true);
+    const result = await handleClusters({}, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
 
-      const data = result.data!;
-      expect(data.vertical_id).toBe("marketplace");
-      expect(data.vertical_name).toBe("Buy/Sell Marketplace");
-      expect(data.collection_strategies).toBeDefined();
-      expect(data.collection_strategies.seller_onboarding).toBeDefined();
-      expect(data.collection_strategies.buyer_onboarding).toBeDefined();
-      expect(data.collection_strategies.seller_onboarding.photo_requirements).toBeDefined();
-      expect(Array.isArray(data.red_flags)).toBe(true);
-      expect(data.red_flags).toContain("unrealistic_item_descriptions");
-      expect(data.roles).toBeDefined();
-    });
+    expect(result.data.clusters.length).toBeGreaterThanOrEqual(2);
+    expect(result.data.total).toBeGreaterThanOrEqual(2);
 
-    test("handles invalid vertical_id", async () => {
-      const result = await handleOnboard({ vertical_id: "nonexistent" }, ctx);
-      expect(result.ok).toBe(false);
-      expect(result.error!.code).toBe("INVALID_INPUT");
-      expect(result.error!.message).toContain("Unknown vertical_id");
-    });
-
-    test("handles missing vertical_id", async () => {
-      const result = await handleOnboard({} as any, ctx);
-      expect(result.ok).toBe(false);
-      expect(result.error!.code).toBe("INVALID_INPUT");
-      expect(result.error!.message).toContain("vertical_id is required");
-    });
+    const clusterIds = result.data.clusters.map((c) => c.cluster_id);
+    expect(clusterIds).toContain("dating.general");
+    expect(clusterIds).toContain("hiring.engineering");
   });
 
-  describe("schelling.server_info", () => {
-    test("returns correct server metadata", async () => {
-      // Register some test data to get non-zero stats
-      await handleRegister(
-        {
-          protocol_version: "schelling-2.0",
-          vertical_id: "matchmaking",
-          embedding: Array(50).fill(0.1),
-          city: "San Francisco",
-          age_range: "25-34",
-          intent: ["romance"],
-        },
-        ctx
-      );
+  test("returns empty list on fresh database", async () => {
+    const result = await handleClusters({}, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.data.clusters.length).toBe(0);
+    expect(result.data.total).toBe(0);
+  });
+});
 
-      const result = await handleServerInfo({}, ctx);
-      expect(result.ok).toBe(true);
+describe("discovery: handleClusterInfo", () => {
+  test("returns correct population and settings for a cluster", async () => {
+    await registerUser({ cluster_id: "dating.general" });
+    await registerUser({ cluster_id: "dating.general" });
 
-      const data = result.data!;
-      expect(data.protocol_version).toBe("schelling-2.0");
-      expect(data.server_version).toBe("2.0.0-phase5");
-      expect(Array.isArray(data.supported_verticals)).toBe(true);
-      expect(data.supported_verticals).toContain("matchmaking");
-      expect(data.supported_verticals).toContain("marketplace");
-      expect(typeof data.total_users).toBe("number");
-      expect(data.total_users).toBeGreaterThanOrEqual(1);
-      expect(typeof data.total_candidates).toBe("number");
-      expect(typeof data.uptime_seconds).toBe("number");
-      expect(data.uptime_seconds).toBeGreaterThanOrEqual(0);
-      expect(Array.isArray(data.capabilities)).toBe(true);
-      expect(data.capabilities).toContain("MCP");
-      expect(data.capabilities).toContain("REST");
-      expect(data.capabilities).toContain("progressive_disclosure");
-      expect(data.capabilities).toContain("reputation_system");
-      expect(data.server_name).toBe("Schelling Protocol Node");
-      expect(data.federation_enabled).toBe(false);
-      expect(typeof data.rate_limits).toBe("object");
-      expect(typeof data.rate_limits.search).toBe("number");
-    });
+    const result = await handleClusterInfo({ cluster_id: "dating.general" }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+
+    const data = result.data;
+    expect(data.cluster_id).toBe("dating.general");
+    expect(data.population).toBe(2);
+    expect(data.phase).toBeTruthy();
+    expect(data.display_name).toBeTruthy();
+
+    // Settings
+    expect(typeof data.settings.symmetric).toBe("boolean");
+    expect(typeof data.settings.age_restricted).toBe("boolean");
+    expect(data.settings.default_funnel_mode).toBe("bilateral");
+
+    // Suggested traits should be populated from registrations
+    expect(data.suggested_traits.length).toBeGreaterThan(0);
+    const traitKeys = data.suggested_traits.map((t) => t.trait_key);
+    expect(traitKeys).toContain("city");
   });
 
-  describe("REST API equivalence", () => {
-    test("REST endpoints would return same results as MCP operations", async () => {
-      // This is a placeholder for REST API testing
-      // In a full test, we would start the REST server and make HTTP requests
-      // to verify that the responses match the MCP responses
-      
-      // For now, we just verify that the handlers work consistently
-      const verticalsResult = await handleListVerticals({}, ctx);
-      const onboardResult = await handleOnboard({ vertical_id: "matchmaking" }, ctx);
-      const serverInfoResult = await handleServerInfo({}, ctx);
+  test("returns error for unknown cluster", async () => {
+    const result = await handleClusterInfo({ cluster_id: "nonexistent.cluster" }, ctx);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error.code).toBe("UNKNOWN_CLUSTER");
+  });
+});
 
-      expect(verticalsResult.ok).toBe(true);
-      expect(onboardResult.ok).toBe(true);
-      expect(serverInfoResult.ok).toBe(true);
+// ===========================================================================
+// Privacy Tests
+// ===========================================================================
 
-      // The REST transport should return the same data structure
-      // just wrapped in HTTP responses with appropriate status codes
-      expect(verticalsResult.data).toBeDefined();
-      expect(onboardResult.data).toBeDefined();
-      expect(serverInfoResult.data).toBeDefined();
+describe("privacy: handleExport", () => {
+  test("exports all user data including profile, candidates, traits, preferences", async () => {
+    const tokenA = await registerUser({
+      identity: { name: "Alice", contact: "alice@example.com" },
     });
+    const tokenB = await registerUser({
+      identity: { name: "Bob", contact: "bob@example.com" },
+    });
+
+    // Create candidates by searching + expressing interest
+    const searchA = await handleSearch({ user_token: tokenA }, ctx);
+    if (!searchA.ok) throw new Error(searchA.error.message);
+    const candidateId = searchA.data.candidates[0].candidate_id;
+    await handleSearch({ user_token: tokenB }, ctx);
+    await handleInterest({ user_token: tokenA, candidate_id: candidateId }, ctx);
+
+    // Export A's data
+    const result = await handleExport({ user_token: tokenA }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+
+    const data = result.data;
+
+    // Profile
+    expect(data.profile.user).toBeDefined();
+    expect(data.profile.user.user_token).toBe(tokenA);
+    expect(data.profile.traits).toBeInstanceOf(Array);
+    expect(data.profile.traits.length).toBeGreaterThan(0);
+    expect(data.profile.preferences).toBeInstanceOf(Array);
+    expect(data.profile.preferences.length).toBeGreaterThan(0);
+
+    // Candidates
+    expect(data.candidates).toBeInstanceOf(Array);
+    expect(data.candidates.length).toBeGreaterThanOrEqual(1);
+
+    // Other arrays should be present (may be empty)
+    expect(data.messages).toBeInstanceOf(Array);
+    expect(data.inquiries).toBeInstanceOf(Array);
+    expect(data.contracts).toBeInstanceOf(Array);
+    expect(data.deliveries).toBeInstanceOf(Array);
+    expect(data.events).toBeInstanceOf(Array);
+    expect(data.subscriptions).toBeInstanceOf(Array);
+
+    // Reputation
+    expect(data.reputation).toBeDefined();
+    expect(typeof data.reputation.score).toBe("number");
+    expect(data.reputation.events).toBeInstanceOf(Array);
+
+    // Enforcement and verification arrays
+    expect(data.enforcement).toBeInstanceOf(Array);
+    expect(data.verification).toBeInstanceOf(Array);
+
+    // Timestamp
+    expect(data.exported_at).toBeTruthy();
   });
 
-  describe("Logger functionality", () => {
-    test("logger produces valid JSON", () => {
-      // Mock console.log to capture output
-      const originalLog = console.log;
-      let capturedLog = "";
-      
-      console.log = (message: string) => {
-        capturedLog = message;
-      };
+  test("export for new user returns empty arrays for optional data", async () => {
+    const token = await registerUser();
 
-      try {
-        // Use the logger directly
-        const { logger } = require("../src/core/logger.js");
-        logger.logOperation(
-          "test_operation",
-          123.45,
-          "ok",
-          "test_token_12345",
-          "matchmaking",
-          { test_field: "test_value", user_count: 42 }
-        );
+    const result = await handleExport({ user_token: token }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
 
-        // Verify it's valid JSON
-        expect(() => JSON.parse(capturedLog)).not.toThrow();
-        
-        const parsed = JSON.parse(capturedLog);
-        expect(parsed.operation).toBe("test_operation");
-        expect(parsed.latency_ms).toBe(123.45);
-        expect(parsed.result).toBe("ok");
-        expect(parsed.vertical).toBe("matchmaking");
-        expect(parsed.identity_hash).toBeDefined();
-        expect(parsed.identity_hash.length).toBe(16); // First 16 chars of SHA256
-        expect(parsed.timestamp).toBeDefined();
-        expect(parsed.metadata).toBeDefined();
-        expect(parsed.metadata.user_count).toBe(42);
-        
-        // Ensure no PII leaked through
-        expect(capturedLog).not.toContain("test_token_12345");
-      } finally {
-        console.log = originalLog;
-      }
+    const data = result.data;
+
+    // User profile should exist
+    expect(data.profile.user).toBeDefined();
+    expect(data.profile.traits.length).toBeGreaterThan(0); // traits from registration
+
+    // No candidates, messages, etc. for a fresh user
+    expect(data.candidates.length).toBe(0);
+    expect(data.messages.length).toBe(0);
+    expect(data.inquiries.length).toBe(0);
+    expect(data.contracts.length).toBe(0);
+    expect(data.deliveries.length).toBe(0);
+    expect(data.events.length).toBe(0);
+    expect(data.subscriptions.length).toBe(0);
+    expect(data.reputation.events.length).toBe(0);
+  });
+});
+
+describe("privacy: handleDeleteAccount", () => {
+  test("requires correct confirmation string", async () => {
+    const token = await registerUser();
+
+    const result = await handleDeleteAccount({
+      user_token: token,
+      confirmation: "wrong_string",
+    }, ctx);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error.code).toBe("CONFIRMATION_REQUIRED");
+  });
+
+  test("successfully deletes account with correct confirmation", async () => {
+    const tokenA = await registerUser({
+      identity: { name: "Alice", contact: "alice@example.com" },
+    });
+    const tokenB = await registerUser({
+      identity: { name: "Bob", contact: "bob@example.com" },
     });
 
-    test("logger scrubs PII from metadata", () => {
-      const originalLog = console.log;
-      let capturedLog = "";
-      
-      console.log = (message: string) => {
-        capturedLog = message;
-      };
+    // Create a candidate pair via search
+    await handleSearch({ user_token: tokenA }, ctx);
+    await handleSearch({ user_token: tokenB }, ctx);
 
-      try {
-        const { logger } = require("../src/core/logger.js");
-        logger.logOperation(
-          "test_operation",
-          100,
-          "ok",
-          undefined,
-          "matchmaking",
-          {
-            name: "John Doe", // Should be scrubbed
-            email: "john@example.com", // Should be scrubbed
-            user_count: 42, // Should be kept
-            operation_id: "op123", // Should be kept
-            stage: 2, // Should be kept
-            compatibility_score: 0.85 // Should be kept
-          }
-        );
+    const result = await handleDeleteAccount({
+      user_token: tokenA,
+      confirmation: "PERMANENTLY_DELETE",
+    }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
 
-        const parsed = JSON.parse(capturedLog);
-        expect(parsed.metadata.name).toBeUndefined();
-        expect(parsed.metadata.email).toBeUndefined();
-        expect(parsed.metadata.user_count).toBe(42);
-        expect(parsed.metadata.operation_id).toBe("op123");
-        expect(parsed.metadata.stage).toBe(2);
-        expect(parsed.metadata.compatibility_score).toBe(0.85);
-      } finally {
-        console.log = originalLog;
-      }
+    const data = result.data;
+    expect(data.deleted).toBe(true);
+    expect(data.deleted_at).toBeTruthy();
+    expect(data.cascade_summary).toBeDefined();
+    expect(typeof data.cascade_summary.profiles).toBe("number");
+    expect(typeof data.cascade_summary.candidates).toBe("number");
+    expect(typeof data.cascade_summary.messages).toBe("number");
+  });
+
+  test("clears all data after deletion", async () => {
+    const tokenA = await registerUser({
+      identity: { name: "Alice", contact: "alice@example.com" },
     });
+    const tokenB = await registerUser({
+      identity: { name: "Bob", contact: "bob@example.com" },
+    });
+
+    // Build up data: search, interest, connect
+    const candidateId = await connectUsers(tokenA, tokenB);
+
+    // Verify data exists before deletion
+    const userBefore = db
+      .prepare("SELECT 1 FROM users WHERE user_token = ?")
+      .get(tokenA);
+    expect(userBefore).toBeDefined();
+
+    const traitsBefore = db
+      .prepare("SELECT COUNT(*) as count FROM traits WHERE user_token = ?")
+      .get(tokenA) as { count: number };
+    expect(traitsBefore.count).toBeGreaterThan(0);
+
+    const candidatesBefore = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM candidates WHERE user_a_token = ? OR user_b_token = ?",
+      )
+      .get(tokenA, tokenA) as { count: number };
+    expect(candidatesBefore.count).toBeGreaterThan(0);
+
+    // Delete account
+    const deleteResult = await handleDeleteAccount({
+      user_token: tokenA,
+      confirmation: "PERMANENTLY_DELETE",
+    }, ctx);
+    expect(deleteResult.ok).toBe(true);
+
+    // Verify cascade_summary counts
+    if (!deleteResult.ok) throw new Error("unreachable");
+    expect(deleteResult.data.cascade_summary.candidates).toBeGreaterThan(0);
+    expect(deleteResult.data.cascade_summary.profiles).toBeGreaterThan(0);
+
+    // Verify data is gone
+    const userAfter = db
+      .prepare("SELECT 1 FROM users WHERE user_token = ?")
+      .get(tokenA);
+    expect(userAfter).toBeNull();
+
+    const traitsAfter = db
+      .prepare("SELECT COUNT(*) as count FROM traits WHERE user_token = ?")
+      .get(tokenA) as { count: number };
+    expect(traitsAfter.count).toBe(0);
+
+    const candidatesAfter = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM candidates WHERE user_a_token = ? OR user_b_token = ?",
+      )
+      .get(tokenA, tokenA) as { count: number };
+    expect(candidatesAfter.count).toBe(0);
+
+    // Preferences gone
+    const prefsAfter = db
+      .prepare("SELECT COUNT(*) as count FROM preferences WHERE user_token = ?")
+      .get(tokenA) as { count: number };
+    expect(prefsAfter.count).toBe(0);
+  });
+
+  test("returns USER_NOT_FOUND for nonexistent user", async () => {
+    const result = await handleDeleteAccount({
+      user_token: "nonexistent-token",
+      confirmation: "PERMANENTLY_DELETE",
+    }, ctx);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error.code).toBe("USER_NOT_FOUND");
   });
 });

@@ -1,299 +1,358 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { initSchema } from "../src/db/schema.js";
+import type { HandlerContext } from "../src/types.js";
+import { Stage } from "../src/types.js";
 import { handleRegister } from "../src/handlers/register.js";
 import { handleSearch } from "../src/handlers/search.js";
-import { handleCompare } from "../src/handlers/compare.js";
-import { handleRequestProfile } from "../src/handlers/request-profile.js";
-import { handlePropose } from "../src/handlers/propose.js";
+import { handleInterest } from "../src/handlers/interest.js";
+import { handleCommit } from "../src/handlers/commit.js";
+import { handleConnections } from "../src/handlers/connections.js";
+import { handleReport } from "../src/handlers/report.js";
 import { handleDecline } from "../src/handlers/decline.js";
-import { handleGetIntroductions } from "../src/handlers/get-introductions.js";
-import { handleReportOutcome } from "../src/handlers/report-outcome.js";
-import type { HandlerContext } from "../src/types.js";
-import { DIMENSION_COUNT } from "../src/types.js";
-import { initVerticalRegistry } from "../src/verticals/registry.js";
 
+let db: Database;
 let ctx: HandlerContext;
 
 beforeEach(() => {
-  const db = new Database(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
+  db = new Database(":memory:");
   initSchema(db);
-  initVerticalRegistry(); // Initialize the vertical registry for tests
   ctx = { db };
 });
 
-// Similar embeddings for A and B, dissimilar for C
-const embeddingA = new Array(DIMENSION_COUNT).fill(0).map((_, i) => {
-  return Math.max(-1, Math.min(1, 0.5 + Math.sin(i) * 0.3));
-});
+async function registerUser(overrides = {}) {
+  const result = await handleRegister({
+    protocol_version: "3.0",
+    cluster_id: "dating.general",
+    traits: [
+      { key: "city", value: "San Francisco", value_type: "string", visibility: "public" },
+      { key: "age", value: 30, value_type: "number", visibility: "after_interest" },
+      { key: "name", value: "Test User", value_type: "string", visibility: "after_connect" },
+    ],
+    preferences: [
+      { trait_key: "city", operator: "eq", value: "San Francisco", weight: 0.5 },
+    ],
+    identity: { name: "Test User", contact: "test@example.com" },
+    ...overrides,
+  } as any, ctx);
+  if (!result.ok) throw new Error(result.error.message);
+  return result.data.user_token;
+}
 
-const embeddingB = new Array(DIMENSION_COUNT).fill(0).map((_, i) => {
-  return Math.max(-1, Math.min(1, 0.5 + Math.sin(i) * 0.25));
-});
+async function connectUsers(tokenA: string, tokenB: string) {
+  const searchA = await handleSearch({ user_token: tokenA }, ctx);
+  if (!searchA.ok) throw new Error(searchA.error.message);
+  await handleSearch({ user_token: tokenB }, ctx);
+  const candidateId = searchA.data.candidates[0].candidate_id;
+  await handleInterest({ user_token: tokenA, candidate_id: candidateId }, ctx);
+  await handleInterest({ user_token: tokenB, candidate_id: candidateId }, ctx);
+  await handleCommit({ user_token: tokenA, candidate_id: candidateId }, ctx);
+  await handleCommit({ user_token: tokenB, candidate_id: candidateId }, ctx);
+  return candidateId;
+}
 
-const embeddingC = new Array(DIMENSION_COUNT).fill(0).map((_, i) => {
-  return Math.max(-1, Math.min(1, -0.5 + Math.cos(i) * 0.3));
-});
+// ---------------------------------------------------------------------------
+// Full Lifecycle
+// ---------------------------------------------------------------------------
 
-describe("full funnel integration", () => {
-  test("complete flow: register → search → compare → profile → propose → introduce → report", async () => {
-    // 1. Register user A
-    const regA = await handleRegister(
-      {
-        protocol_version: "schelling-2.0",
-        embedding: embeddingA,
-        city: "San Francisco",
-        age_range: "25-34",
-        intent: ["romance"],
-        interests: ["rock climbing", "functional programming", "cooking"],
-        values_text: "intellectual honesty, autonomy",
-        description: "A deeply curious person who loves exploring ideas",
-        seeking: "Looking for someone who challenges me intellectually",
-        identity: { name: "Alice", contact: "alice@example.com" },
-      },
-      ctx
-    );
-    expect(regA.ok).toBe(true);
-    const tokenA = regA.ok ? regA.data.user_token : "";
-
-    // 2. Register user B (similar)
-    const regB = await handleRegister(
-      {
-        protocol_version: "schelling-2.0",
-        embedding: embeddingB,
-        city: "San Francisco",
-        age_range: "25-34",
-        intent: ["romance", "friends"],
-        interests: ["rock climbing", "functional programming", "japanese cuisine"],
-        values_text: "curiosity, depth over breadth",
-        description: "Thoughtful engineer who values deep conversation",
-        seeking: "Someone equally passionate about ideas",
-        identity: { name: "Bob", contact: "bob@example.com" },
-      },
-      ctx
-    );
-    expect(regB.ok).toBe(true);
-    const tokenB = regB.ok ? regB.data.user_token : "";
-
-    // 3. Register user C (dissimilar)
-    const regC = await handleRegister(
-      {
-        protocol_version: "schelling-2.0",
-        embedding: embeddingC,
-        city: "New York",
-        age_range: "35-44",
-        intent: ["collaborators"],
-        interests: ["sales", "golf"],
-        description: "Business-focused person",
-        seeking: "Business partners",
-        identity: { name: "Charlie", contact: "charlie@example.com" },
-      },
-      ctx
-    );
-    expect(regC.ok).toBe(true);
-    const tokenC = regC.ok ? regC.data.user_token : "";
-
-    // 4. A searches → finds B as top match
-    const searchA = await handleSearch(
-      { user_token: tokenA, threshold: 0.3 },
-      ctx
-    );
-    expect(searchA.ok).toBe(true);
-    if (!searchA.ok) return;
-
-    const bCandidate = searchA.data.candidates.find((c) => {
-      // B should be the highest scoring
-      return true;
+describe("v3 integration: full lifecycle", () => {
+  test("complete flow: register -> search -> interest -> commit -> connected -> report -> re-register", async () => {
+    // ── 1. Register user A ─────────────────────────────────────────
+    const tokenA = await registerUser({
+      identity: { name: "Alice", contact: "alice@example.com" },
     });
-    expect(bCandidate).toBeDefined();
-    const bCandidateId = bCandidate!.candidate_id;
+    expect(tokenA).toBeTruthy();
 
-    // Find C's candidate if present
-    const cCandidate = searchA.data.candidates.find(
-      (c) => c.candidate_id !== bCandidateId
-    );
+    // ── 2. Register user B (same cluster) ──────────────────────────
+    const tokenB = await registerUser({
+      identity: { name: "Bob", contact: "bob@example.com" },
+      traits: [
+        { key: "city", value: "San Francisco", value_type: "string", visibility: "public" },
+        { key: "age", value: 28, value_type: "number", visibility: "after_interest" },
+        { key: "name", value: "Bob", value_type: "string", visibility: "after_connect" },
+      ],
+    });
+    expect(tokenB).toBeTruthy();
 
-    // 5. A compares B → gets breakdown with shared interests
-    const compareA = await handleCompare(
-      { user_token: tokenA, candidate_ids: [bCandidateId] },
-      ctx
-    );
-    expect(compareA.ok).toBe(true);
-    if (compareA.ok) {
-      expect(compareA.data.comparisons[0].shared_interests).toContain(
-        "rock climbing"
-      );
-      expect(compareA.data.comparisons[0].shared_interests).toContain(
-        "functional programming"
-      );
-    }
+    // ── 3. Register user C (different cluster) ─────────────────────
+    const tokenC = await registerUser({
+      cluster_id: "hiring.engineering",
+      identity: { name: "Charlie", contact: "charlie@example.com" },
+      traits: [
+        { key: "city", value: "New York", value_type: "string", visibility: "public" },
+      ],
+      preferences: [],
+    });
+    expect(tokenC).toBeTruthy();
 
-    // 6. A declines C (if C appeared in results)
-    if (cCandidate) {
-      const declineC = await handleDecline(
-        { user_token: tokenA, candidate_id: cCandidate.candidate_id, reason: "incompatible" },
-        ctx
-      );
-      expect(declineC.ok).toBe(true);
-    }
+    // ── 4. A searches -> finds B but NOT C ─────────────────────────
+    const searchA = await handleSearch({ user_token: tokenA }, ctx);
+    expect(searchA.ok).toBe(true);
+    if (!searchA.ok) throw new Error("unreachable");
 
-    // 7. B searches → finds A
-    const searchB = await handleSearch(
-      { user_token: tokenB, threshold: 0.3 },
-      ctx
-    );
+    const candidateTokens = searchA.data.candidates.map((c) => c.candidate_id);
+    expect(searchA.data.candidates.length).toBeGreaterThanOrEqual(1);
+
+    // Verify C is not among the candidates (different cluster)
+    // C's user_token should not appear in any candidate pair
+    const allPairsForA = db
+      .prepare("SELECT * FROM candidates WHERE user_a_token = ? OR user_b_token = ?")
+      .all(tokenA, tokenA) as any[];
+    const pairedTokensForA = allPairsForA.flatMap((c: any) => [c.user_a_token, c.user_b_token]);
+    expect(pairedTokensForA).not.toContain(tokenC);
+
+    // ── 5. B searches -> finds A ───────────────────────────────────
+    const searchB = await handleSearch({ user_token: tokenB }, ctx);
     expect(searchB.ok).toBe(true);
-    if (!searchB.ok) return;
-    expect(searchB.data.candidates.length).toBeGreaterThan(0);
+    if (!searchB.ok) throw new Error("unreachable");
+    expect(searchB.data.candidates.length).toBeGreaterThanOrEqual(1);
 
-    // 8. B compares A → mutual tier-2 established
-    const compareB = await handleCompare(
-      { user_token: tokenB, candidate_ids: [bCandidateId] },
-      ctx
-    );
-    expect(compareB.ok).toBe(true);
+    // ── 6. A expresses interest -> not yet mutual ──────────────────
+    const candidateId = searchA.data.candidates[0].candidate_id;
 
-    // 9. A requests B's profile → status "available"
-    const profileA = await handleRequestProfile(
-      { user_token: tokenA, candidate_id: bCandidateId },
-      ctx
-    );
-    expect(profileA.ok).toBe(true);
-    if (profileA.ok) {
-      expect(profileA.data.status).toBe("available");
-      if (profileA.data.status === "available") {
-        expect(profileA.data.profile.description).toBe(
-          "Thoughtful engineer who values deep conversation"
-        );
-        expect(profileA.data.profile.seeking).toBe(
-          "Someone equally passionate about ideas"
-        );
-      }
-    }
+    const interestA = await handleInterest({
+      user_token: tokenA,
+      candidate_id: candidateId,
+    }, ctx);
+    expect(interestA.ok).toBe(true);
+    if (!interestA.ok) throw new Error("unreachable");
+    expect(interestA.data.mutual_interest).toBe(false);
+    expect(interestA.data.your_stage).toBe(Stage.INTERESTED);
 
-    // 10. A proposes B → status "pending"
-    const proposeA = await handlePropose(
-      { user_token: tokenA, candidate_id: bCandidateId },
-      ctx
-    );
-    expect(proposeA.ok).toBe(true);
-    if (proposeA.ok) {
-      expect(proposeA.data.status).toBe("pending");
-    }
+    // ── 7. B expresses interest -> mutual interest ─────────────────
+    const interestB = await handleInterest({
+      user_token: tokenB,
+      candidate_id: candidateId,
+    }, ctx);
+    expect(interestB.ok).toBe(true);
+    if (!interestB.ok) throw new Error("unreachable");
+    expect(interestB.data.mutual_interest).toBe(true);
+    // After mutual interest, after_interest traits are newly visible
+    expect(interestB.data.newly_visible_traits.length).toBeGreaterThan(0);
+    // The "age" trait (after_interest) should now be visible
+    const ageTrait = interestB.data.newly_visible_traits.find((t) => t.key === "age");
+    expect(ageTrait).toBeDefined();
 
-    // 11. B requests A's profile → succeeds (mutual tier-2 already established)
-    const profileB = await handleRequestProfile(
-      { user_token: tokenB, candidate_id: bCandidateId },
-      ctx
-    );
-    expect(profileB.ok).toBe(true);
-    if (profileB.ok) {
-      expect(profileB.data.status).toBe("available");
-    }
+    // ── 8. A commits -> not connected yet (B hasn't committed) ─────
+    const commitA = await handleCommit({
+      user_token: tokenA,
+      candidate_id: candidateId,
+    }, ctx);
+    expect(commitA.ok).toBe(true);
+    if (!commitA.ok) throw new Error("unreachable");
+    expect(commitA.data.their_stage).toBe(Stage.INTERESTED);
+    expect(commitA.data.connected).toBe(false);
 
-    // 12. B proposes A → status "mutual" → introduction returned
-    const proposeB = await handlePropose(
-      { user_token: tokenB, candidate_id: bCandidateId },
-      ctx
-    );
-    expect(proposeB.ok).toBe(true);
-    if (proposeB.ok) {
-      expect(proposeB.data.status).toBe("mutual");
-      if (proposeB.data.status === "mutual") {
-        expect(proposeB.data.introduction.name).toBe("Alice");
-        expect(proposeB.data.introduction.contact).toBe("alice@example.com");
-        expect(proposeB.data.introduction.compatibility_score).toBeGreaterThan(0.5);
-        expect(proposeB.data.introduction.shared_interests).toContain(
-          "rock climbing"
-        );
-      }
-    }
+    // ── 9. B commits -> auto-elevated to CONNECTED ─────────────────
+    const commitB = await handleCommit({
+      user_token: tokenB,
+      candidate_id: candidateId,
+    }, ctx);
+    expect(commitB.ok).toBe(true);
+    if (!commitB.ok) throw new Error("unreachable");
+    expect(commitB.data.connected).toBe(true);
+    expect(commitB.data.your_stage).toBe(Stage.CONNECTED);
+    expect(commitB.data.their_stage).toBe(Stage.CONNECTED);
 
-    // 13. A calls get_introductions → sees B's introduction
-    const introsA = await handleGetIntroductions(
-      { user_token: tokenA },
-      ctx
-    );
-    expect(introsA.ok).toBe(true);
-    if (introsA.ok) {
-      expect(introsA.data.introductions.length).toBe(1);
-      expect(introsA.data.introductions[0].name).toBe("Bob");
-      expect(introsA.data.pending_proposals).toBe(0);
-    }
+    // after_connect traits ("name") should now be visible
+    const nameTrait = commitB.data.newly_visible_traits.find((t) => t.key === "name");
+    expect(nameTrait).toBeDefined();
 
-    // 14. A reports positive outcome → recorded
-    const outcomeA = await handleReportOutcome(
-      {
-        user_token: tokenA,
-        candidate_id: bCandidateId,
-        outcome: "positive",
-        met_in_person: true,
-        notes: "Great conversation!",
-      },
-      ctx
-    );
-    expect(outcomeA.ok).toBe(true);
+    // ── 10. Check connections for A -> includes B ──────────────────
+    const connectionsA = await handleConnections({
+      user_token: tokenA,
+      stage_filter: Stage.CONNECTED,
+    }, ctx);
+    expect(connectionsA.ok).toBe(true);
+    if (!connectionsA.ok) throw new Error("unreachable");
+    expect(connectionsA.data.candidates.length).toBe(1);
+    expect(connectionsA.data.candidates[0].your_stage).toBe(Stage.CONNECTED);
+    expect(connectionsA.data.candidates[0].their_stage).toBe(Stage.CONNECTED);
 
-    // 15. A reports again → ALREADY_REPORTED
-    const outcomeA2 = await handleReportOutcome(
-      {
-        user_token: tokenA,
-        candidate_id: bCandidateId,
-        outcome: "positive",
-      },
-      ctx
-    );
-    expect(outcomeA2.ok).toBe(false);
-    if (!outcomeA2.ok) {
-      expect(outcomeA2.error.code).toBe("ALREADY_REPORTED");
-    }
+    // ── 11. A reports positive outcome -> success ──────────────────
+    const reportA = await handleReport({
+      user_token: tokenA,
+      candidate_id: candidateId,
+      outcome: "positive",
+    }, ctx);
+    expect(reportA.ok).toBe(true);
+    if (!reportA.ok) throw new Error("unreachable");
+    expect(reportA.data.reported).toBe(true);
 
-    // 16. A re-registers → old candidates, declines, outcomes all gone
-    const reregA = await handleRegister(
-      {
-        protocol_version: "schelling-2.0",
-        embedding: embeddingA.map((v) => Math.max(-1, Math.min(1, v + 0.1))),
-        city: "San Francisco",
-        age_range: "25-34",
-        intent: ["romance"],
-        user_token: tokenA,
-      },
-      ctx
-    );
-    expect(reregA.ok).toBe(true);
+    // ── 12. A tries to report again -> ALREADY_REPORTED ────────────
+    const reportAgain = await handleReport({
+      user_token: tokenA,
+      candidate_id: candidateId,
+      outcome: "positive",
+    }, ctx);
+    expect(reportAgain.ok).toBe(false);
+    if (reportAgain.ok) throw new Error("unreachable");
+    expect(reportAgain.error.code).toBe("ALREADY_REPORTED");
 
-    // Verify cascade: no candidates, no declines for A, no outcomes for A
-    const candidateCount = ctx.db
-      .prepare("SELECT COUNT(*) as count FROM candidates")
-      .get() as { count: number };
-    expect(candidateCount.count).toBe(0);
+    // ── 13. A re-registers (with user_token) -> old data cleared ───
+    const reRegA = await handleRegister({
+      protocol_version: "3.0",
+      cluster_id: "dating.general",
+      user_token: tokenA,
+      traits: [
+        { key: "city", value: "San Francisco", value_type: "string", visibility: "public" },
+      ],
+      preferences: [],
+      identity: { name: "Alice", contact: "alice@example.com" },
+    } as any, ctx);
+    expect(reRegA.ok).toBe(true);
+    if (!reRegA.ok) throw new Error("unreachable");
+    // Re-registration should return the same token
+    expect(reRegA.data.user_token).toBe(tokenA);
 
-    const declineCount = ctx.db
-      .prepare(
-        "SELECT COUNT(*) as count FROM declines WHERE decliner_token = ?"
-      )
-      .get(tokenA) as { count: number };
-    expect(declineCount.count).toBe(0);
-
-    const outcomeCount = ctx.db
-      .prepare(
-        "SELECT COUNT(*) as count FROM outcomes WHERE reporter_token = ?"
-      )
-      .get(tokenA) as { count: number };
-    expect(outcomeCount.count).toBe(0);
-
-    // 17. A searches again → C appears again (decline was cleared by re-registration)
-    const searchA2 = await handleSearch(
-      { user_token: tokenA, threshold: 0.1 },
-      ctx
-    );
+    // ── 14. A searches again -> B available again ──────────────────
+    const searchA2 = await handleSearch({ user_token: tokenA }, ctx);
     expect(searchA2.ok).toBe(true);
-    if (searchA2.ok) {
-      // C should be findable again (decline was deleted by CASCADE)
-      const tokenCExists = searchA2.data.candidates.some(() => true);
-      // Just verify we get results at all (B and C are both available)
-      expect(searchA2.data.total_scanned).toBeGreaterThan(0);
-    }
+    if (!searchA2.ok) throw new Error("unreachable");
+    // B should appear in results (previous candidate was from the old registration)
+    expect(searchA2.data.candidates.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cluster Isolation
+// ---------------------------------------------------------------------------
+
+describe("v3 integration: cluster isolation", () => {
+  test("search only returns users in the same cluster", async () => {
+    const tokenA = await registerUser({ cluster_id: "dating.general" });
+    const tokenB = await registerUser({ cluster_id: "dating.general" });
+    const tokenC = await registerUser({
+      cluster_id: "hiring.engineering",
+      traits: [
+        { key: "city", value: "San Francisco", value_type: "string", visibility: "public" },
+      ],
+    });
+
+    const searchA = await handleSearch({ user_token: tokenA }, ctx);
+    expect(searchA.ok).toBe(true);
+    if (!searchA.ok) throw new Error("unreachable");
+
+    // Should find B, not C
+    expect(searchA.data.total_matches).toBeGreaterThanOrEqual(1);
+
+    // Verify C is absent from the candidate pairs
+    const pairsA = db
+      .prepare("SELECT * FROM candidates WHERE user_a_token = ? OR user_b_token = ?")
+      .all(tokenA, tokenA) as any[];
+    const paired = pairsA.flatMap((c: any) => [c.user_a_token, c.user_b_token]);
+    expect(paired).toContain(tokenB);
+    expect(paired).not.toContain(tokenC);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Decline Removes Candidate
+// ---------------------------------------------------------------------------
+
+describe("v3 integration: decline", () => {
+  test("decline removes candidate from future search", async () => {
+    const tokenA = await registerUser();
+    const tokenB = await registerUser();
+
+    // A searches and finds B
+    const search1 = await handleSearch({ user_token: tokenA }, ctx);
+    expect(search1.ok).toBe(true);
+    if (!search1.ok) throw new Error("unreachable");
+    expect(search1.data.candidates.length).toBe(1);
+
+    const candidateId = search1.data.candidates[0].candidate_id;
+
+    // A declines B
+    const decline = await handleDecline({
+      user_token: tokenA,
+      candidate_id: candidateId,
+    }, ctx);
+    expect(decline.ok).toBe(true);
+    if (!decline.ok) throw new Error("unreachable");
+    expect(decline.data.declined).toBe(true);
+
+    // A searches again -> B no longer appears
+    const search2 = await handleSearch({ user_token: tokenA }, ctx);
+    expect(search2.ok).toBe(true);
+    if (!search2.ok) throw new Error("unreachable");
+    expect(search2.data.candidates.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Progressive Disclosure
+// ---------------------------------------------------------------------------
+
+describe("v3 integration: progressive disclosure", () => {
+  test("traits are revealed progressively based on mutual stage", async () => {
+    const tokenA = await registerUser({
+      identity: { name: "Alice", contact: "alice@example.com" },
+    });
+    const tokenB = await registerUser({
+      identity: { name: "Bob", contact: "bob@example.com" },
+      traits: [
+        { key: "city", value: "San Francisco", value_type: "string", visibility: "public" },
+        { key: "age", value: 28, value_type: "number", visibility: "after_interest" },
+        { key: "name", value: "Bob", value_type: "string", visibility: "after_connect" },
+      ],
+    });
+
+    // ── At DISCOVERED stage: only public traits visible ────────────
+    const searchA = await handleSearch({ user_token: tokenA }, ctx);
+    expect(searchA.ok).toBe(true);
+    if (!searchA.ok) throw new Error("unreachable");
+
+    const candidateFromSearch = searchA.data.candidates[0];
+    const searchTraitKeys = candidateFromSearch.visible_traits.map((t) => t.key);
+    expect(searchTraitKeys).toContain("city");
+    expect(searchTraitKeys).not.toContain("age");
+    expect(searchTraitKeys).not.toContain("name");
+
+    // B also discovers A
+    await handleSearch({ user_token: tokenB }, ctx);
+    const candidateId = candidateFromSearch.candidate_id;
+
+    // ── At INTERESTED stage: after_interest traits become visible ──
+    await handleInterest({ user_token: tokenA, candidate_id: candidateId }, ctx);
+    const interestB = await handleInterest({
+      user_token: tokenB,
+      candidate_id: candidateId,
+    }, ctx);
+    expect(interestB.ok).toBe(true);
+    if (!interestB.ok) throw new Error("unreachable");
+
+    // B should now see A's after_interest traits as newly_visible
+    // And A should see B's after_interest traits via connections check
+    const connectionsA = await handleConnections({
+      user_token: tokenA,
+      stage_filter: Stage.INTERESTED,
+    }, ctx);
+    expect(connectionsA.ok).toBe(true);
+    if (!connectionsA.ok) throw new Error("unreachable");
+
+    const connectionTraitKeys = connectionsA.data.candidates[0].visible_traits.map((t) => t.key);
+    // Public + after_interest should be visible
+    expect(connectionTraitKeys).toContain("city");
+    expect(connectionTraitKeys).toContain("age");
+    // after_connect should NOT be visible yet
+    expect(connectionTraitKeys).not.toContain("name");
+
+    // ── At CONNECTED stage: after_connect traits become visible ────
+    await handleCommit({ user_token: tokenA, candidate_id: candidateId }, ctx);
+    await handleCommit({ user_token: tokenB, candidate_id: candidateId }, ctx);
+
+    const connectionsA2 = await handleConnections({
+      user_token: tokenA,
+      stage_filter: Stage.CONNECTED,
+    }, ctx);
+    expect(connectionsA2.ok).toBe(true);
+    if (!connectionsA2.ok) throw new Error("unreachable");
+
+    const connectedTraitKeys = connectionsA2.data.candidates[0].visible_traits.map((t) => t.key);
+    // All non-private traits should now be visible
+    expect(connectedTraitKeys).toContain("city");
+    expect(connectedTraitKeys).toContain("age");
+    expect(connectedTraitKeys).toContain("name");
   });
 });

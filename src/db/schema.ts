@@ -3,6 +3,40 @@ import type { Database } from "bun:sqlite";
 // ─── Schelling Protocol v3.0 Schema ────────────────────────────────────
 
 const DDL = `
+-- ─── Drop all tables for clean v3 schema (v3 is a full migration) ────
+
+DROP TABLE IF EXISTS idempotency_keys;
+DROP TABLE IF EXISTS pending_actions;
+DROP TABLE IF EXISTS enforcement_actions;
+DROP TABLE IF EXISTS verifications;
+DROP TABLE IF EXISTS jury_verdicts;
+DROP TABLE IF EXISTS jury_assignments;
+DROP TABLE IF EXISTS disputes;
+DROP TABLE IF EXISTS reputation_events;
+DROP TABLE IF EXISTS tool_feedback;
+DROP TABLE IF EXISTS tools;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS relay_blocks;
+DROP TABLE IF EXISTS direct_contacts;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS inquiries;
+DROP TABLE IF EXISTS deliverables;
+DROP TABLE IF EXISTS contract_amendments;
+DROP TABLE IF EXISTS contracts;
+DROP TABLE IF EXISTS outcomes;
+DROP TABLE IF EXISTS declines;
+DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS cluster_norms;
+DROP TABLE IF EXISTS clusters;
+DROP TABLE IF EXISTS preferences;
+DROP TABLE IF EXISTS traits;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS negotiations;
+DROP TABLE IF EXISTS verticals;
+DROP TABLE IF EXISTS vertical_descriptors;
+
 -- ─── Core: Users ─────────────────────────────────────────────────────
 -- Each row is one registration. A user may have multiple registrations
 -- across clusters, each with its own user_token.
@@ -425,15 +459,11 @@ CREATE TABLE IF NOT EXISTS reputation_events (
   reporter_id       TEXT NOT NULL,               -- who reported it (or "system")
   reporter_reputation REAL,
   cluster_id        TEXT NOT NULL,
-  event_type        TEXT NOT NULL
-    CHECK (event_type IN ('outcome','dispute','completion','abandonment',
-      'contract_completed','contract_terminated','contract_expired',
-      'deliverable_accepted','deliverable_rejected','frivolous_filing',
-      'jury_majority','event_unacked','enforcement_warning','enforcement_action')),
+  event_type        TEXT NOT NULL,
   rating            TEXT CHECK (rating IS NULL OR rating IN ('positive','neutral','negative')),
   dimensions        TEXT,                        -- JSON
   notes             TEXT,
-  created_at        INTEGER NOT NULL             -- unix ms
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_rep_identity    ON reputation_events(identity_id);
@@ -458,9 +488,9 @@ CREATE TABLE IF NOT EXISTS disputes (
     CHECK (status IN ('filed','jury_selected','in_deliberation','resolved','operator_review',
       'resolved_for_filer','resolved_for_defendant','dismissed')),
   jury_size         INTEGER,
-  resolved_at       INTEGER,
+  resolved_at       TEXT,
   resolution_notes  TEXT,
-  created_at        INTEGER NOT NULL
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_disputes_candidate  ON disputes(candidate_id);
@@ -514,8 +544,8 @@ CREATE TABLE IF NOT EXISTS verifications (
   status            TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','approved','rejected','provided','expired')),
   current_tier      TEXT,
-  created_at        INTEGER NOT NULL,
-  expires_at        INTEGER
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at        TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_verif_user      ON verifications(user_token);

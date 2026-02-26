@@ -4,13 +4,8 @@ import { getDatabase } from "./db/client.js";
 import { initSchema } from "./db/schema.js";
 import { bindTools } from "./transports/mcp.js";
 import { createRestServer } from "./transports/rest.js";
-import { initVerticalRegistry } from "./verticals/registry.js";
-
 const db = getDatabase();
 initSchema(db);
-
-// Initialize vertical registry with built-in verticals
-initVerticalRegistry();
 
 const ctx = { db };
 
@@ -34,7 +29,7 @@ if (enableRest) {
   // Default: Start MCP server via stdio
   const server = new McpServer({
     name: "schelling",
-    version: "2.0.0",
+    version: "3.0.0",
   });
 
   bindTools(server, ctx);

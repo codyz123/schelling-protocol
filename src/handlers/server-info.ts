@@ -1,96 +1,115 @@
-import type { HandlerContext, HandlerResult } from "../types.js";
-import { getVerticalIds } from "../verticals/registry.js";
+import type { HandlerContext, HandlerResult, ToolRecord } from "../types.js";
+import { PROTOCOL_VERSION, SERVER_VERSION, SERVER_NAME } from "../types.js";
 
-interface ServerInfoParams {
-  // No parameters needed - this is an unauthenticated operation
+// ─── Output type ─────────────────────────────────────────────────────
+
+interface DefaultToolSummary {
+  tool_id: string;
+  display_name: string;
+  one_line_description: string;
 }
 
-interface ServerInfoResult {
+interface ServerInfoOutput {
   protocol_version: string;
-  server_version: string;
-  supported_verticals: string[];
-  total_users: number;
-  total_candidates: number;
-  uptime_seconds: number;
-  capabilities: string[];
   server_name: string;
+  server_version: string;
+  cluster_count: number;
+  total_tools: number;
+  default_tools: DefaultToolSummary[];
   federation_enabled: boolean;
-  rate_limits: Record<string, number>;
+  capabilities: {
+    natural_language: boolean;
+    funnel_modes: string[];
+    fast_paths: boolean;
+    deliverables: boolean;
+    disputes: boolean;
+    reputation: boolean;
+    verification: boolean;
+    data_export: boolean;
+  };
+  rate_limits: {
+    register_per_day: number;
+    search_per_hour: number;
+    propose_per_hour: number;
+    onboard_per_hour: number;
+    describe_per_hour: number;
+    clusters_per_hour: number;
+  };
+  mcp_manifest_url: null;
+  openapi_url: null;
 }
 
-// Track server start time for uptime calculation
-const SERVER_START_TIME = Date.now();
+// ─── handleServerInfo ────────────────────────────────────────────────
 
-export function handleServerInfo(
-  params: ServerInfoParams,
+export async function handleServerInfo(
+  _input: Record<string, never>,
   ctx: HandlerContext
-): HandlerResult<ServerInfoResult> {
+): Promise<HandlerResult<ServerInfoOutput>> {
   try {
-    const supportedVerticals = getVerticalIds();
-    
-    // Get total user count across all verticals
-    const totalUsersQuery = ctx.db.query(
-      "SELECT COUNT(*) as count FROM users"
-    );
-    const totalUsers = (totalUsersQuery.get() as { count: number })?.count || 0;
+    const clusterCountRow = ctx.db
+      .prepare("SELECT COUNT(*) as count FROM clusters WHERE phase != 'dead'")
+      .get() as { count: number };
+    const clusterCount = clusterCountRow?.count ?? 0;
 
-    // Get total candidate count across all verticals
-    const totalCandidatesQuery = ctx.db.query(
-      "SELECT COUNT(*) as count FROM candidates WHERE stage_a > 0 OR stage_b > 0"
-    );
-    const totalCandidates = (totalCandidatesQuery.get() as { count: number })?.count || 0;
+    const toolCountRow = ctx.db
+      .prepare("SELECT COUNT(*) as count FROM tools WHERE status = 'active'")
+      .get() as { count: number };
+    const totalTools = toolCountRow?.count ?? 0;
 
-    // Calculate uptime
-    const uptimeSeconds = Math.floor((Date.now() - SERVER_START_TIME) / 1000);
+    const defaultToolRows = ctx.db
+      .prepare(
+        `SELECT tool_id, display_name, one_line_description
+         FROM tools
+         WHERE type = 'default' AND status = 'active'
+         ORDER BY usage_count DESC`
+      )
+      .all() as Pick<ToolRecord, "tool_id" | "display_name" | "one_line_description">[];
 
-    const result: ServerInfoResult = {
-      protocol_version: "schelling-2.0",
-      server_version: "2.0.0-phase5", // Version corresponding to Phase 5 implementation
-      supported_verticals: supportedVerticals,
-      total_users: totalUsers,
-      total_candidates: totalCandidates,
-      uptime_seconds: uptimeSeconds,
-      capabilities: [
-        "MCP", // Model Context Protocol transport
-        "REST", // REST API transport (being added in Phase 5)
-        "progressive_disclosure", // Core feature
-        "reputation_system", // Phase 2 feature
-        "dispute_resolution", // Phase 4 feature
-        "multi_vertical", // Phase 1 feature
-        "asymmetric_matching", // Phase 3 feature
-        "negotiation", // Phase 3 feature
-        "verification", // Phase 4 feature
-        "data_export", // Phase 4 feature
-        "structured_logging" // Phase 5 feature
-      ],
-      server_name: "Schelling Protocol Node",
-      federation_enabled: false, // Not yet implemented
-      rate_limits: {
-        "search": 10, // per hour
-        "register": 5, // per day  
-        "evaluate": 50, // per hour
-        "exchange": 20, // per hour
-        "commit": 10, // per hour
-        "dispute": 3, // per day
-        "negotiate": 20, // per hour
-        "verticals": 100, // per hour (high limit for discovery)
-        "onboard": 100, // per hour (high limit for onboarding)
-        "server_info": 100 // per hour (high limit for meta queries)
-      }
-    };
+    const defaultTools: DefaultToolSummary[] = defaultToolRows.map((t) => ({
+      tool_id: t.tool_id,
+      display_name: t.display_name,
+      one_line_description: t.one_line_description,
+    }));
 
     return {
       ok: true,
-      data: result
+      data: {
+        protocol_version: PROTOCOL_VERSION,
+        server_name: SERVER_NAME,
+        server_version: SERVER_VERSION,
+        cluster_count: clusterCount,
+        total_tools: totalTools,
+        default_tools: defaultTools,
+        federation_enabled: false,
+        capabilities: {
+          natural_language: true,
+          funnel_modes: ["bilateral", "broadcast", "group", "auction"],
+          fast_paths: true,
+          deliverables: true,
+          disputes: true,
+          reputation: true,
+          verification: true,
+          data_export: true,
+        },
+        rate_limits: {
+          register_per_day: 10,
+          search_per_hour: 60,
+          propose_per_hour: 30,
+          onboard_per_hour: 100,
+          describe_per_hour: 100,
+          clusters_per_hour: 100,
+        },
+        mcp_manifest_url: null,
+        openapi_url: null,
+      },
     };
-
   } catch (error: unknown) {
     return {
       ok: false,
       error: {
-        code: "INVALID_INPUT", 
-        message: error instanceof Error ? error.message : String(error)
-      }
+        code: "INTERNAL_ERROR",
+        message: error instanceof Error ? error.message : String(error),
+      },
     };
   }
 }
