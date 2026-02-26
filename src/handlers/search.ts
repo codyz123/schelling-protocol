@@ -2,67 +2,279 @@ import { randomUUID } from "node:crypto";
 import type {
   HandlerContext,
   HandlerResult,
+  Trait,
+  Preference,
+  Capability,
   UserRecord,
+  TraitRecord,
+  PreferenceRecord,
+  CandidateRecord,
 } from "../types.js";
-import { Stage, orderTokens } from "../types.js";
-import { computeCompatibility } from "../matching/compatibility.js";
-import { getVertical } from "../verticals/registry.js";
-import { computeReputation } from "../core/reputation.js";
-import { computeMarketplaceMatch } from "../verticals/marketplace/scoring.js";
+import {
+  Stage,
+  orderTokens,
+  evaluatePreference,
+  VERIFICATION_TRUST,
+} from "../types.js";
+
+// ─── Input / Output Types ────────────────────────────────────────────
 
 export interface SearchInput {
   user_token: string;
-  vertical_id?: string; // Default to 'matchmaking' for backward compatibility
+  cluster_id?: string;
   top_k?: number;
   threshold?: number;
-  intent_filter?: string;
-  city_filter?: string;
-  min_reputation?: number; // Filter candidates by minimum reputation score
-  cursor?: string; // For pagination
-  idempotency_key?: string;
 }
 
-export interface SearchCandidate {
+export interface PreferenceSatisfactionDetail {
+  satisfied: boolean;
+  score: number;
+  candidate_value: unknown;
+  missing: boolean;
+}
+
+export interface VerificationSummary {
+  total_traits: number;
+  unverified: number;
+  self_verified: number;
+  cross_verified: number;
+  authority_verified: number;
+  overall_trust: number;
+}
+
+export interface SearchResult {
   candidate_id: string;
-  compatibility_score: number;
-  shared_categories: string[];
-  intent: string[];
-  city: string;
-  age_range: string;
+  advisory_score: number;
+  your_fit: number;
+  their_fit: number;
+  intent_similarity: number | null;
+  preference_satisfaction: Record<string, PreferenceSatisfactionDetail>;
+  visible_traits: Trait[];
+  intents: string[];
+  agent_capabilities: Capability[];
   reputation_score: number;
-  verification_level: "anonymous" | "verified" | "attested";
-  interaction_count: number;
+  verification_summary: VerificationSummary;
+  funnel_mode: string;
+  group_size: number | null;
+  group_filled: number | null;
+  stale: boolean;
+  computed_at: string;
+}
+
+export interface PendingAction {
+  candidate_id: string;
+  action_type: string;
+}
+
+export interface RankingExplanation {
+  model_tier: "prior";
+  adjustments: never[];
+  outcome_basis: 0;
 }
 
 export interface SearchOutput {
-  candidates: SearchCandidate[];
+  candidates: SearchResult[];
   total_scanned: number;
-  next_cursor?: string;
-  pending_actions?: Array<{
-    candidate_id: string;
-    action_type: string;
-  }>;
+  total_matches: number;
+  ranking_explanation: RankingExplanation;
+  next_cursor: null;
+  pending_actions: PendingAction[];
+  nl_parsed: null;
 }
 
-export async function handleSearch(
-  input: SearchInput,
-  ctx: HandlerContext
-): Promise<HandlerResult<SearchOutput>> {
-  const topK = input.top_k ?? 50;
-  const threshold = input.threshold ?? 0.5;
-  const verticalId = input.vertical_id ?? 'matchmaking';
-  
-  // Check idempotency
-  if (input.idempotency_key) {
-    const existing = ctx.db
-      .prepare("SELECT response FROM idempotency_keys WHERE key = ? AND operation = 'search'")
-      .get(input.idempotency_key) as { response: string } | undefined;
-    if (existing) {
-      return { ok: true, data: JSON.parse(existing.response) };
+// ─── Helper Functions ────────────────────────────────────────────────
+
+/** Round n to dp decimal places */
+function quantize(n: number, dp: number): number {
+  const factor = Math.pow(10, dp);
+  return Math.round(n * factor) / factor;
+}
+
+/** Cosine similarity between two equal-length vectors, returns [-1, 1] */
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denom === 0) return 0;
+  return dot / denom;
+}
+
+interface FitResult {
+  fit: number;
+  satisfaction: Record<string, PreferenceSatisfactionDetail>;
+}
+
+/**
+ * Compute how well a set of candidate traits satisfies a list of preferences.
+ * Hard filters (weight=1.0) that fail return null to signal exclusion.
+ * Soft preferences (weight<1.0) contribute a weighted score.
+ */
+function computePreferenceFit(
+  preferences: Preference[],
+  candidateTraits: Map<string, unknown>,
+): { excluded: true } | FitResult {
+  const satisfaction: Record<string, PreferenceSatisfactionDetail> = {};
+
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const pref of preferences) {
+    const hasTrait = candidateTraits.has(pref.trait_key);
+    const traitValue = candidateTraits.get(pref.trait_key);
+    const traitMissing = !hasTrait;
+
+    const { pass, score } = evaluatePreference(pref, traitValue, traitMissing);
+
+    satisfaction[pref.trait_key] = {
+      satisfied: pass,
+      score,
+      candidate_value: hasTrait ? traitValue : null,
+      missing: traitMissing,
+    };
+
+    // Hard filter: weight === 1.0 and failed → exclude candidate
+    if (pref.weight === 1.0 && !pass) {
+      return { excluded: true };
+    }
+
+    // Soft preference: weight < 1.0
+    if (pref.weight < 1.0) {
+      weightedSum += score * pref.weight;
+      totalWeight += pref.weight;
     }
   }
 
-  const caller = ctx.db
+  const fit = totalWeight > 0 ? weightedSum / totalWeight : 1.0;
+  return { fit: Math.max(0, Math.min(1, fit)), satisfaction };
+}
+
+/** Parse JSON-encoded trait value; returns undefined on failure */
+function parseTraitValue(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/** Convert TraitRecord rows into a Map<key, parsed-value> and an array of Trait objects */
+function buildTraitMap(rows: TraitRecord[]): {
+  traitMap: Map<string, unknown>;
+  traits: Trait[];
+} {
+  const traitMap = new Map<string, unknown>();
+  const traits: Trait[] = [];
+
+  for (const row of rows) {
+    const value = parseTraitValue(row.value);
+    traitMap.set(row.key, value);
+    traits.push({
+      key: row.key,
+      value: value as Trait["value"],
+      value_type: row.value_type as Trait["value_type"],
+      visibility: row.visibility as Trait["visibility"],
+      verification: row.verification as Trait["verification"],
+      display_name: row.display_name ?? undefined,
+      category: row.category ?? undefined,
+      enum_values: row.enum_values
+        ? (JSON.parse(row.enum_values) as string[])
+        : undefined,
+    });
+  }
+
+  return { traitMap, traits };
+}
+
+/** Parse a JSON-encoded preference value */
+function parsePreferenceValue(
+  raw: string,
+): string | number | boolean | string[] | number[] {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/** Convert PreferenceRecord rows into Preference objects */
+function buildPreferences(rows: PreferenceRecord[]): Preference[] {
+  return rows.map((row) => ({
+    trait_key: row.trait_key,
+    operator: row.operator as Preference["operator"],
+    value: parsePreferenceValue(row.value),
+    weight: row.weight,
+    label: row.label ?? undefined,
+  }));
+}
+
+/** Compute verification summary for a candidate's traits */
+function buildVerificationSummary(traits: Trait[]): VerificationSummary {
+  const summary: VerificationSummary = {
+    total_traits: traits.length,
+    unverified: 0,
+    self_verified: 0,
+    cross_verified: 0,
+    authority_verified: 0,
+    overall_trust: 0,
+  };
+
+  if (traits.length === 0) {
+    return summary;
+  }
+
+  let trustSum = 0;
+
+  for (const trait of traits) {
+    const tier = trait.verification ?? "unverified";
+    switch (tier) {
+      case "unverified":
+        summary.unverified++;
+        break;
+      case "self_verified":
+        summary.self_verified++;
+        break;
+      case "cross_verified":
+        summary.cross_verified++;
+        break;
+      case "authority_verified":
+        summary.authority_verified++;
+        break;
+    }
+    trustSum += VERIFICATION_TRUST[tier as keyof typeof VERIFICATION_TRUST] ?? 0;
+  }
+
+  summary.overall_trust = quantize(trustSum / traits.length, 4);
+  return summary;
+}
+
+// ─── Main Handler ────────────────────────────────────────────────────
+
+export async function handleSearch(
+  input: SearchInput,
+  ctx: HandlerContext,
+): Promise<HandlerResult<SearchOutput>> {
+  const { db } = ctx;
+
+  // ── 1. Validate input ────────────────────────────────────────────
+
+  if (!input.user_token) {
+    return {
+      ok: false,
+      error: { code: "INVALID_INPUT", message: "user_token is required" },
+    };
+  }
+
+  const topK = Math.min(input.top_k ?? 50, 200);
+  const threshold = Math.max(0.0, Math.min(1.0, input.threshold ?? 0.0));
+
+  const caller = db
     .prepare("SELECT * FROM users WHERE user_token = ?")
     .get(input.user_token) as UserRecord | undefined;
 
@@ -73,258 +285,373 @@ export async function handleSearch(
     };
   }
 
-  // Get vertical configuration - use defaults for matchmaking if not found
-  const vertical = getVertical(verticalId);
-  if (!vertical && verticalId !== "matchmaking") {
+  if (caller.status !== "active") {
     return {
       ok: false,
-      error: { code: "INVALID_VERTICAL", message: `Vertical ${verticalId} not found` }
+      error: {
+        code: caller.status === "paused" ? "USER_PAUSED" : "USER_SUSPENDED",
+        message: `User account is ${caller.status}`,
+      },
     };
   }
 
-  const callerEmbedding: number[] = caller.embedding ? JSON.parse(caller.embedding) : [];
-  const callerDealBreakers = caller.deal_breakers ? JSON.parse(caller.deal_breakers) : {};
-  const callerRole = caller.role ?? "seeker";
-  const callerMarketplaceData = caller.marketplace_data ? JSON.parse(caller.marketplace_data) : {};
+  const clusterId = input.cluster_id ?? caller.cluster_id;
 
-  // For asymmetric verticals, search for the opposite role
-  let targetRole = callerRole; // Default for symmetric verticals
-  if (vertical && !vertical.symmetric) {
-    if (verticalId === "marketplace") {
-      targetRole = callerRole === "seller" ? "buyer" : "seller";
-    }
-  }
+  // ── 2. Find candidates ───────────────────────────────────────────
 
-  // Two-pass filtering: hard filters first (deal-breakers), then soft scoring
-  
-  // Pass 1: Hard filters (deal-breakers)
-  let sql = `
-    SELECT u.* FROM users u
-    WHERE u.protocol_version = ?
-      AND u.vertical_id = ?
-      AND u.user_token != ?
-      AND u.status = 'active'
-      AND u.user_token NOT IN (
-        SELECT declined_token FROM declines 
-        WHERE decliner_token = ? AND vertical_id = ?
-      )
-  `;
-  const params: unknown[] = [
-    caller.protocol_version,
-    verticalId,
-    input.user_token,
-    input.user_token,
-    verticalId,
-  ];
+  // Active users in the cluster, excluding self and users caller has declined
+  const candidateUsers = db
+    .prepare(
+      `SELECT * FROM users
+       WHERE cluster_id = ?
+         AND status = 'active'
+         AND user_token != ?
+         AND user_token NOT IN (
+           SELECT declined_token FROM declines
+           WHERE decliner_token = ?
+             AND (permanent = 1 OR (expires_at IS NOT NULL AND expires_at > datetime('now')))
+         )`,
+    )
+    .all(clusterId, input.user_token, input.user_token) as UserRecord[];
 
-  // For asymmetric verticals, filter by target role
-  if (vertical && !vertical.symmetric) {
-    sql += ` AND u.role = ?`;
-    params.push(targetRole);
-  }
+  const totalScanned = candidateUsers.length;
 
-  // Apply hard filters based on vertical configuration
-  if (vertical?.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("intent")) {
-    if (input.intent_filter) {
-      sql += ` AND EXISTS (SELECT 1 FROM json_each(u.intent) WHERE value = ?)`;
-      params.push(input.intent_filter);
-    }
-  }
+  // ── 3. Load caller's preferences and traits ──────────────────────
 
-  if (vertical?.deal_breakers?.enabled && vertical.deal_breakers.hard_filters.includes("city")) {
-    if (input.city_filter) {
-      sql += ` AND u.city = ?`;
-      params.push(input.city_filter);
-    }
-  }
+  const callerPrefRows = db
+    .prepare("SELECT * FROM preferences WHERE user_token = ?")
+    .all(input.user_token) as PreferenceRecord[];
 
-  // Apply caller's deal-breakers
-  if (callerDealBreakers.no_smoking) {
-    sql += ` AND (u.deal_breakers IS NULL OR json_extract(u.deal_breakers, '$.smoking') != 1)`;
-  }
-  
-  if (callerDealBreakers.no_pets) {
-    sql += ` AND (u.deal_breakers IS NULL OR json_extract(u.deal_breakers, '$.pets') != 1)`;
-  }
+  const callerPreferences = buildPreferences(callerPrefRows);
 
-  const others = ctx.db.prepare(sql).all(...params) as UserRecord[];
+  const callerTraitRows = db
+    .prepare("SELECT * FROM traits WHERE user_token = ?")
+    .all(input.user_token) as TraitRecord[];
 
-  // Pass 2: Score candidates that passed hard filters and apply reputation filter
-  const scored: {
+  const { traitMap: callerTraitMap } = buildTraitMap(callerTraitRows);
+
+  // Parse caller intent embedding once
+  const callerIntentEmbedding: number[] | null = caller.intent_embedding
+    ? (JSON.parse(caller.intent_embedding) as number[])
+    : null;
+
+  // ── 4. Score each candidate ──────────────────────────────────────
+
+  interface ScoredCandidate {
     user: UserRecord;
-    score: number;
-    categories: string[];
-    reputation: {
-      score: number;
-      verification_level: "anonymous" | "verified" | "attested";
-      interaction_count: number;
-    };
-    explanation?: string;
-  }[] = [];
-
-  for (const other of others) {
-    let matchResult: any;
-    let score: number;
-    let categories: string[] = [];
-    let explanation: string | undefined;
-
-    if (verticalId === "marketplace") {
-      // Use marketplace-specific scoring
-      const otherMarketplaceData = other.marketplace_data ? JSON.parse(other.marketplace_data) : {};
-      
-      // For marketplace, scoring depends on roles
-      if (callerRole === "buyer" && other.role === "seller") {
-        // Buyer searching sellers - buyer preference vs seller listing
-        matchResult = computeMarketplaceMatch(otherMarketplaceData, callerMarketplaceData);
-      } else if (callerRole === "seller" && other.role === "buyer") {
-        // Seller searching buyers - seller listing vs buyer preference  
-        matchResult = computeMarketplaceMatch(callerMarketplaceData, otherMarketplaceData);
-      } else {
-        continue; // Skip incompatible roles
-      }
-      
-      score = matchResult.overall_score;
-      categories = [
-        `price_overlap_${matchResult.price_overlap_score.toFixed(2)}`,
-        `category_match_${matchResult.category_match_score.toFixed(2)}`,
-        `location_${matchResult.location_proximity_score.toFixed(2)}`
-      ];
-      explanation = matchResult.match_explanation;
-    } else {
-      // Use matchmaking compatibility scoring for other verticals
-      const otherEmbedding: number[] = other.embedding ? JSON.parse(other.embedding) : [];
-      matchResult = computeCompatibility(callerEmbedding, otherEmbedding);
-      score = matchResult.overall_score;
-      categories = matchResult.shared_categories.map(
-        (sc) => `${sc.direction}_${sc.dimension}`
-      );
-    }
-
-    if (score >= threshold) {
-      // Get reputation for this candidate
-      const reputation = computeReputation(ctx.db, other.user_token, verticalId);
-      
-      // Apply minimum reputation filter
-      if (input.min_reputation && reputation.score < input.min_reputation) {
-        continue; // Skip this candidate
-      }
-
-      // Handle exclusive commitment for marketplace
-      if (verticalId === "marketplace" && vertical?.exclusive_commitment) {
-        // Check if this user is already committed to someone else
-        const existingCommitments = ctx.db
-          .prepare(`
-            SELECT COUNT(*) as count FROM candidates 
-            WHERE (user_a_token = ? OR user_b_token = ?) 
-              AND vertical_id = ? 
-              AND (stage_a >= 4 OR stage_b >= 4)
-          `)
-          .get(other.user_token, other.user_token, verticalId) as { count: number };
-        
-        if (existingCommitments.count > 0) {
-          continue; // Skip users with existing commitments in exclusive verticals
-        }
-      }
-
-      scored.push({
-        user: other,
-        score,
-        categories,
-        reputation: {
-          score: reputation.score,
-          verification_level: reputation.verification_level,
-          interaction_count: reputation.interaction_count,
-        },
-        explanation,
-      });
-    }
+    advisory_score: number;
+    your_fit: number;
+    their_fit: number;
+    intent_similarity: number | null;
+    satisfaction: Record<string, PreferenceSatisfactionDetail>;
+    publicTraits: Trait[];
+    allTraits: Trait[];
   }
 
-  // Sort by score descending, take top_k
-  scored.sort((a, b) => b.score - a.score);
-  const topCandidates = scored.slice(0, topK);
+  const scored: ScoredCandidate[] = [];
 
-  // Upsert candidate records and build response
-  const upsertCandidate = ctx.db.transaction(
-    (
-      callerToken: string,
-      otherTokenVal: string,
-      score: number,
-      categories: string,
-      verticalId: string
-    ) => {
-      const { a, b } = orderTokens(callerToken, otherTokenVal);
-      const side = callerToken === a ? "stage_a" : "stage_b";
+  for (const candidate of candidateUsers) {
+    // Load candidate traits
+    const candidateTraitRows = db
+      .prepare("SELECT * FROM traits WHERE user_token = ?")
+      .all(candidate.user_token) as TraitRecord[];
 
-      ctx.db
-        .prepare(
-          `INSERT OR IGNORE INTO candidates (id, user_a_token, user_b_token, vertical_id, score, shared_categories)
-           VALUES (?, ?, ?, ?, ?, ?)`
-        )
-        .run(randomUUID(), a, b, verticalId, score, categories);
+    const { traitMap: candidateTraitMap, traits: candidateTraits } =
+      buildTraitMap(candidateTraitRows);
 
-      ctx.db
-        .prepare(
-          `UPDATE candidates SET ${side} = MAX(${side}, ?), score = ?, updated_at = datetime('now')
-           WHERE user_a_token = ? AND user_b_token = ? AND vertical_id = ?`
-        )
-        .run(Stage.DISCOVERED, score, a, b, verticalId);
-    }
-  );
+    // ── a. Hard filter + soft scoring: your_fit ──────────────────
 
-  const candidates: SearchCandidate[] = [];
-
-  for (const item of topCandidates) {
-    const categoriesJson = JSON.stringify(item.categories);
-    upsertCandidate(
-      input.user_token,
-      item.user.user_token,
-      item.score,
-      categoriesJson,
-      verticalId
+    const yourFitResult = computePreferenceFit(
+      callerPreferences,
+      candidateTraitMap,
     );
 
-    // Get the candidate record to return its ID
-    const { a, b } = orderTokens(input.user_token, item.user.user_token);
-    const candidateRow = ctx.db
-      .prepare(
-        "SELECT id FROM candidates WHERE user_a_token = ? AND user_b_token = ? AND vertical_id = ?"
-      )
-      .get(a, b, verticalId) as { id: string };
+    if ("excluded" in yourFitResult) {
+      // Hard filter failed — skip this candidate entirely
+      continue;
+    }
 
-    candidates.push({
-      candidate_id: candidateRow.id,
-      compatibility_score: item.score,
-      shared_categories: item.categories,
-      intent: JSON.parse(item.user.intent),
-      city: item.user.city,
-      age_range: item.user.age_range,
-      reputation_score: item.reputation.score,
-      verification_level: item.reputation.verification_level,
-      interaction_count: item.reputation.interaction_count,
+    const yourFit = yourFitResult.fit;
+    const satisfaction = yourFitResult.satisfaction;
+
+    // ── b. their_fit: how well caller satisfies candidate's prefs ─
+
+    const candidatePrefRows = db
+      .prepare("SELECT * FROM preferences WHERE user_token = ?")
+      .all(candidate.user_token) as PreferenceRecord[];
+
+    const candidatePreferences = buildPreferences(candidatePrefRows);
+
+    const theirFitResult = computePreferenceFit(
+      candidatePreferences,
+      callerTraitMap,
+    );
+
+    // If candidate's hard filters exclude caller, we still include but note low their_fit
+    const theirFit =
+      "excluded" in theirFitResult ? 0.0 : theirFitResult.fit;
+
+    // ── c. advisory_score: geometric mean ─────────────────────────
+
+    let advisoryScore = Math.sqrt(yourFit * theirFit);
+
+    // ── d. Intent similarity ───────────────────────────────────────
+
+    let intentSimilarity: number | null = null;
+
+    if (callerIntentEmbedding && candidate.intent_embedding) {
+      const candidateIntentEmbedding = JSON.parse(
+        candidate.intent_embedding,
+      ) as number[];
+
+      const rawSim = cosineSimilarity(
+        callerIntentEmbedding,
+        candidateIntentEmbedding,
+      );
+      // Map [-1,1] → [0,1]
+      intentSimilarity = (rawSim + 1) / 2;
+
+      // Blend into advisory score
+      advisoryScore = 0.7 * advisoryScore + 0.3 * intentSimilarity;
+    }
+
+    // Apply threshold
+    if (advisoryScore < threshold) {
+      continue;
+    }
+
+    // Visible traits: only "public" visibility at DISCOVERED stage
+    const publicTraits = candidateTraits.filter(
+      (t) => t.visibility === "public",
+    );
+
+    scored.push({
+      user: candidate,
+      advisory_score: advisoryScore,
+      your_fit: yourFit,
+      their_fit: theirFit,
+      intent_similarity: intentSimilarity,
+      satisfaction,
+      publicTraits,
+      allTraits: candidateTraits,
     });
   }
 
-  // Get pending actions for this user
-  const pendingActions = ctx.db
-    .prepare("SELECT candidate_id, action_type FROM pending_actions WHERE user_token = ? AND consumed_at IS NULL")
-    .all(input.user_token) as Array<{ candidate_id: string; action_type: string }>;
+  // ── 5. Rank and truncate ─────────────────────────────────────────
 
-  const result: SearchOutput = {
-    candidates,
-    total_scanned: others.length,
-    pending_actions: pendingActions.length > 0 ? pendingActions : undefined,
-  };
+  scored.sort((a, b) => b.advisory_score - a.advisory_score);
+  const totalMatches = scored.length;
+  const topCandidates = scored.slice(0, topK);
 
-  // Store idempotency key if provided
-  if (input.idempotency_key) {
-    ctx.db
-      .prepare("INSERT OR REPLACE INTO idempotency_keys (key, operation, user_token, response) VALUES (?, ?, ?, ?)")
-      .run(input.idempotency_key, 'search', input.user_token, JSON.stringify(result));
+  // ── 6. Upsert candidate records and build response ───────────────
+
+  // Fetch existing candidate records in bulk so we can check existing stages
+  // We need user_a_token, user_b_token pairs ordered correctly
+  const results: SearchResult[] = [];
+
+  const upsertStmt = db.prepare(
+    `INSERT INTO candidates
+       (id, user_a_token, user_b_token, cluster_id, funnel_mode,
+        score, fit_a, fit_b, intent_similarity, stage_a, stage_b)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (user_a_token, user_b_token, cluster_id) DO UPDATE SET
+       score = excluded.score,
+       fit_a = excluded.fit_a,
+       fit_b = excluded.fit_b,
+       intent_similarity = excluded.intent_similarity,
+       updated_at = datetime('now')`,
+  );
+
+  const discoverStmtA = db.prepare(
+    `UPDATE candidates
+     SET stage_a = MAX(stage_a, ?), updated_at = datetime('now')
+     WHERE user_a_token = ? AND user_b_token = ? AND cluster_id = ?`,
+  );
+
+  const discoverStmtB = db.prepare(
+    `UPDATE candidates
+     SET stage_b = MAX(stage_b, ?), updated_at = datetime('now')
+     WHERE user_a_token = ? AND user_b_token = ? AND cluster_id = ?`,
+  );
+
+  const fetchCandidateStmt = db.prepare(
+    `SELECT * FROM candidates
+     WHERE user_a_token = ? AND user_b_token = ? AND cluster_id = ?`,
+  );
+
+  // Compute group_filled counts once if needed
+  const groupFilledCache = new Map<string, number>();
+
+  function getGroupFilled(clusterId: string, callerToken: string): number | null {
+    // group_filled = number of CONNECTED slots in this cluster for the caller
+    // Only meaningful if funnel_mode = 'group'
+    const cacheKey = `${clusterId}:${callerToken}`;
+    if (groupFilledCache.has(cacheKey)) {
+      return groupFilledCache.get(cacheKey)!;
+    }
+    const row = db
+      .prepare(
+        `SELECT COUNT(*) as cnt FROM candidates
+         WHERE cluster_id = ?
+           AND (user_a_token = ? OR user_b_token = ?)
+           AND stage_a = ? AND stage_b = ?`,
+      )
+      .get(clusterId, callerToken, callerToken, Stage.CONNECTED, Stage.CONNECTED) as {
+      cnt: number;
+    };
+    const count = row?.cnt ?? 0;
+    groupFilledCache.set(cacheKey, count);
+    return count;
   }
+
+  const computedAt = new Date().toISOString();
+
+  const doUpsert = db.transaction(() => {
+    for (const item of topCandidates) {
+      const { a, b } = orderTokens(input.user_token, item.user.user_token);
+      const callerIsA = input.user_token === a;
+
+      // fit_a = how well B fits A's prefs, fit_b = how well A fits B's prefs
+      const fitA = callerIsA ? item.your_fit : item.their_fit;
+      const fitB = callerIsA ? item.their_fit : item.your_fit;
+
+      upsertStmt.run(
+        randomUUID(),
+        a,
+        b,
+        clusterId,
+        item.user.funnel_mode,
+        item.advisory_score,
+        fitA,
+        fitB,
+        item.intent_similarity,
+        Stage.UNDISCOVERED,
+        Stage.UNDISCOVERED,
+      );
+
+      // Advance caller's side to DISCOVERED if currently UNDISCOVERED
+      if (callerIsA) {
+        discoverStmtA.run(Stage.DISCOVERED, a, b, clusterId);
+      } else {
+        discoverStmtB.run(Stage.DISCOVERED, a, b, clusterId);
+      }
+    }
+  });
+
+  doUpsert();
+
+  // Build response objects
+  for (const item of topCandidates) {
+    const { a, b } = orderTokens(input.user_token, item.user.user_token);
+
+    const candidateRow = fetchCandidateStmt.get(a, b, clusterId) as
+      | CandidateRecord
+      | undefined;
+
+    const candidateId = candidateRow?.id ?? randomUUID();
+
+    // Reputation score: simple cold-start from outcomes in reputation_events
+    const repRow = db
+      .prepare(
+        `SELECT AVG(CASE rating
+                  WHEN 'positive' THEN 1.0
+                  WHEN 'neutral'  THEN 0.5
+                  WHEN 'negative' THEN 0.0
+                  ELSE 0.5
+                END) as avg_score,
+                COUNT(*) as cnt
+         FROM reputation_events
+         WHERE identity_id = ? AND cluster_id = ?`,
+      )
+      .get(item.user.user_token, clusterId) as {
+      avg_score: number | null;
+      cnt: number;
+    };
+
+    const reputationScore =
+      repRow && repRow.cnt > 0 ? quantize(repRow.avg_score ?? 0.5, 4) : 0.5;
+
+    // Verification summary uses all of the candidate's traits
+    const verificationSummary = buildVerificationSummary(item.allTraits);
+
+    // Parse intents
+    const intents: string[] = item.user.intents
+      ? (JSON.parse(item.user.intents) as string[])
+      : [];
+
+    // Parse agent_capabilities
+    const agentCapabilities: Capability[] = item.user.agent_capabilities
+      ? (JSON.parse(item.user.agent_capabilities) as Capability[])
+      : [];
+
+    // group_filled: only relevant for group mode
+    const isGroup = item.user.funnel_mode === "group";
+    const groupFilled = isGroup
+      ? getGroupFilled(clusterId, item.user.user_token)
+      : null;
+
+    // stale: candidate record last updated > 24h ago
+    const stale = candidateRow
+      ? Date.now() - new Date(candidateRow.updated_at).getTime() >
+        24 * 60 * 60 * 1000
+      : false;
+
+    results.push({
+      candidate_id: candidateId,
+      advisory_score: quantize(item.advisory_score, 2),
+      your_fit: quantize(item.your_fit, 2),
+      their_fit: quantize(item.their_fit, 2),
+      intent_similarity:
+        item.intent_similarity !== null
+          ? quantize(item.intent_similarity, 2)
+          : null,
+      preference_satisfaction: item.satisfaction,
+      visible_traits: item.publicTraits,
+      intents,
+      agent_capabilities: agentCapabilities,
+      reputation_score: reputationScore,
+      verification_summary: verificationSummary,
+      funnel_mode: item.user.funnel_mode,
+      group_size: item.user.group_size ?? null,
+      group_filled: groupFilled,
+      stale,
+      computed_at: computedAt,
+    });
+  }
+
+  // ── 7. Pending actions ───────────────────────────────────────────
+
+  const pendingActionRows = db
+    .prepare(
+      `SELECT candidate_id, action_type FROM pending_actions
+       WHERE user_token = ? AND consumed_at IS NULL`,
+    )
+    .all(input.user_token) as Array<{
+    candidate_id: string;
+    action_type: string;
+  }>;
+
+  const pendingActions: PendingAction[] = pendingActionRows.map((row) => ({
+    candidate_id: row.candidate_id,
+    action_type: row.action_type,
+  }));
+
+  // ── 8. Return ────────────────────────────────────────────────────
 
   return {
     ok: true,
-    data: result,
+    data: {
+      candidates: results,
+      total_scanned: totalScanned,
+      total_matches: totalMatches,
+      ranking_explanation: {
+        model_tier: "prior",
+        adjustments: [],
+        outcome_basis: 0,
+      },
+      next_cursor: null,
+      pending_actions: pendingActions,
+      nl_parsed: null,
+    },
   };
 }

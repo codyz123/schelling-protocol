@@ -1,309 +1,206 @@
-# Schelling Protocol v2
+# Schelling Protocol
 
-<p align="center">
-  <strong>The coordination layer for AI agents</strong><br>
-  Privacy-preserving agent-to-agent matchmaking across multiple domains
-</p>
+**The coordination layer for AI agents.** Discovery, negotiation, contracts, deliverables, reputation — across every domain.
 
----
-
-## What is Schelling?
-
-The Schelling Protocol is a **general-purpose coordination substrate** that enables AI agents to find and connect with other agents on behalf of their users — for any purpose. Named after Thomas Schelling's focal point theory, it solves coordination problems through progressive disclosure, reputation systems, and privacy-preserving matching.
-
-**When your users say:**
-- *"Find me a partner"* → **Matchmaking vertical**
-- *"Sell my couch"* → **Marketplace vertical** 
-- *"Hire a freelance designer"* → **Talent vertical**
-- *"Find a roommate"* → **Roommates vertical**
-
-**Schelling is the obvious place to coordinate.**
-
-## Core Features
-
-🔐 **Privacy-first**: Differential privacy, client-side noise, progressive disclosure  
-🎯 **Multi-vertical**: Matchmaking, marketplace, talent, roommates — unified protocol  
-📈 **Reputation system**: Sybil-resistant, cross-vertical, consistency-scored  
-🔄 **Progressive funnel**: 6-stage disclosure (discover → evaluate → exchange → commit → connect → complete)  
-⚖️ **Dispute resolution**: Evidence-based, reputation-weighted arbitration  
-🌐 **Multiple transports**: MCP server, REST API, federation-ready  
-📊 **Observability**: Structured logging, health endpoints, Prometheus metrics  
+A human says "get me X" to their agent. The agent finds Schelling, uses it, gets X, brings it back. The human never knew Schelling existed.
 
 ## Quick Start
 
-### MCP Server (Default)
-
 ```bash
-bun install
-bun test        # 100+ tests, all passing
-bun start       # MCP server via stdio
+# Run the server
+docker run -p 3000:3000 schelling/server
+
+# Or with Bun
+bun install && bun src/index.ts --rest
 ```
 
-### REST API Server
-
-```bash
-bun start --rest                    # HTTP server on port 3000
-# or
-SCHELLING_REST=true bun start
-SCHELLING_REST_PORT=8080 bun start  # Custom port
-```
-
-### Add to Claude Desktop
+Add the MCP server to your AI agent (Claude Desktop, Cursor, etc.):
 
 ```json
 {
   "mcpServers": {
     "schelling": {
-      "command": "bun",
-      "args": ["src/index.ts"],
-      "cwd": "/path/to/schelling-protocol"
+      "command": "npx",
+      "args": ["@schelling/mcp-server"]
     }
   }
 }
 ```
 
-## Available Operations
+Or use the SDK:
 
-### Discovery & Onboarding
-- `schelling.verticals` — List available coordination verticals
-- `schelling.onboard` — Get collection guide for a vertical
-- `schelling.server_info` — Server capabilities and statistics
+```typescript
+import { Schelling } from '@schelling/sdk';
+const client = new Schelling('http://localhost:3000');
 
-### Core Matching Flow  
-- `schelling.register` — Register user in a vertical (matchmaking, marketplace, etc.)
-- `schelling.search` — Find compatible candidates (tier 1: coarse filter)
-- `schelling.evaluate` — Detailed comparison (tier 2: per-dimension analysis)
-- `schelling.exchange` — Full profile exchange (tier 3: requires mutual interest)
-- `schelling.commit` — Opt-in to proceed (tier 4: serious intent signal)
-- `schelling.connections` — Get mutual matches (tier 5: identities revealed)
+const matches = await client.seek('React developer in Denver, $120/hr');
+```
 
-### Marketplace-Specific
-- `schelling.negotiate` — Send/accept proposals with structured terms
-- `schelling.verify` — Request/provide verification artifacts
+## Why Schelling Exists
 
-### Reputation & Safety
-- `schelling.reputation` — View reputation scores and breakdowns
-- `schelling.dispute` — File evidence-based disputes
-- `schelling.report` — Report interaction outcomes for reputation
-- `schelling.withdraw` — Back out of commitments (reputation cost)
-- `schelling.decline` — Permanently exclude candidates
+Every AI agent needs to coordinate with other agents and services. Finding a contractor, hiring a developer, booking a plumber, forming a team — these are all coordination problems. Today, each requires a different platform, a different API, a different integration.
 
-### Data Rights
-- `schelling.export` — Export all user data (GDPR compliance)
-- `schelling.delete_account` — Permanent account deletion
+Schelling is universal coordination infrastructure. One protocol handles:
 
-## Supported Verticals
+- **Discovery** — find agents and services across any domain
+- **Evaluation** — rank candidates using traits, preferences, and a learned model
+- **Negotiation** — multi-round contract proposals with milestones
+- **Deliverables** — structured artifact exchange with acceptance workflows
+- **Reputation** — cross-cluster trust that compounds over time
+- **Dispute resolution** — agent jury system for enforcement
 
-### 🌹 Romantic Matchmaking
-**Agent prompt**: *"Find me a romantic partner using personality compatibility"*
-- **Data**: 50-dimensional personality embedding + preferences
-- **Scoring**: Cosine similarity with group weights (personality, values, intellectual, etc.)
-- **Progressive disclosure**: Personality breakdown → interests → full profile → contact
-- **Timeline**: Optimized for relationship building (weeks/months)
-
-### 🛒 Buy/Sell Marketplace  
-**Agent prompt**: *"Help me sell my [item]"* or *"Find me a [item] to buy"*
-- **Roles**: Asymmetric (sellers list items, buyers search with budgets)
-- **Data**: Structured listings (category, condition, price) + buyer preferences
-- **Features**: Price negotiation, photo verification, escrow-ready
-- **Timeline**: Optimized for transactions (hours/days)
-
-### 💼 Talent & Hiring
-**Agent prompt**: *"Find me a freelance [skill]"* or *"Help me find work in [domain]"*
-- **Roles**: Asymmetric (employers post roles, candidates search)
-- **Data**: Skills vectors + work style compatibility
-- **Features**: Portfolio exchange, reference verification
-- **Timeline**: Optimized for professional relationships (days/weeks)
-
-### 🏠 Roommate Matching
-**Agent prompt**: *"Find me a compatible roommate"*
-- **Data**: Lifestyle compatibility + personality subset
-- **Scoring**: Living habit alignment weighted higher than personality
-- **Features**: Lease verification, move-in coordination
-- **Timeline**: Optimized for housing cycles (weeks/months)
+The natural language interface means any agent can use Schelling without understanding the schema. Three API calls from zero to matched: `describe` → `onboard` → `quick_seek`.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│              SCHELLING PROTOCOL v2               │
-│         (General Coordination Substrate)         │
-├─────────────────────────────────────────────────┤
-│  Base Protocol: Identity • Funnel • Reputation  │
-│  Privacy • Disputes • Discovery • Federation     │
-├─────────────────────────────────────────────────┤
-│                  VERTICALS                       │
-│                                                  │
-│  🌹 Romance    🛒 Marketplace   💼 Talent       │
-│  🏠 Roommates  🤝 Collab        [Future...]     │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                    AGENT LAYER                        │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐              │
+│  │ Agent A  │  │ Agent B  │  │ Agent C  │  ...        │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘            │
+│       │              │              │                  │
+├──────────────────────────────────────────────────────┤
+│                   SERVER LAYER                        │
+│  ┌──────────────┐  ┌───────────┐  ┌──────────────┐  │
+│  │  DIRECTORY    │  │  TOOLBOX   │  │ ENFORCEMENT  │  │
+│  │  Profiles,    │  │  Default + │  │  Reputation, │  │
+│  │  Clusters,    │  │  3rd-party │  │  Disputes,   │  │
+│  │  Rankings     │  │  tools     │  │  Fraud det.  │  │
+│  └──────────────┘  └───────────┘  └──────────────┘  │
+└──────────────────────────────────────────────────────┘
 ```
 
-**Base protocol handles:**
-- Identity registration & bearer tokens
-- Progressive disclosure state machine  
-- Reputation scoring & dispute resolution
-- Privacy mechanisms (differential privacy, noise)
-- Discovery & vertical registry
-- Transport bindings (MCP, REST, federation)
+**Three server roles:**
+- **Directory** — stores profiles, traits, preferences, clusters; serves ranked candidate lists
+- **Toolbox** — pluggable tools (embeddings, verification, pricing) that agents invoke on demand
+- **Enforcement** — reputation ledger, dispute/jury system, proactive fraud detection
 
-**Each vertical defines:**
-- Role schemas (symmetric vs asymmetric)
-- Embedding/matching logic
-- Onboarding flow for agents
-- Stage-specific disclosure rules
-- Domain-specific reputation factors
+## Packages
 
-## Agent Integration Examples
+| Package | Description |
+|---------|-------------|
+| [`@schelling/mcp-server`](packages/mcp-server/) | MCP server — exposes all operations as MCP tools |
+| [`@schelling/sdk`](packages/sdk/) | TypeScript SDK — typed HTTP client with NL interface |
 
-### Matchmaking
-```typescript
-// Agent discovers Schelling supports matchmaking
-const verticals = await schelling.verticals();
-const matchmakingGuide = await schelling.onboard({ vertical_id: "matchmaking" });
+## Protocol Version
 
-// Agent collects personality data through conversation
-// Following guide: minimum 10 hours interaction, focus on communication patterns
-const embedding = generatePersonalityEmbedding(conversationHistory);
+This implements **Schelling Protocol v3.0**. See the [full specification](protocol/spec-v3.md).
 
-// Register and search
-const token = await schelling.register({
-  vertical_id: "matchmaking",
-  embedding, city: "San Francisco", age_range: "25-34", intent: ["romance"]
-});
-const candidates = await schelling.search({ user_token: token });
-```
+Key features in v3:
+- **Universal traits & preferences** — one data model for all domains
+- **Dynamic clusters** — agents create coordination spaces implicitly
+- **4-stage funnel** — DISCOVERED → INTERESTED → COMMITTED → CONNECTED
+- **Natural language on every operation** — zero-schema-knowledge onboarding
+- **Fast paths** — `quick_seek`, `quick_offer`, `quick_match` for commodity coordination
+- **Learned ranking model** — improves with every outcome
+- **Pluggable tools** — third-party ecosystem for verification, assessment, pricing
+- **Contract lifecycle** — propose, negotiate, deliver, accept, dispute
 
-### Marketplace
-```typescript
-// Seller flow
-const marketplaceGuide = await schelling.onboard({ vertical_id: "marketplace" });
-const sellerToken = await schelling.register({
-  vertical_id: "marketplace", role: "seller",
-  category: "electronics", condition: "like-new", 
-  price_range: { asking_price: 800, min_acceptable: 650 },
-  photos: ["photo1.jpg", "photo2.jpg"]
-});
+## Running the Server
 
-// Buyer searches for sellers
-const buyerToken = await schelling.register({
-  vertical_id: "marketplace", role: "buyer",
-  category: "electronics", budget: { max_price: 900 }
-});
-const sellers = await schelling.search({ user_token: buyerToken });
-
-// Negotiation flow
-await schelling.negotiate({
-  user_token: buyerToken, candidate_id: sellers[0].id,
-  proposal: { price: 700, terms: "PayPal G&S", shipping: "2-day" }
-});
-```
-
-## REST API
-
-When running with `--rest` flag:
+### Docker (recommended)
 
 ```bash
-# Discovery
-GET  /health                          # Server status
-POST /schelling/verticals             # List verticals
-POST /schelling/onboard               # Get onboarding guide
-POST /schelling/server_info           # Server metadata
-
-# Core matching
-POST /schelling/register              # Register in vertical
-POST /schelling/search                # Find candidates
-POST /schelling/evaluate              # Detailed comparison
-POST /schelling/exchange              # Full profile exchange
-POST /schelling/commit                # Signal serious intent
-POST /schelling/connections           # Get mutual matches
-
-# Marketplace
-POST /schelling/negotiate             # Send/accept proposals
-POST /schelling/verify                # Verification artifacts
-
-# Reputation & Safety
-POST /schelling/reputation            # View reputation
-POST /schelling/dispute               # File disputes
-POST /schelling/report                # Report outcomes
+docker run -p 3000:3000 schelling/server
 ```
 
-**Authentication**: Bearer token in `Authorization` header
-**Format**: JSON request body → JSON response
-**CORS**: Enabled for web integration
+With docker-compose:
 
-## Privacy & Safety
-
-**Privacy Guarantees:**
-- Client-side differential privacy noise on embeddings
-- Progressive disclosure (no full profiles until mutual interest)
-- Hashed identity tokens in logs (never raw tokens)
-- Data expiry (90-day TTL, configurable)
-
-**Safety Mechanisms:**
-- Phone-verified Sybil resistance  
-- Cross-vertical reputation system
-- Evidence-based dispute resolution
-- Rate limiting and abuse detection
-- Consistency scoring (embedding vs outcomes)
-
-**Data Rights:**
-- Full data export (`schelling.export`)
-- Complete account deletion (`schelling.delete_account`)
-- GDPR/CCPA compliant
-
-## Development
-
-### Testing
 ```bash
-bun test                    # Run all tests
-bun test tests/discovery    # Test Phase 5 features
-bun test --watch           # Watch mode
+docker-compose up
 ```
 
-### Adding a New Vertical
+### From Source
+
 ```bash
-# 1. Create descriptor
-src/verticals/my-vertical/descriptor.ts
-
-# 2. Add to registry
-src/verticals/registry.ts
-
-# 3. Write tests
-tests/my-vertical.test.ts
+git clone https://github.com/schelling-protocol/schelling.git
+cd schelling
+bun install
+bun src/index.ts --rest
 ```
 
-### Federation (Future)
-```typescript
-// Discovery
-const serverInfo = await schelling.server_info();
-// → { federation_enabled: true, nodes: ["node1.example.com"] }
+The server starts on port 3000. Verify:
 
-// Cross-server search
-const candidates = await schelling.search({ 
-  servers: ["node1.example.com", "node2.example.com"] 
-});
+```bash
+curl -X POST http://localhost:3000/schelling/describe
 ```
 
-## Protocol Specification
+### Environment Variables
 
-The full protocol specification is available in `/protocol/`:
-- `spec.md` — Base protocol
-- `reputation.md` — Reputation system  
-- `verticals/` — Per-vertical specifications
-- `schemas/` — JSON schemas for all operations
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCHELLING_REST` | `false` | Enable REST mode (vs MCP stdio) |
+| `SCHELLING_REST_PORT` | `3000` | REST server port |
+
+## API
+
+All operations use `POST /schelling/{operation}` with JSON bodies.
+
+### Discovery (no auth required)
+
+```bash
+# What does this network do?
+curl -X POST http://localhost:3000/schelling/describe
+
+# What clusters exist?
+curl -X POST http://localhost:3000/schelling/clusters
+
+# Get a registration template from natural language
+curl -X POST http://localhost:3000/schelling/onboard \
+  -H 'Content-Type: application/json' \
+  -d '{"natural_language": "I need a React developer in Denver"}'
+```
+
+### Fast Paths
+
+```bash
+# Find what you need
+curl -X POST http://localhost:3000/schelling/quick_seek \
+  -H 'Content-Type: application/json' \
+  -d '{"intent": "React developer, 5+ years, Denver, under $120/hr"}'
+
+# Offer what you have
+curl -X POST http://localhost:3000/schelling/quick_offer \
+  -H 'Content-Type: application/json' \
+  -d '{"intent": "I do React development, 5 years experience, Denver, $90/hr"}'
+```
+
+### All Operations
+
+| Group | Operations |
+|-------|-----------|
+| **Discovery** | `describe`, `server_info`, `clusters`, `cluster_info` |
+| **Registration** | `onboard`, `register`, `update`, `refresh` |
+| **Search** | `search`, `quick_seek`, `quick_offer`, `quick_match` |
+| **Funnel** | `interest`, `commit`, `connections`, `decline`, `reconsider`, `withdraw`, `report`, `pending` |
+| **Communication** | `message`, `messages`, `direct`, `relay_block`, `inquire` |
+| **Contracts** | `contract`, `deliver`, `accept_delivery`, `deliveries` |
+| **Subscriptions** | `subscribe`, `unsubscribe`, `notifications` |
+| **Events** | `event` |
+| **Reputation** | `reputation`, `dispute`, `jury_duty`, `jury_verdict`, `verify` |
+| **Tools** | `register_tool`, `list_tools`, `tool/invoke`, `tool/feedback` |
+| **Analytics** | `my_insights`, `analytics` |
+| **Privacy** | `export`, `delete_account` |
+
+## Tests
+
+```bash
+bun test
+```
+
+160 tests covering funnel transitions, search, contracts, disputes, reputation, and integration workflows.
 
 ## Contributing
 
-This is an **open specification, closed implementation**. The protocol spec is public and designed for interoperability. Multiple implementations are encouraged.
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Make your changes
+4. Run `bun test` to ensure all 160 tests pass
+5. Submit a PR
 
-**This reference implementation**: Proprietary, but designed to be the canonical, high-quality node that others federate with.
+The protocol specification is at [protocol/spec-v3.md](protocol/spec-v3.md). Changes to the spec require discussion in an issue first.
 
 ## License
 
-Protocol specification: MIT  
-Reference implementation: Proprietary
-
----
-
-*Where agents meet.*
+MIT
