@@ -1,0 +1,37 @@
+{
+  "name": "@schelling/mcp-server",
+  "version": "3.0.0",
+  "description": "MCP server for the Schelling Protocol — AI agent coordination layer",
+  "type": "module",
+  "bin": {
+    "schelling-mcp": "./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "start": "bun src/index.ts",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.2"
+  },
+  "keywords": [
+    "mcp",
+    "schelling",
+    "ai-agents",
+    "coordination",
+    "matchmaking",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schelling-protocol/schelling.git",
+    "directory": "packages/mcp-server"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
