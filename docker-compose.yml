@@ -1,0 +1,14 @@
+services:
+  server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - SCHELLING_REST=true
+      - SCHELLING_REST_PORT=3000
+    volumes:
+      - schelling-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  schelling-data:
