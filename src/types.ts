@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { DatabaseConnection } from "./db/interface.js";
 
 // ─── Funnel Stages (v3) ─────────────────────────────────────────────
 // v3 simplified: 4 stages instead of v2's 7
@@ -130,7 +130,7 @@ export interface ErrorResponse {
 // ─── Handler Contract ───────────────────────────────────────────────
 
 export interface HandlerContext {
-  db: Database;
+  db: DatabaseConnection;
 }
 
 export type HandlerResult<T> =
