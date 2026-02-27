@@ -1,6 +1,6 @@
 node_modules
 data
-dashboard
+dashboard/node_modules
 packages
 protocol
 tests

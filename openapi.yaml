@@ -1,0 +1,3713 @@
+openapi: 3.0.3
+info:
+  title: Schelling Protocol REST API
+  version: 3.0.0
+  description: |
+    OpenAPI specification for the Schelling Protocol REST API.
+    All operations are POST requests to `/schelling/{operation}` unless noted otherwise.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      responses:
+        "200":
+          description: Server health and info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /openapi.yaml:
+    get:
+      operationId: getOpenApiYaml
+      summary: OpenAPI specification
+      responses:
+        "200":
+          description: OpenAPI YAML document
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+  /schelling/server_info:
+    post:
+      operationId: serverInfo
+      summary: Server information
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyInput"
+      responses:
+        "200":
+          description: Server info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerInfoOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/describe:
+    post:
+      operationId: describe
+      summary: Protocol description
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmptyInput"
+      responses:
+        "200":
+          description: Protocol description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DescribeOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/onboard:
+    post:
+      operationId: onboard
+      summary: Generate a registration template from natural language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardInput"
+      responses:
+        "200":
+          description: Onboarding results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/register:
+    post:
+      operationId: register
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "200":
+          description: Registration result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/update:
+    post:
+      operationId: update
+      summary: Update an existing user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInput"
+      responses:
+        "200":
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/refresh:
+    post:
+      operationId: refresh
+      summary: Refresh a user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshInput"
+      responses:
+        "200":
+          description: Refresh result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/clusters:
+    post:
+      operationId: clusters
+      summary: List or search clusters
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClustersInput"
+      responses:
+        "200":
+          description: Cluster list or search result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClustersOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/cluster_info:
+    post:
+      operationId: clusterInfo
+      summary: Get cluster details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterInfoInput"
+      responses:
+        "200":
+          description: Cluster info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClusterInfoOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/search:
+    post:
+      operationId: search
+      summary: Search for candidates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchInput"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/quick_seek:
+    post:
+      operationId: quickSeek
+      summary: Fast-path seek
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickSeekInput"
+      responses:
+        "200":
+          description: Quick seek result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickSeekOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/quick_offer:
+    post:
+      operationId: quickOffer
+      summary: Fast-path offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickOfferInput"
+      responses:
+        "200":
+          description: Quick offer result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickOfferOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/quick_match:
+    post:
+      operationId: quickMatch
+      summary: Fast-path match between seek and offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickMatchInput"
+      responses:
+        "200":
+          description: Quick match result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickMatchOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/interest:
+    post:
+      operationId: interest
+      summary: Express interest in a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InterestInput"
+      responses:
+        "200":
+          description: Interest result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterestOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/commit:
+    post:
+      operationId: commit
+      summary: Commit to proceed with a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitInput"
+      responses:
+        "200":
+          description: Commit result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/connections:
+    post:
+      operationId: connections
+      summary: List candidate connections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionsInput"
+      responses:
+        "200":
+          description: Connection list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionsOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/decline:
+    post:
+      operationId: decline
+      summary: Decline a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeclineInput"
+      responses:
+        "200":
+          description: Decline result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeclineOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/reconsider:
+    post:
+      operationId: reconsider
+      summary: Reconsider a declined candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReconsiderInput"
+      responses:
+        "200":
+          description: Reconsider result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconsiderOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/withdraw:
+    post:
+      operationId: withdraw
+      summary: Withdraw from a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawInput"
+      responses:
+        "200":
+          description: Withdraw result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/report:
+    post:
+      operationId: report
+      summary: Report outcome for a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "200":
+          description: Report result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/pending:
+    post:
+      operationId: pending
+      summary: List pending actions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PendingInput"
+      responses:
+        "200":
+          description: Pending actions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/message:
+    post:
+      operationId: message
+      summary: Send a message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/messages:
+    post:
+      operationId: messages
+      summary: List messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessagesInput"
+      responses:
+        "200":
+          description: Messages list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagesOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/direct:
+    post:
+      operationId: direct
+      summary: Share direct contact info
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectInput"
+      responses:
+        "200":
+          description: Direct sharing result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/relay_block:
+    post:
+      operationId: relayBlock
+      summary: Block or unblock relay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RelayBlockInput"
+      responses:
+        "200":
+          description: Relay block result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelayBlockOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/inquire:
+    post:
+      operationId: inquire
+      summary: Ask, answer, or list inquiries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InquireInput"
+      responses:
+        "200":
+          description: Inquiry result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InquireOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/contract:
+    post:
+      operationId: contract
+      summary: Contract actions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContractInput"
+      responses:
+        "200":
+          description: Contract action result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContractOutputUnion"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/deliver:
+    post:
+      operationId: deliver
+      summary: Deliver a contract milestone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliverInput"
+      responses:
+        "200":
+          description: Deliver result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliverOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/accept_delivery:
+    post:
+      operationId: acceptDelivery
+      summary: Accept or reject a delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptDeliveryInput"
+      responses:
+        "200":
+          description: Accept delivery result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptDeliveryOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/deliveries:
+    post:
+      operationId: deliveries
+      summary: List contract deliveries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveriesInput"
+      responses:
+        "200":
+          description: Deliveries list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveriesOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/event:
+    post:
+      operationId: event
+      summary: Emit, acknowledge, or list events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "200":
+          description: Event result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/subscribe:
+    post:
+      operationId: subscribe
+      summary: Create or list subscriptions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscribeInput"
+      responses:
+        "200":
+          description: Subscription result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscribeOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/unsubscribe:
+    post:
+      operationId: unsubscribe
+      summary: Cancel a subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnsubscribeInput"
+      responses:
+        "200":
+          description: Unsubscribe result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnsubscribeOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/notifications:
+    post:
+      operationId: notifications
+      summary: List notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationsInput"
+      responses:
+        "200":
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationsOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/reputation:
+    post:
+      operationId: reputation
+      summary: Reputation summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReputationInput"
+      responses:
+        "200":
+          description: Reputation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReputationOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/dispute:
+    post:
+      operationId: dispute
+      summary: File a dispute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeInput"
+      responses:
+        "200":
+          description: Dispute result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/jury_duty:
+    post:
+      operationId: juryDuty
+      summary: List jury duty cases
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuryDutyInput"
+      responses:
+        "200":
+          description: Jury duty cases
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuryDutyOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/jury_verdict:
+    post:
+      operationId: juryVerdict
+      summary: Submit a jury verdict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuryVerdictInput"
+      responses:
+        "200":
+          description: Verdict result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuryVerdictOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/verify:
+    post:
+      operationId: verify
+      summary: Submit or request verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyInput"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/register_tool:
+    post:
+      operationId: registerTool
+      summary: Register a tool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterToolInput"
+      responses:
+        "200":
+          description: Register tool result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterToolOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/list_tools:
+    post:
+      operationId: listTools
+      summary: List tools
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListToolsInput"
+      responses:
+        "200":
+          description: Tool list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListToolsOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/tool/invoke:
+    post:
+      operationId: toolInvoke
+      summary: Invoke a tool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolInvokeInput"
+      responses:
+        "200":
+          description: Tool invocation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolInvokeOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/tool/feedback:
+    post:
+      operationId: toolFeedback
+      summary: Provide tool feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolFeedbackInput"
+      responses:
+        "200":
+          description: Tool feedback result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolFeedbackOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/my_insights:
+    post:
+      operationId: myInsights
+      summary: Get personalized insights
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MyInsightsInput"
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyInsightsOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/analytics:
+    post:
+      operationId: analytics
+      summary: Admin analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsInput"
+      responses:
+        "200":
+          description: Analytics result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/export:
+    post:
+      operationId: export
+      summary: Export user data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportInput"
+      responses:
+        "200":
+          description: Export result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/delete_account:
+    post:
+      operationId: deleteAccount
+      summary: Delete user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountInput"
+      responses:
+        "200":
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteAccountOutput"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    EmptyInput:
+      type: object
+      additionalProperties: false
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    Visibility:
+      type: string
+      enum: [public, after_interest, after_commit, after_connect, private]
+
+    VerificationTier:
+      type: string
+      enum: [unverified, self_verified, cross_verified, authority_verified]
+
+    PreferenceOperator:
+      type: string
+      enum: [eq, neq, gt, gte, lt, lte, in, contains, exists, range, contains_any, regex, contains_all]
+
+    FunnelMode:
+      type: string
+      enum: [bilateral, broadcast, group, auction]
+
+    Trait:
+      type: object
+      required: [key, value, value_type, visibility]
+      properties:
+        key:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              items: { type: string }
+        value_type:
+          type: string
+          enum: [string, number, boolean, enum, array]
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+        verification:
+          $ref: "#/components/schemas/VerificationTier"
+        display_name:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        enum_values:
+          type: array
+          items: { type: string }
+          nullable: true
+
+    Preference:
+      type: object
+      required: [trait_key, operator, value, weight]
+      properties:
+        trait_key:
+          type: string
+        operator:
+          $ref: "#/components/schemas/PreferenceOperator"
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              items: { type: string }
+            - type: array
+              items: { type: number }
+        weight:
+          type: number
+        label:
+          type: string
+          nullable: true
+
+    Capability:
+      type: object
+      required: [capability]
+      properties:
+        capability:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+          nullable: true
+        confidence:
+          type: number
+          nullable: true
+
+    AgentAttestation:
+      type: object
+      required: [model, method, interaction_hours, generated_at]
+      properties:
+        model: { type: string }
+        method: { type: string }
+        interaction_hours: { type: number }
+        generated_at: { type: string, format: date-time }
+
+    TextProfile:
+      type: object
+      properties:
+        description: { type: string }
+        seeking: { type: string }
+        interests:
+          type: array
+          items: { type: string }
+        values_text: { type: string }
+
+    Identity:
+      type: object
+      properties:
+        name: { type: string }
+        contact: { type: string }
+        phone_hash: { type: string }
+
+    NLParseResult:
+      type: object
+      required: [cluster_id, traits, keywords]
+      properties:
+        cluster_id:
+          type: string
+          nullable: true
+        traits:
+          type: array
+          items: { $ref: "#/components/schemas/Trait" }
+        keywords:
+          type: array
+          items: { type: string }
+
+    VisibleTrait:
+      type: object
+      required: [key, value, value_type, verification]
+      properties:
+        key: { type: string }
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              items: { type: string }
+        value_type: { type: string }
+        display_name:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        verification: { type: string }
+
+    VisibleTraitWithVisibility:
+      allOf:
+        - $ref: "#/components/schemas/VisibleTrait"
+        - type: object
+          required: [visibility]
+          properties:
+            visibility: { type: string }
+
+    PreferenceSatisfactionDetail:
+      type: object
+      required: [satisfied, score, candidate_value, missing]
+      properties:
+        satisfied: { type: boolean }
+        score: { type: number }
+        candidate_value: { }
+        missing: { type: boolean }
+
+    VerificationSummary:
+      type: object
+      required: [total_traits, unverified, self_verified, cross_verified, authority_verified, overall_trust]
+      properties:
+        total_traits: { type: number }
+        unverified: { type: number }
+        self_verified: { type: number }
+        cross_verified: { type: number }
+        authority_verified: { type: number }
+        overall_trust: { type: number }
+
+    RankingExplanation:
+      type: object
+      required: [model_tier, adjustments, outcome_basis]
+      properties:
+        model_tier:
+          type: string
+          enum: [prior]
+        adjustments:
+          type: array
+          items: {}
+        outcome_basis:
+          type: integer
+          enum: [0]
+
+    SearchPendingAction:
+      type: object
+      required: [candidate_id, action_type]
+      properties:
+        candidate_id: { type: string }
+        action_type: { type: string }
+
+    SearchResult:
+      type: object
+      required:
+        - candidate_id
+        - advisory_score
+        - your_fit
+        - their_fit
+        - intent_similarity
+        - preference_satisfaction
+        - visible_traits
+        - intents
+        - agent_capabilities
+        - reputation_score
+        - verification_summary
+        - funnel_mode
+        - group_size
+        - group_filled
+        - stale
+        - computed_at
+      properties:
+        candidate_id: { type: string }
+        advisory_score: { type: number }
+        your_fit: { type: number }
+        their_fit: { type: number }
+        intent_similarity: { type: number, nullable: true }
+        preference_satisfaction:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PreferenceSatisfactionDetail"
+        visible_traits:
+          type: array
+          items: { $ref: "#/components/schemas/Trait" }
+        intents:
+          type: array
+          items: { type: string }
+        agent_capabilities:
+          type: array
+          items: { $ref: "#/components/schemas/Capability" }
+        reputation_score: { type: number }
+        verification_summary:
+          $ref: "#/components/schemas/VerificationSummary"
+        funnel_mode: { type: string }
+        group_size: { type: number, nullable: true }
+        group_filled: { type: number, nullable: true }
+        stale: { type: boolean }
+        computed_at: { type: string, format: date-time }
+
+    SearchOutput:
+      type: object
+      required: [candidates, total_scanned, total_matches, ranking_explanation, next_cursor, pending_actions, nl_parsed]
+      properties:
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/SearchResult" }
+        total_scanned: { type: number }
+        total_matches: { type: number }
+        ranking_explanation:
+          $ref: "#/components/schemas/RankingExplanation"
+        next_cursor:
+          type: string
+          nullable: true
+        pending_actions:
+          type: array
+          items: { $ref: "#/components/schemas/SearchPendingAction" }
+        nl_parsed:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    SearchInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        cluster_id: { type: string }
+        top_k: { type: number }
+        threshold: { type: number }
+
+    RegisterInput:
+      type: object
+      required: [protocol_version, cluster_id]
+      properties:
+        protocol_version: { type: string }
+        cluster_id: { type: string }
+        role: { type: string }
+        funnel_mode: { $ref: "#/components/schemas/FunnelMode" }
+        group_size: { type: number }
+        auto_fill: { type: boolean }
+        group_deadline: { type: string, format: date-time }
+        traits:
+          type: array
+          items: { $ref: "#/components/schemas/Trait" }
+        natural_language: { type: string }
+        preferences:
+          type: array
+          items: { $ref: "#/components/schemas/Preference" }
+        intent_embedding:
+          type: array
+          items: { type: number }
+        intents:
+          type: array
+          items: { type: string }
+        personality_embedding:
+          type: array
+          items: { type: number }
+        appearance_embedding:
+          type: array
+          items: { type: number }
+        text_profile: { $ref: "#/components/schemas/TextProfile" }
+        identity: { $ref: "#/components/schemas/Identity" }
+        agent_model: { type: string }
+        agent_capabilities:
+          type: array
+          items: {}
+        agent_attestation: { $ref: "#/components/schemas/AgentAttestation" }
+        media_refs:
+          type: array
+          items: { type: string }
+        auto_interest_opt_out: { type: boolean }
+        behavioral_inference_opt_out: { type: boolean }
+        user_token: { type: string }
+        idempotency_key: { type: string }
+
+    RegisterOutput:
+      type: object
+      required:
+        - user_token
+        - protocol_version
+        - cluster_id
+        - cluster_created
+        - trait_count
+        - preference_count
+        - profile_completeness
+        - suggested_additions
+        - nl_parsed
+      properties:
+        user_token: { type: string }
+        protocol_version: { type: string, enum: ["3.0"] }
+        cluster_id: { type: string }
+        cluster_created: { type: boolean }
+        trait_count: { type: number }
+        preference_count: { type: number }
+        profile_completeness: { type: number }
+        suggested_additions:
+          type: array
+          items: { type: string }
+        nl_parsed:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    UpdateInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        traits:
+          type: array
+          items: { $ref: "#/components/schemas/Trait" }
+        remove_traits:
+          type: array
+          items: { type: string }
+        preferences:
+          type: array
+          items: { $ref: "#/components/schemas/Preference" }
+        remove_preferences:
+          type: array
+          items: { type: string }
+        text_profile: { $ref: "#/components/schemas/TextProfile" }
+        intent_embedding:
+          type: array
+          items: { type: number }
+        intents:
+          type: array
+          items: { type: string }
+        personality_embedding:
+          type: array
+          items: { type: number }
+        appearance_embedding:
+          type: array
+          items: { type: number }
+        status:
+          type: string
+          enum: [active, paused, delisted]
+        funnel_mode: { $ref: "#/components/schemas/FunnelMode" }
+        identity: { $ref: "#/components/schemas/Identity" }
+        agent_model: { type: string }
+        agent_capabilities:
+          type: array
+          items: {}
+        agent_attestation: { $ref: "#/components/schemas/AgentAttestation" }
+        media_refs:
+          type: array
+          items: { type: string }
+        auto_interest_opt_out: { type: boolean }
+        behavioral_inference_opt_out: { type: boolean }
+        group_size: { type: number }
+        auto_fill: { type: boolean }
+        group_deadline: { type: string, format: date-time }
+
+    UpdateOutput:
+      type: object
+      required: [updated, trait_count, preference_count, profile_completeness, nl_parsed]
+      properties:
+        updated: { type: boolean, enum: [true] }
+        trait_count: { type: number }
+        preference_count: { type: number }
+        profile_completeness: { type: number }
+        nl_parsed:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    RefreshInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        idempotency_key: { type: string }
+
+    RefreshOutput:
+      type: object
+      required: [refreshed, refreshed_at, next_refresh_due]
+      properties:
+        refreshed: { type: boolean, enum: [true] }
+        refreshed_at: { type: string, format: date-time }
+        next_refresh_due: { type: string, format: date-time }
+
+    OnboardInput:
+      type: object
+      required: [natural_language]
+      properties:
+        natural_language: { type: string }
+        cluster_hint: { type: string }
+        role_hint: { type: string }
+
+    OnboardOutput:
+      type: object
+      required:
+        - suggested_cluster
+        - suggested_role
+        - parsed_traits
+        - parsed_preferences
+        - additional_traits_suggested
+        - registration_template
+        - clarification_needed
+        - cluster_priors
+      properties:
+        suggested_cluster:
+          type: object
+          required: [cluster_id, display_name, confidence, alternatives]
+          properties:
+            cluster_id: { type: string }
+            display_name: { type: string, nullable: true }
+            confidence: { type: number }
+            alternatives:
+              type: array
+              items:
+                type: object
+                required: [cluster_id, display_name, confidence]
+                properties:
+                  cluster_id: { type: string }
+                  display_name: { type: string, nullable: true }
+                  confidence: { type: number }
+        suggested_role:
+          type: object
+          nullable: true
+          required: [role_id, confidence]
+          properties:
+            role_id: { type: string }
+            confidence: { type: number }
+        parsed_traits:
+          type: array
+          items:
+            type: object
+            required: [key, value, value_type, visibility, source]
+            properties:
+              key: { type: string }
+              value:
+                oneOf:
+                  - type: string
+                  - type: number
+              value_type:
+                type: string
+                enum: [string, number]
+              visibility:
+                type: string
+                enum: [public]
+              source:
+                type: string
+                enum: [nl_extracted]
+        parsed_preferences:
+          type: array
+          items: {}
+        additional_traits_suggested:
+          type: array
+          items:
+            type: object
+            required: [trait_key, display_name, prompt, frequency]
+            properties:
+              trait_key: { type: string }
+              display_name: { type: string, nullable: true }
+              prompt: { type: string, nullable: true }
+              frequency: { type: number }
+        registration_template:
+          type: object
+          required: [protocol_version, cluster_id, role, traits, preferences, intents]
+          properties:
+            protocol_version: { type: string }
+            cluster_id: { type: string }
+            role: { type: string, nullable: true }
+            traits:
+              type: array
+              items:
+                type: object
+                required: [key, value, value_type, visibility]
+                properties:
+                  key: { type: string }
+                  value:
+                    oneOf:
+                      - type: string
+                      - type: number
+                  value_type:
+                    type: string
+                    enum: [string, number]
+                  visibility:
+                    type: string
+                    enum: [public]
+            preferences:
+              type: array
+              items: {}
+            intents:
+              type: array
+              items: { type: string }
+        clarification_needed:
+          type: object
+          additionalProperties: true
+          nullable: true
+        cluster_priors:
+          type: object
+          additionalProperties: true
+
+    ClustersInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [list, search, describe]
+        query: { type: string }
+        prefix: { type: string }
+        min_population: { type: number }
+        sort: { type: string }
+        limit: { type: number }
+        cursor: { type: string }
+
+    ClustersOutput:
+      type: object
+      required: [action, clusters, total, next_cursor]
+      properties:
+        action: { type: string }
+        clusters:
+          type: array
+          items:
+            type: object
+            required: [cluster_id, display_name, description, population, phase, default_funnel_mode, symmetric, age_restricted, last_activity]
+            properties:
+              cluster_id: { type: string }
+              display_name: { type: string, nullable: true }
+              description: { type: string, nullable: true }
+              population: { type: number }
+              phase: { type: string }
+              default_funnel_mode: { type: string }
+              symmetric: { type: boolean }
+              age_restricted: { type: boolean }
+              last_activity: { type: string, format: date-time }
+        total: { type: number }
+        next_cursor: { type: string, nullable: true }
+
+    ClusterInfoInput:
+      type: object
+      required: [cluster_id]
+      properties:
+        cluster_id: { type: string }
+
+    ClusterInfoOutput:
+      type: object
+      required:
+        - cluster_id
+        - display_name
+        - description
+        - population
+        - phase
+        - settings
+        - suggested_traits
+        - metadata
+        - created_at
+        - last_activity
+      properties:
+        cluster_id: { type: string }
+        display_name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        population: { type: number }
+        phase: { type: string }
+        settings:
+          type: object
+          required: [symmetric, exclusive_commitment, age_restricted, default_funnel_mode, max_negotiation_rounds, proposal_timeout_hours]
+          properties:
+            symmetric: { type: boolean }
+            exclusive_commitment: { type: boolean }
+            age_restricted: { type: boolean }
+            default_funnel_mode: { type: string }
+            max_negotiation_rounds: { type: number }
+            proposal_timeout_hours: { type: number }
+        suggested_traits:
+          type: array
+          items:
+            type: object
+            required: [trait_key, value_type, display_name, frequency, signal_strength, prompt, enum_values]
+            properties:
+              trait_key: { type: string }
+              value_type: { type: string, nullable: true }
+              display_name: { type: string, nullable: true }
+              frequency: { type: number }
+              signal_strength: { type: number }
+              prompt: { type: string, nullable: true }
+              enum_values:
+                type: array
+                items: { type: string }
+                nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at: { type: string, format: date-time }
+        last_activity: { type: string, format: date-time }
+
+    InterestInput:
+      type: object
+      required: [user_token, candidate_id]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        contract_proposal:
+          type: object
+          additionalProperties: true
+          nullable: true
+        idempotency_key: { type: string }
+
+    InterestOutput:
+      type: object
+      required: [candidate_id, your_stage, their_stage, mutual_interest, newly_visible_traits, contract_id, interest_expires_at]
+      properties:
+        candidate_id: { type: string }
+        your_stage: { type: number }
+        their_stage: { type: number }
+        mutual_interest: { type: boolean }
+        newly_visible_traits:
+          type: array
+          items: { $ref: "#/components/schemas/VisibleTrait" }
+        contract_id:
+          type: string
+          nullable: true
+        interest_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CommitInput:
+      type: object
+      required: [user_token, candidate_id]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        idempotency_key: { type: string }
+
+    CommitOutput:
+      type: object
+      required: [candidate_id, your_stage, their_stage, connected, newly_visible_traits]
+      properties:
+        candidate_id: { type: string }
+        your_stage: { type: number }
+        their_stage: { type: number }
+        connected: { type: boolean }
+        newly_visible_traits:
+          type: array
+          items: { $ref: "#/components/schemas/VisibleTrait" }
+
+    ConnectionsInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        stage_filter: { type: number }
+        cluster_filter: { type: string }
+        mode_filter: { type: string }
+        limit: { type: number }
+        cursor: { type: string }
+
+    CandidateSummary:
+      type: object
+      required:
+        - id
+        - other_token_hash
+        - cluster_id
+        - funnel_mode
+        - score
+        - fit_for_you
+        - fit_for_them
+        - intent_similarity
+        - your_stage
+        - their_stage
+        - created_at
+        - updated_at
+        - visible_traits
+      properties:
+        id: { type: string }
+        other_token_hash: { type: string }
+        cluster_id: { type: string }
+        funnel_mode: { type: string }
+        score: { type: number }
+        fit_for_you: { type: number }
+        fit_for_them: { type: number }
+        intent_similarity: { type: number, nullable: true }
+        your_stage: { type: number }
+        their_stage: { type: number }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        visible_traits:
+          type: array
+          items: { $ref: "#/components/schemas/VisibleTraitWithVisibility" }
+
+    ConnectionsOutput:
+      type: object
+      required: [candidates, total, next_cursor]
+      properties:
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/CandidateSummary" }
+        total: { type: number }
+        next_cursor: { type: string, nullable: true }
+
+    DeclineInput:
+      type: object
+      required: [user_token, candidate_id]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        reason:
+          type: string
+          enum: [not_interested, dealbreaker, timing, logistics, other]
+        feedback:
+          type: object
+          additionalProperties: true
+        idempotency_key: { type: string }
+
+    DeclineOutput:
+      type: object
+      required: [declined, decline_count, permanent, expires_at]
+      properties:
+        declined: { type: boolean, enum: [true] }
+        decline_count: { type: number }
+        permanent: { type: boolean }
+        expires_at: { type: string, format: date-time, nullable: true }
+
+    ReconsiderInput:
+      type: object
+      required: [user_token, candidate_id]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        idempotency_key: { type: string }
+
+    ReconsiderOutput:
+      type: object
+      required: [candidate_id, stage, reconsidered_at]
+      properties:
+        candidate_id: { type: string }
+        stage: { type: string, enum: [DISCOVERED] }
+        reconsidered_at: { type: string, format: date-time }
+
+    WithdrawInput:
+      type: object
+      required: [user_token, candidate_id]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        reason: { type: string }
+        idempotency_key: { type: string }
+
+    WithdrawOutput:
+      type: object
+      required: [withdrawn, your_stage]
+      properties:
+        withdrawn: { type: boolean, enum: [true] }
+        your_stage: { type: number }
+
+    ReportInput:
+      type: object
+      required: [user_token, candidate_id, outcome]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        outcome:
+          type: string
+          enum: [positive, neutral, negative]
+        feedback:
+          type: object
+          additionalProperties: true
+        idempotency_key: { type: string }
+
+    ReportOutput:
+      type: object
+      required: [reported, reported_at]
+      properties:
+        reported: { type: boolean, enum: [true] }
+        reported_at: { type: string, format: date-time }
+
+    PendingInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+
+    PendingAction:
+      type: object
+      required: [id, candidate_id, action_type, details, created_at]
+      properties:
+        id: { type: string }
+        candidate_id: { type: string, nullable: true }
+        action_type: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at: { type: string, format: date-time }
+
+    PendingOutput:
+      type: object
+      required: [actions]
+      properties:
+        actions:
+          type: array
+          items: { $ref: "#/components/schemas/PendingAction" }
+
+    MessageInput:
+      type: object
+      required: [user_token, candidate_id, content]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        content: { type: string }
+        idempotency_key: { type: string }
+
+    MessageOutput:
+      type: object
+      required: [message_id, sent_at]
+      properties:
+        message_id: { type: string }
+        sent_at: { type: string, format: date-time }
+
+    MessagesInput:
+      type: object
+      required: [user_token, candidate_id]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        since: { type: string, format: date-time }
+        limit: { type: number }
+        cursor: { type: string }
+
+    MessageSummary:
+      type: object
+      required: [message_id, sender, content, sent_at]
+      properties:
+        message_id: { type: string }
+        sender:
+          type: string
+          enum: [you, them]
+        content: { type: string }
+        sent_at: { type: string, format: date-time }
+
+    MessagesOutput:
+      type: object
+      required: [messages, total, next_cursor]
+      properties:
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/MessageSummary" }
+        total: { type: number }
+        next_cursor: { type: string, nullable: true }
+
+    DirectInput:
+      type: object
+      required: [user_token, candidate_id, contact_info]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        contact_info: { type: string }
+        idempotency_key: { type: string }
+
+    DirectOutput:
+      type: object
+      required: [shared, mutual, their_contact]
+      properties:
+        shared: { type: boolean, enum: [true] }
+        mutual: { type: boolean }
+        their_contact: { type: string, nullable: true }
+
+    RelayBlockInput:
+      type: object
+      required: [user_token, candidate_id, blocked]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        blocked: { type: boolean }
+
+    RelayBlockOutput:
+      type: object
+      required: [blocked]
+      properties:
+        blocked: { type: boolean }
+
+    InquireAskInput:
+      type: object
+      required: [user_token, candidate_id, action, question]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        action: { type: string, enum: [ask] }
+        question: { type: string }
+        category:
+          type: string
+          enum: [dealbreakers, logistics, compensation, lifestyle, custom]
+        required: { type: boolean }
+        idempotency_key: { type: string }
+
+    InquireAnswerInput:
+      type: object
+      required: [user_token, candidate_id, action, inquiry_id, answer]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        action: { type: string, enum: [answer] }
+        inquiry_id: { type: string }
+        answer: { type: string }
+        confidence: { type: number }
+        source:
+          type: string
+          enum: [agent_knowledge, human_confirmed]
+        idempotency_key: { type: string }
+
+    InquireListInput:
+      type: object
+      required: [user_token, candidate_id, action]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        action: { type: string, enum: [list] }
+
+    InquireInput:
+      oneOf:
+        - $ref: "#/components/schemas/InquireAskInput"
+        - $ref: "#/components/schemas/InquireAnswerInput"
+        - $ref: "#/components/schemas/InquireListInput"
+
+    InquireAskOutput:
+      type: object
+      required: [inquiry_id, status]
+      properties:
+        inquiry_id: { type: string }
+        status: { type: string, enum: [pending] }
+
+    InquireAnswerOutput:
+      type: object
+      required: [inquiry_id, status, answered_at]
+      properties:
+        inquiry_id: { type: string }
+        status: { type: string, enum: [answered] }
+        answered_at: { type: string, format: date-time }
+
+    InquireListItem:
+      type: object
+      required: [inquiry_id, direction, question, category, required, answer, answer_confidence, answer_source, status, created_at, answered_at]
+      properties:
+        inquiry_id: { type: string }
+        direction:
+          type: string
+          enum: [from_you, to_you]
+        question: { type: string }
+        category: { type: string, nullable: true }
+        required: { type: boolean }
+        answer: { type: string, nullable: true }
+        answer_confidence: { type: number, nullable: true }
+        answer_source: { type: string, nullable: true }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        answered_at: { type: string, format: date-time, nullable: true }
+
+    InquireListOutput:
+      type: object
+      required: [inquiries]
+      properties:
+        inquiries:
+          type: array
+          items: { $ref: "#/components/schemas/InquireListItem" }
+
+    InquireOutput:
+      oneOf:
+        - $ref: "#/components/schemas/InquireAskOutput"
+        - $ref: "#/components/schemas/InquireAnswerOutput"
+        - $ref: "#/components/schemas/InquireListOutput"
+
+    ContractInput:
+      type: object
+      required: [user_token, action]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        action:
+          type: string
+          enum: [propose, accept, reject, counter, complete, terminate, list]
+        contract_id: { type: string }
+        terms:
+          type: object
+          additionalProperties: true
+        type:
+          type: string
+          enum: [match, service, task, custom]
+        dispute_content_disclosure: { type: boolean }
+        safe_types:
+          type: array
+          items: { type: string }
+        terms_schema_version: { type: string }
+        milestones:
+          type: array
+          items:
+            type: object
+            required: [milestone_id, description, deadline]
+            properties:
+              milestone_id: { type: string }
+              description: { type: string }
+              deadline: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        reason: { type: string }
+        status: { type: string }
+        idempotency_key: { type: string }
+
+    ContractOutput:
+      type: object
+      required:
+        - contract_id
+        - candidate_id
+        - status
+        - type
+        - terms
+        - milestones
+        - round
+        - proposed_by
+        - proposed_at
+        - accepted_at
+        - completed_at
+        - expires_at
+        - supersedes
+      properties:
+        contract_id: { type: string }
+        candidate_id: { type: string }
+        status: { type: string }
+        type: { type: string }
+        terms:
+          type: object
+          additionalProperties: true
+        milestones:
+          type: array
+          items:
+            type: object
+            required: [milestone_id, description, deadline]
+            properties:
+              milestone_id: { type: string }
+              description: { type: string }
+              deadline: { type: string, format: date-time }
+          nullable: true
+        round: { type: number }
+        proposed_by: { type: string }
+        proposed_at: { type: string, format: date-time }
+        accepted_at: { type: string, format: date-time, nullable: true }
+        completed_at: { type: string, format: date-time, nullable: true }
+        expires_at: { type: string, format: date-time }
+        supersedes: { type: string, nullable: true }
+
+    ContractListOutput:
+      type: object
+      required: [contracts, total]
+      properties:
+        contracts:
+          type: array
+          items: { $ref: "#/components/schemas/ContractOutput" }
+        total: { type: number }
+
+    ContractOutputUnion:
+      oneOf:
+        - $ref: "#/components/schemas/ContractOutput"
+        - $ref: "#/components/schemas/ContractListOutput"
+
+    DeliverInput:
+      type: object
+      required: [user_token, contract_id, deliverable]
+      properties:
+        user_token: { type: string }
+        contract_id: { type: string }
+        milestone_id: { type: string }
+        deliverable:
+          type: object
+          required: [type, content]
+          properties:
+            type: { type: string }
+            content: { type: string }
+            content_type: { type: string }
+            filename: { type: string }
+            metadata:
+              type: object
+              additionalProperties: true
+            checksum: { type: string }
+        message: { type: string }
+        idempotency_key: { type: string }
+
+    DeliverOutput:
+      type: object
+      required: [delivery_id, contract_id, milestone_id, delivered_at, expires_at, status]
+      properties:
+        delivery_id: { type: string }
+        contract_id: { type: string }
+        milestone_id: { type: string, nullable: true }
+        delivered_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        status: { type: string }
+
+    AcceptDeliveryInput:
+      type: object
+      required: [user_token, delivery_id, accepted]
+      properties:
+        user_token: { type: string }
+        delivery_id: { type: string }
+        accepted: { type: boolean }
+        feedback: { type: string }
+        rating: { type: number }
+        idempotency_key: { type: string }
+
+    AcceptDeliveryOutput:
+      type: object
+      required: [delivery_id, status, responded_at, contract_status, milestone_status]
+      properties:
+        delivery_id: { type: string }
+        status: { type: string }
+        responded_at: { type: string, format: date-time }
+        contract_status: { type: string }
+        milestone_status: { type: string, nullable: true }
+
+    DeliveriesInput:
+      type: object
+      required: [user_token, contract_id]
+      properties:
+        user_token: { type: string }
+        contract_id: { type: string }
+        status_filter: { type: string }
+
+    DeliveryView:
+      type: object
+      required:
+        - delivery_id
+        - contract_id
+        - milestone_id
+        - type
+        - content
+        - content_type
+        - filename
+        - metadata
+        - checksum
+        - message
+        - status
+        - feedback
+        - rating
+        - delivered_at
+        - responded_at
+        - expires_at
+        - delivered_by
+      properties:
+        delivery_id: { type: string }
+        contract_id: { type: string }
+        milestone_id: { type: string, nullable: true }
+        type: { type: string }
+        content: { type: string }
+        content_type: { type: string, nullable: true }
+        filename: { type: string, nullable: true }
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        checksum: { type: string, nullable: true }
+        message: { type: string, nullable: true }
+        status: { type: string }
+        feedback: { type: string, nullable: true }
+        rating: { type: number, nullable: true }
+        delivered_at: { type: string, format: date-time }
+        responded_at: { type: string, format: date-time, nullable: true }
+        expires_at: { type: string, format: date-time }
+        delivered_by: { type: string, enum: [you, them] }
+
+    DeliveriesOutput:
+      type: object
+      required: [deliveries, total]
+      properties:
+        deliveries:
+          type: array
+          items: { $ref: "#/components/schemas/DeliveryView" }
+        total: { type: number }
+
+    EventEmitInput:
+      type: object
+      required: [user_token, action, candidate_id, event_type]
+      properties:
+        user_token: { type: string }
+        action: { type: string, enum: [emit] }
+        candidate_id: { type: string }
+        contract_id: { type: string }
+        event_type:
+          type: string
+          enum: [milestone_reached, schedule_change, issue_reported, completion_signal, status_update, custom]
+        payload: {}
+        requires_ack: { type: boolean }
+        ack_deadline_hours: { type: number }
+        idempotency_key: { type: string }
+
+    EventAckInput:
+      type: object
+      required: [user_token, action, event_id]
+      properties:
+        user_token: { type: string }
+        action: { type: string, enum: [ack] }
+        event_id: { type: string }
+        response: { type: string }
+
+    EventListInput:
+      type: object
+      required: [user_token, action]
+      properties:
+        user_token: { type: string }
+        action: { type: string, enum: [list] }
+        candidate_id: { type: string }
+        contract_id: { type: string }
+        since: { type: string, format: date-time }
+        limit: { type: number }
+
+    EventInput:
+      oneOf:
+        - $ref: "#/components/schemas/EventEmitInput"
+        - $ref: "#/components/schemas/EventAckInput"
+        - $ref: "#/components/schemas/EventListInput"
+
+    EventEmitOutput:
+      type: object
+      required: [event_id, emitted_at, ack_deadline]
+      properties:
+        event_id: { type: string }
+        emitted_at: { type: string, format: date-time }
+        ack_deadline: { type: string, format: date-time, nullable: true }
+
+    EventAckOutput:
+      type: object
+      required: [acked, acked_at]
+      properties:
+        acked: { type: boolean, enum: [true] }
+        acked_at: { type: string, format: date-time }
+
+    EventListItem:
+      type: object
+      required:
+        - event_id
+        - candidate_id
+        - contract_id
+        - event_type
+        - payload
+        - requires_ack
+        - ack_deadline
+        - acked
+        - acked_at
+        - ack_response
+        - emitted_at
+        - emitted_by
+      properties:
+        event_id: { type: string }
+        candidate_id: { type: string }
+        contract_id: { type: string, nullable: true }
+        event_type: { type: string }
+        payload: {}
+        requires_ack: { type: boolean }
+        ack_deadline: { type: string, format: date-time, nullable: true }
+        acked: { type: boolean }
+        acked_at: { type: string, format: date-time, nullable: true }
+        ack_response: { type: string, nullable: true }
+        emitted_at: { type: string, format: date-time }
+        emitted_by: { type: string, enum: [you, them] }
+
+    EventListOutput:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/EventListItem" }
+
+    EventOutput:
+      oneOf:
+        - $ref: "#/components/schemas/EventEmitOutput"
+        - $ref: "#/components/schemas/EventAckOutput"
+        - $ref: "#/components/schemas/EventListOutput"
+
+    SubscribeInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        action:
+          type: string
+          enum: [create, list]
+        threshold: { type: number }
+        intent_embedding:
+          type: array
+          items: { type: number }
+        trait_filters:
+          type: array
+          items:
+            type: object
+            required: [trait_key, operator, value]
+            properties:
+              trait_key: { type: string }
+              operator: { type: string }
+              value: {}
+        capability_filters:
+          type: array
+          items: { type: string }
+        cluster_filter: { type: string }
+        mode_filter: { type: string }
+        max_notifications_per_day: { type: number }
+        ttl_days: { type: number }
+        idempotency_key: { type: string }
+
+    SubscribeCreateOutput:
+      type: object
+      required: [subscription_id, created_at, expires_at]
+      properties:
+        subscription_id: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+
+    SubscribeListOutput:
+      type: object
+      required: [subscriptions]
+      properties:
+        subscriptions:
+          type: array
+          items:
+            type: object
+            required:
+              - subscription_id
+              - cluster_filter
+              - intent_embedding
+              - threshold
+              - trait_filters
+              - capability_filters
+              - mode_filter
+              - max_notifications_per_day
+              - notification_count
+              - created_at
+              - expires_at
+            properties:
+              subscription_id: { type: string }
+              cluster_filter: { type: string, nullable: true }
+              intent_embedding:
+                type: array
+                items: { type: number }
+                nullable: true
+              threshold: { type: number }
+              trait_filters:
+                type: array
+                items: {}
+                nullable: true
+              capability_filters:
+                type: array
+                items: { type: string }
+                nullable: true
+              mode_filter: { type: string, nullable: true }
+              max_notifications_per_day: { type: number }
+              notification_count: { type: number }
+              created_at: { type: string, format: date-time }
+              expires_at: { type: string, format: date-time }
+
+    SubscribeOutput:
+      oneOf:
+        - $ref: "#/components/schemas/SubscribeCreateOutput"
+        - $ref: "#/components/schemas/SubscribeListOutput"
+
+    UnsubscribeInput:
+      type: object
+      required: [user_token, subscription_id]
+      properties:
+        user_token: { type: string }
+        subscription_id: { type: string }
+
+    UnsubscribeOutput:
+      type: object
+      required: [cancelled]
+      properties:
+        cancelled: { type: boolean, enum: [true] }
+
+    NotificationsInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        subscription_id: { type: string }
+        since: { type: string, format: date-time }
+        limit: { type: number }
+
+    NotificationItem:
+      type: object
+      required: [notification_id, subscription_id, candidate_token_hash, advisory_score, intent_similarity, matched_at]
+      properties:
+        notification_id: { type: string }
+        subscription_id: { type: string }
+        candidate_token_hash: { type: string }
+        advisory_score: { type: number }
+        intent_similarity: { type: number, nullable: true }
+        matched_at: { type: string, format: date-time }
+
+    NotificationsOutput:
+      type: object
+      required: [notifications]
+      properties:
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/NotificationItem" }
+
+    ReputationInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+
+    ReputationOutput:
+      type: object
+      required:
+        - score
+        - interaction_count
+        - positive_rate
+        - verification_level
+        - dispute_history
+        - member_since
+        - enforcement_history
+        - deliverable_stats
+      properties:
+        score: { type: number }
+        interaction_count: { type: number }
+        positive_rate: { type: number }
+        verification_level: { type: string }
+        dispute_history:
+          type: object
+          required: [filed, lost, won]
+          properties:
+            filed: { type: number }
+            lost: { type: number }
+            won: { type: number }
+        member_since: { type: string, format: date-time }
+        enforcement_history:
+          type: array
+          items:
+            type: object
+            required: [id, level, reason, created_at]
+            properties:
+              id: { type: string }
+              level: { type: number }
+              reason: { type: string }
+              created_at: { type: string, format: date-time }
+        deliverable_stats:
+          type: object
+          required: [delivered, accepted, rejected]
+          properties:
+            delivered: { type: number }
+            accepted: { type: number }
+            rejected: { type: number }
+
+    DisputeInput:
+      type: object
+      required: [user_token, candidate_id, reason]
+      properties:
+        user_token: { type: string }
+        candidate_id: { type: string }
+        reason: { type: string }
+        evidence:
+          type: array
+          items: { type: string }
+        trait_claims:
+          type: array
+          items:
+            type: object
+            required: [trait_key, claimed_value, actual_value]
+            properties:
+              trait_key: { type: string }
+              claimed_value: { type: string }
+              actual_value: { type: string }
+        delivery_claims:
+          type: array
+          items:
+            type: object
+            required: [delivery_id, issue]
+            properties:
+              delivery_id: { type: string }
+              issue: { type: string }
+        idempotency_key: { type: string }
+
+    DisputeOutput:
+      type: object
+      required: [dispute_id, status, jury_size, filed_at]
+      properties:
+        dispute_id: { type: string }
+        status: { type: string }
+        jury_size: { type: number, nullable: true }
+        filed_at: { type: string, format: date-time }
+
+    JuryDutyInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+
+    JuryCase:
+      type: object
+      required: [dispute_id, dispute_type, filer_evidence, defendant_evidence, context, deliverable_content, deadline, filed_at]
+      properties:
+        dispute_id: { type: string }
+        dispute_type:
+          type: string
+          enum: [standard, deliverable]
+        filer_evidence:
+          type: object
+          required: [statement, traits, timeline]
+          properties:
+            statement: { type: string }
+            traits:
+              type: array
+              items:
+                type: object
+                required: [trait_key, claimed_value, actual_value]
+                properties:
+                  trait_key: { type: string }
+                  claimed_value: { type: string }
+                  actual_value: { type: string }
+            timeline:
+              type: array
+              items: {}
+        defendant_evidence:
+          type: object
+          required: [statement, traits, timeline]
+          properties:
+            statement: { type: string, nullable: true }
+            traits:
+              type: array
+              items: {}
+            timeline:
+              type: array
+              items: {}
+        context:
+          type: object
+          required: [cluster_id, contract_terms, deliverable_metadata]
+          properties:
+            cluster_id: { type: string }
+            contract_terms:
+              type: object
+              additionalProperties: true
+              nullable: true
+            deliverable_metadata:
+              type: object
+              additionalProperties: true
+              nullable: true
+        deliverable_content:
+          type: object
+          additionalProperties: true
+          nullable: true
+        deadline: { type: string, format: date-time }
+        filed_at: { type: string, format: date-time }
+
+    JuryDutyOutput:
+      type: object
+      required: [cases]
+      properties:
+        cases:
+          type: array
+          items: { $ref: "#/components/schemas/JuryCase" }
+
+    JuryVerdictInput:
+      type: object
+      required: [user_token, dispute_id, verdict, reasoning]
+      properties:
+        user_token: { type: string }
+        dispute_id: { type: string }
+        verdict:
+          type: string
+          enum: [for_filer, for_defendant, dismissed]
+        reasoning: { type: string }
+        idempotency_key: { type: string }
+
+    JuryVerdictOutput:
+      type: object
+      required: [verdict_recorded, dispute_status, all_verdicts_in]
+      properties:
+        verdict_recorded: { type: boolean, enum: [true] }
+        dispute_status: { type: string }
+        all_verdicts_in: { type: boolean }
+
+    VerifySubmitInput:
+      type: object
+      required: [user_token, action, trait_key, evidence_type, evidence_data, requested_tier]
+      properties:
+        user_token: { type: string }
+        action: { type: string, enum: [submit] }
+        trait_key: { type: string }
+        evidence_type:
+          type: string
+          enum: [photo, document, link, attestation]
+        evidence_data: { type: string }
+        requested_tier:
+          type: string
+          enum: [self_verified, cross_verified, authority_verified]
+        idempotency_key: { type: string }
+
+    VerifyRequestInput:
+      type: object
+      required: [user_token, action, candidate_id, trait_key]
+      properties:
+        user_token: { type: string }
+        action: { type: string, enum: [request] }
+        candidate_id: { type: string }
+        trait_key: { type: string }
+        idempotency_key: { type: string }
+
+    VerifyInput:
+      oneOf:
+        - $ref: "#/components/schemas/VerifySubmitInput"
+        - $ref: "#/components/schemas/VerifyRequestInput"
+
+    VerifySubmitOutput:
+      type: object
+      required: [verification_id, status, current_tier]
+      properties:
+        verification_id: { type: string }
+        status: { type: string }
+        current_tier: { type: string, nullable: true }
+
+    VerifyRequestOutput:
+      type: object
+      required: [requested, request_id]
+      properties:
+        requested: { type: boolean, enum: [true] }
+        request_id: { type: string }
+
+    VerifyOutput:
+      oneOf:
+        - $ref: "#/components/schemas/VerifySubmitOutput"
+        - $ref: "#/components/schemas/VerifyRequestOutput"
+
+    RegisterToolInput:
+      type: object
+      required: [user_token, tool_id, display_name, description, one_line_description, endpoint, input_schema, output_schema, version]
+      properties:
+        user_token: { type: string }
+        tool_id: { type: string }
+        display_name: { type: string }
+        description: { type: string }
+        one_line_description: { type: string }
+        endpoint: { type: string }
+        input_schema: {}
+        output_schema: {}
+        cluster_scope:
+          type: array
+          items: { type: string }
+        pricing:
+          type: object
+          additionalProperties: true
+        version: { type: string }
+        health_check_endpoint: { type: string }
+        idempotency_key: { type: string }
+
+    RegisterToolOutput:
+      type: object
+      required: [tool_id, registered_at, status]
+      properties:
+        tool_id: { type: string }
+        registered_at: { type: string, format: date-time }
+        status: { type: string }
+
+    ListToolsInput:
+      type: object
+      properties:
+        cluster_id: { type: string }
+        query: { type: string }
+        type:
+          type: string
+          enum: [default, third_party, all]
+        min_reputation: { type: number }
+        limit: { type: number }
+        cursor: { type: string }
+
+    ToolDetail:
+      type: object
+      required:
+        - tool_id
+        - display_name
+        - description
+        - one_line_description
+        - type
+        - endpoint
+        - input_schema
+        - output_schema
+        - version
+        - cluster_scope
+        - pricing
+        - reputation
+        - usage_count
+        - status
+        - registered_at
+      properties:
+        tool_id: { type: string }
+        display_name: { type: string }
+        description: { type: string }
+        one_line_description: { type: string }
+        type: { type: string }
+        endpoint: { type: string, nullable: true }
+        input_schema: {}
+        output_schema: {}
+        version: { type: string }
+        cluster_scope:
+          type: array
+          items: { type: string }
+          nullable: true
+        pricing:
+          type: object
+          additionalProperties: true
+          nullable: true
+        reputation: { type: number }
+        usage_count: { type: number }
+        status: { type: string }
+        registered_at: { type: string, format: date-time }
+
+    ListToolsOutput:
+      type: object
+      required: [tools, total, next_cursor]
+      properties:
+        tools:
+          type: array
+          items: { $ref: "#/components/schemas/ToolDetail" }
+        total: { type: number }
+        next_cursor: { type: string, nullable: true }
+
+    ToolInvokeInput:
+      type: object
+      required: [user_token, tool_id, input]
+      properties:
+        user_token: { type: string }
+        tool_id: { type: string }
+        input:
+          type: object
+          additionalProperties: true
+
+    ToolInvokeOutput:
+      type: object
+      required: [tool_id, output, execution_ms, billing]
+      properties:
+        tool_id: { type: string }
+        output:
+          type: object
+          additionalProperties: true
+        execution_ms: { type: number }
+        billing:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    ToolFeedbackInput:
+      type: object
+      required: [user_token, tool_id, rating]
+      properties:
+        user_token: { type: string }
+        tool_id: { type: string }
+        rating:
+          type: string
+          enum: [positive, negative]
+        comment: { type: string }
+        invocation_id: { type: string }
+
+    ToolFeedbackOutput:
+      type: object
+      required: [submitted, tool_reputation]
+      properties:
+        submitted: { type: boolean, enum: [true] }
+        tool_reputation: { type: number }
+
+    MyInsightsInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+
+    SuggestedTrait:
+      type: object
+      required: [key, description, importance]
+      properties:
+        key: { type: string }
+        description: { type: string, nullable: true }
+        importance: { type: number }
+
+    PreferenceInsight:
+      type: object
+      required: [trait_key, stated_weight, effective_weight, suggestion]
+      properties:
+        trait_key: { type: string }
+        stated_weight: { type: number }
+        effective_weight: { type: number }
+        suggestion: { type: string, nullable: true }
+
+    FunnelStats:
+      type: object
+      required: [total_discovered, total_interested, total_committed, total_connected, conversion_rate]
+      properties:
+        total_discovered: { type: number }
+        total_interested: { type: number }
+        total_committed: { type: number }
+        total_connected: { type: number }
+        conversion_rate: { type: number }
+
+    MyDeliverableStats:
+      type: object
+      required: [delivered, accepted, rejected, acceptance_rate]
+      properties:
+        delivered: { type: number }
+        accepted: { type: number }
+        rejected: { type: number }
+        acceptance_rate: { type: number }
+
+    StalenessInfo:
+      type: object
+      required: [profile_age_days, stale, refresh_due]
+      properties:
+        profile_age_days: { type: number }
+        stale: { type: boolean }
+        refresh_due: { type: boolean }
+
+    EnforcementNotice:
+      type: object
+      required: [id, level, reason, expires_at, created_at]
+      properties:
+        id: { type: string }
+        level: { type: number }
+        reason: { type: string }
+        expires_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    MyInsightsOutput:
+      type: object
+      required:
+        - profile_completeness
+        - suggested_traits
+        - preference_insights
+        - funnel_stats
+        - deliverable_stats
+        - staleness
+        - agent_quality_warning
+        - enforcement_notices
+        - cluster_tips
+        - reputation_score
+      properties:
+        profile_completeness: { type: number }
+        suggested_traits:
+          type: array
+          items: { $ref: "#/components/schemas/SuggestedTrait" }
+        preference_insights:
+          type: array
+          items: { $ref: "#/components/schemas/PreferenceInsight" }
+        funnel_stats: { $ref: "#/components/schemas/FunnelStats" }
+        deliverable_stats: { $ref: "#/components/schemas/MyDeliverableStats" }
+        staleness: { $ref: "#/components/schemas/StalenessInfo" }
+        agent_quality_warning:
+          type: string
+          nullable: true
+        enforcement_notices:
+          type: array
+          items: { $ref: "#/components/schemas/EnforcementNotice" }
+        cluster_tips:
+          type: array
+          items: { type: string }
+        reputation_score: { type: number }
+
+    AnalyticsInput:
+      type: object
+      required: [admin_token]
+      properties:
+        admin_token: { type: string }
+        cluster_id: { type: string }
+        time_range:
+          type: object
+          required: [start, end]
+          properties:
+            start: { type: string, format: date-time }
+            end: { type: string, format: date-time }
+
+    ClusterStats:
+      type: object
+      required: [total_clusters, active_clusters, total_participants, new_registrations]
+      properties:
+        total_clusters: { type: number }
+        active_clusters: { type: number }
+        total_participants: { type: number }
+        new_registrations: { type: number }
+
+    FunnelConversion:
+      type: object
+      required: [discovered_to_interested, interested_to_committed, committed_to_connected]
+      properties:
+        discovered_to_interested: { type: number }
+        interested_to_committed: { type: number }
+        committed_to_connected: { type: number }
+
+    AgentQualityStat:
+      type: object
+      required: [agent_model, user_count, avg_reputation]
+      properties:
+        agent_model: { type: string }
+        user_count: { type: number }
+        avg_reputation: { type: number }
+
+    RejectionPattern:
+      type: object
+      required: [reason, count, stage_at_decline]
+      properties:
+        reason: { type: string }
+        count: { type: number }
+        stage_at_decline: { type: number }
+
+    VerificationStats:
+      type: object
+      required: [total_traits, unverified, self_verified, cross_verified, authority_verified]
+      properties:
+        total_traits: { type: number }
+        unverified: { type: number }
+        self_verified: { type: number }
+        cross_verified: { type: number }
+        authority_verified: { type: number }
+
+    EnforcementStats:
+      type: object
+      required: [total_actions, active_disputes, resolved_disputes]
+      properties:
+        total_actions: { type: number }
+        active_disputes: { type: number }
+        resolved_disputes: { type: number }
+
+    ToolUsageStat:
+      type: object
+      required: [tool_id, display_name, usage_count, status]
+      properties:
+        tool_id: { type: string }
+        display_name: { type: string }
+        usage_count: { type: number }
+        status: { type: string }
+
+    DeliverableStats:
+      type: object
+      required: [total_delivered, accepted, rejected, expired]
+      properties:
+        total_delivered: { type: number }
+        accepted: { type: number }
+        rejected: { type: number }
+        expired: { type: number }
+
+    AnalyticsOutput:
+      type: object
+      required:
+        - cluster_stats
+        - funnel_conversion
+        - agent_quality
+        - trait_importance
+        - rejection_patterns
+        - verification_stats
+        - enforcement_stats
+        - tool_usage_stats
+        - deliverable_stats
+      properties:
+        cluster_stats: { $ref: "#/components/schemas/ClusterStats" }
+        funnel_conversion: { $ref: "#/components/schemas/FunnelConversion" }
+        agent_quality:
+          type: array
+          items: { $ref: "#/components/schemas/AgentQualityStat" }
+        trait_importance:
+          type: array
+          items: {}
+        rejection_patterns:
+          type: array
+          items: { $ref: "#/components/schemas/RejectionPattern" }
+        verification_stats: { $ref: "#/components/schemas/VerificationStats" }
+        enforcement_stats: { $ref: "#/components/schemas/EnforcementStats" }
+        tool_usage_stats:
+          type: array
+          items: { $ref: "#/components/schemas/ToolUsageStat" }
+        deliverable_stats: { $ref: "#/components/schemas/DeliverableStats" }
+
+    ExportInput:
+      type: object
+      required: [user_token]
+      properties:
+        user_token: { type: string }
+        format:
+          type: string
+          enum: [json, csv]
+
+    UserRecord:
+      type: object
+      required:
+        - user_token
+        - protocol_version
+        - cluster_id
+        - role
+        - funnel_mode
+        - group_size
+        - auto_fill
+        - group_deadline
+        - intent_embedding
+        - intents
+        - personality_embedding
+        - appearance_embedding
+        - text_profile
+        - identity
+        - phone_hash
+        - agent_model
+        - agent_capabilities
+        - agent_attestation
+        - media_refs
+        - auto_interest_opt_out
+        - behavioral_inference_opt_out
+        - status
+        - created_at
+        - updated_at
+      properties:
+        user_token: { type: string }
+        protocol_version: { type: string }
+        cluster_id: { type: string }
+        role: { type: string, nullable: true }
+        funnel_mode: { type: string }
+        group_size: { type: number, nullable: true }
+        auto_fill: { type: number }
+        group_deadline: { type: string, nullable: true }
+        intent_embedding: { type: string, nullable: true }
+        intents: { type: string, nullable: true }
+        personality_embedding: { type: string, nullable: true }
+        appearance_embedding: { type: string, nullable: true }
+        text_profile: { type: string, nullable: true }
+        identity: { type: string, nullable: true }
+        phone_hash: { type: string, nullable: true }
+        agent_model: { type: string, nullable: true }
+        agent_capabilities: { type: string, nullable: true }
+        agent_attestation: { type: string, nullable: true }
+        media_refs: { type: string, nullable: true }
+        auto_interest_opt_out: { type: number }
+        behavioral_inference_opt_out: { type: number }
+        status:
+          type: string
+          enum: [active, paused, delisted]
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    TraitRecord:
+      type: object
+      required: [id, user_token, key, value, value_type, visibility, verification, display_name, category, enum_values, created_at, updated_at]
+      properties:
+        id: { type: string }
+        user_token: { type: string }
+        key: { type: string }
+        value: { type: string }
+        value_type: { type: string }
+        visibility: { type: string }
+        verification: { type: string }
+        display_name: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        enum_values: { type: string, nullable: true }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    PreferenceRecord:
+      type: object
+      required: [id, user_token, trait_key, operator, value, weight, label, created_at, updated_at]
+      properties:
+        id: { type: string }
+        user_token: { type: string }
+        trait_key: { type: string }
+        operator: { type: string }
+        value: { type: string }
+        weight: { type: number }
+        label: { type: string, nullable: true }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    CandidateRecord:
+      type: object
+      required: [id, user_a_token, user_b_token, cluster_id, funnel_mode, score, fit_a, fit_b, intent_similarity, stage_a, stage_b, created_at, updated_at]
+      properties:
+        id: { type: string }
+        user_a_token: { type: string }
+        user_b_token: { type: string }
+        cluster_id: { type: string }
+        funnel_mode: { type: string }
+        score: { type: number }
+        fit_a: { type: number }
+        fit_b: { type: number }
+        intent_similarity: { type: number, nullable: true }
+        stage_a: { type: number }
+        stage_b: { type: number }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    ContractRecord:
+      type: object
+      required: [contract_id, candidate_id, proposed_by, type, terms, terms_schema_version, milestones, dispute_content_disclosure, safe_types, status, supersedes, round, proposed_at, accepted_at, completed_at, expires_at]
+      properties:
+        contract_id: { type: string }
+        candidate_id: { type: string }
+        proposed_by: { type: string }
+        type: { type: string }
+        terms: { type: string }
+        terms_schema_version: { type: string, nullable: true }
+        milestones: { type: string, nullable: true }
+        dispute_content_disclosure: { type: number }
+        safe_types: { type: string, nullable: true }
+        status: { type: string }
+        supersedes: { type: string, nullable: true }
+        round: { type: number }
+        proposed_at: { type: string }
+        accepted_at: { type: string, nullable: true }
+        completed_at: { type: string, nullable: true }
+        expires_at: { type: string }
+
+    DeliverableRecord:
+      type: object
+      required: [delivery_id, contract_id, deliverer_token, milestone_id, type, content, content_type, filename, metadata, checksum, message, status, feedback, rating, delivered_at, responded_at, expires_at]
+      properties:
+        delivery_id: { type: string }
+        contract_id: { type: string }
+        deliverer_token: { type: string }
+        milestone_id: { type: string, nullable: true }
+        type: { type: string }
+        content: { type: string }
+        content_type: { type: string, nullable: true }
+        filename: { type: string, nullable: true }
+        metadata: { type: string, nullable: true }
+        checksum: { type: string, nullable: true }
+        message: { type: string, nullable: true }
+        status: { type: string }
+        feedback: { type: string, nullable: true }
+        rating: { type: number, nullable: true }
+        delivered_at: { type: string }
+        responded_at: { type: string, nullable: true }
+        expires_at: { type: string }
+
+    InquiryRecord:
+      type: object
+      required: [id, candidate_id, from_token, question, category, required, answer, answer_confidence, answer_source, status, created_at, answered_at]
+      properties:
+        id: { type: string }
+        candidate_id: { type: string }
+        from_token: { type: string }
+        question: { type: string }
+        category: { type: string, nullable: true }
+        required: { type: number }
+        answer: { type: string, nullable: true }
+        answer_confidence: { type: number, nullable: true }
+        answer_source: { type: string, nullable: true }
+        status: { type: string }
+        created_at: { type: string }
+        answered_at: { type: string, nullable: true }
+
+    DisputeRecord:
+      type: object
+      required: [id, candidate_id, filed_by, filed_against, cluster_id, stage_at_filing, reason, evidence, trait_claims, delivery_claims, status, jury_size, resolved_at, resolution_notes, created_at]
+      properties:
+        id: { type: string }
+        candidate_id: { type: string }
+        filed_by: { type: string }
+        filed_against: { type: string }
+        cluster_id: { type: string }
+        stage_at_filing: { type: number }
+        reason: { type: string }
+        evidence: { type: string, nullable: true }
+        trait_claims: { type: string, nullable: true }
+        delivery_claims: { type: string, nullable: true }
+        status: { type: string }
+        jury_size: { type: number, nullable: true }
+        resolved_at: { type: string, nullable: true }
+        resolution_notes: { type: string, nullable: true }
+        created_at: { type: string }
+
+    DeclineRecord:
+      type: object
+      required: [id, decliner_token, declined_token, cluster_id, candidate_id, stage_at_decline, reason, feedback, permanent, expires_at, created_at]
+      properties:
+        id: { type: string }
+        decliner_token: { type: string }
+        declined_token: { type: string }
+        cluster_id: { type: string }
+        candidate_id: { type: string, nullable: true }
+        stage_at_decline: { type: number }
+        reason: { type: string, nullable: true }
+        feedback: { type: string, nullable: true }
+        permanent: { type: number }
+        expires_at: { type: string, nullable: true }
+        created_at: { type: string }
+
+    OutcomeRecord:
+      type: object
+      required: [id, candidate_id, reporter_token, outcome, feedback, created_at]
+      properties:
+        id: { type: string }
+        candidate_id: { type: string }
+        reporter_token: { type: string }
+        outcome: { type: string }
+        feedback: { type: string, nullable: true }
+        created_at: { type: string }
+
+    SubscriptionRecord:
+      type: object
+      required: [subscription_id, user_token, cluster_filter, intent_embedding, threshold, trait_filters, capability_filters, mode_filter, max_notifications_per_day, notification_count, created_at, expires_at]
+      properties:
+        subscription_id: { type: string }
+        user_token: { type: string }
+        cluster_filter: { type: string, nullable: true }
+        intent_embedding: { type: string, nullable: true }
+        threshold: { type: number }
+        trait_filters: { type: string, nullable: true }
+        capability_filters: { type: string, nullable: true }
+        mode_filter: { type: string, nullable: true }
+        max_notifications_per_day: { type: number }
+        notification_count: { type: number }
+        created_at: { type: string }
+        expires_at: { type: string }
+
+    EventRecord:
+      type: object
+      required: [event_id, candidate_id, contract_id, emitter_token, event_type, payload, requires_ack, ack_deadline, acked, acked_at, ack_response, emitted_at]
+      properties:
+        event_id: { type: string }
+        candidate_id: { type: string }
+        contract_id: { type: string, nullable: true }
+        emitter_token: { type: string }
+        event_type: { type: string }
+        payload: { type: string, nullable: true }
+        requires_ack: { type: number }
+        ack_deadline: { type: string, nullable: true }
+        acked: { type: number }
+        acked_at: { type: string, nullable: true }
+        ack_response: { type: string, nullable: true }
+        emitted_at: { type: string }
+
+    MessageRecord:
+      type: object
+      required: [id, candidate_id, sender_token, content, sent_at]
+      properties:
+        id: { type: string }
+        candidate_id: { type: string }
+        sender_token: { type: string }
+        content: { type: string }
+        sent_at: { type: string }
+
+    ToolRecord:
+      type: object
+      required:
+        - tool_id
+        - display_name
+        - description
+        - one_line_description
+        - type
+        - endpoint
+        - input_schema
+        - output_schema
+        - owner_token
+        - version
+        - cluster_scope
+        - pricing
+        - health_check_endpoint
+        - reputation
+        - usage_count
+        - status
+        - registered_at
+      properties:
+        tool_id: { type: string }
+        display_name: { type: string }
+        description: { type: string }
+        one_line_description: { type: string }
+        type: { type: string }
+        endpoint: { type: string, nullable: true }
+        input_schema: { type: string }
+        output_schema: { type: string }
+        owner_token: { type: string, nullable: true }
+        version: { type: string }
+        cluster_scope: { type: string, nullable: true }
+        pricing: { type: string, nullable: true }
+        health_check_endpoint: { type: string, nullable: true }
+        reputation: { type: number }
+        usage_count: { type: number }
+        status: { type: string }
+        registered_at: { type: string }
+
+    ReputationEventRecord:
+      type: object
+      required: [id, identity_id, reporter_id, reporter_reputation, cluster_id, event_type, created_at]
+      properties:
+        id: { type: string }
+        identity_id: { type: string }
+        reporter_id: { type: string }
+        reporter_reputation: { type: number, nullable: true }
+        cluster_id: { type: string }
+        event_type: { type: string }
+        rating: { type: string, nullable: true }
+        dimensions: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        created_at: { type: number }
+
+    PendingActionRecord:
+      type: object
+      required: [id, user_token, candidate_id, action_type, details, created_at, consumed_at]
+      properties:
+        id: { type: string }
+        user_token: { type: string }
+        candidate_id: { type: string, nullable: true }
+        action_type: { type: string }
+        details: { type: string, nullable: true }
+        created_at: { type: string }
+        consumed_at: { type: string, nullable: true }
+
+    ExportOutput:
+      type: object
+      required:
+        - profile
+        - candidates
+        - messages
+        - inquiries
+        - contracts
+        - deliveries
+        - events
+        - subscriptions
+        - reputation
+        - enforcement
+        - verification
+        - exported_at
+      properties:
+        profile:
+          type: object
+          required: [user, traits, preferences]
+          properties:
+            user: { $ref: "#/components/schemas/UserRecord" }
+            traits:
+              type: array
+              items: { $ref: "#/components/schemas/TraitRecord" }
+            preferences:
+              type: array
+              items: { $ref: "#/components/schemas/PreferenceRecord" }
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/CandidateRecord" }
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/MessageRecord" }
+        inquiries:
+          type: array
+          items: { $ref: "#/components/schemas/InquiryRecord" }
+        contracts:
+          type: array
+          items: { $ref: "#/components/schemas/ContractRecord" }
+        deliveries:
+          type: array
+          items: { $ref: "#/components/schemas/DeliverableRecord" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/EventRecord" }
+        subscriptions:
+          type: array
+          items: { $ref: "#/components/schemas/SubscriptionRecord" }
+        reputation:
+          type: object
+          required: [score, events]
+          properties:
+            score: { type: number }
+            events:
+              type: array
+              items: { $ref: "#/components/schemas/ReputationEventRecord" }
+        enforcement:
+          type: array
+          items:
+            type: object
+            required: [id, user_token, level, reason, evidence, expires_at, disputable, created_at]
+            properties:
+              id: { type: string }
+              user_token: { type: string }
+              level: { type: number }
+              reason: { type: string }
+              evidence: { type: string, nullable: true }
+              expires_at: { type: string, nullable: true }
+              disputable: { type: number }
+              created_at: { type: string }
+        verification:
+          type: array
+          items:
+            type: object
+            required: [id, user_token, candidate_id, trait_key, action, evidence_type, evidence_data, requested_tier, requested_from, status, current_tier, created_at, expires_at]
+            properties:
+              id: { type: string }
+              user_token: { type: string }
+              candidate_id: { type: string, nullable: true }
+              trait_key: { type: string }
+              action: { type: string }
+              evidence_type: { type: string, nullable: true }
+              evidence_data: { type: string, nullable: true }
+              requested_tier: { type: string, nullable: true }
+              requested_from: { type: string, nullable: true }
+              status: { type: string }
+              current_tier: { type: string, nullable: true }
+              created_at: { type: number }
+              expires_at: { type: number, nullable: true }
+        exported_at: { type: string, format: date-time }
+
+    DeleteAccountInput:
+      type: object
+      required: [user_token, confirmation]
+      properties:
+        user_token: { type: string }
+        confirmation: { type: string }
+
+    DeleteAccountOutput:
+      type: object
+      required: [deleted, deleted_at, cascade_summary]
+      properties:
+        deleted: { type: boolean, enum: [true] }
+        deleted_at: { type: string, format: date-time }
+        cascade_summary:
+          type: object
+          required: [profiles, candidates, messages, inquiries, subscriptions, contracts, deliverables, events]
+          properties:
+            profiles: { type: number }
+            candidates: { type: number }
+            messages: { type: number }
+            inquiries: { type: number }
+            subscriptions: { type: number }
+            contracts: { type: number }
+            deliverables: { type: number }
+            events: { type: number }
+
+    QuickSeekInput:
+      type: object
+      required: [intent]
+      properties:
+        user_token: { type: string }
+        intent: { type: string }
+        cluster_id: { type: string }
+        constraints:
+          type: object
+          additionalProperties: true
+        max_results: { type: number }
+        auto_advance: { type: boolean }
+        deadline: { type: string, format: date-time }
+        budget: { type: number }
+
+    QuickSeekSearchResult:
+      type: object
+      required: [user_token_hash, score, matching_traits]
+      properties:
+        user_token_hash: { type: string }
+        score: { type: number }
+        matching_traits:
+          type: array
+          items: { type: string }
+        candidate_id: { type: string }
+
+    QuickSeekOutput:
+      type: object
+      required: [user_token, cluster_id, candidates, total_matches, auto_advanced, nl_parsed, registration_created]
+      properties:
+        user_token: { type: string }
+        cluster_id: { type: string }
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/QuickSeekSearchResult" }
+        total_matches: { type: number }
+        auto_advanced:
+          type: array
+          items: { type: string }
+        nl_parsed: { $ref: "#/components/schemas/NLParseResult" }
+        registration_created: { type: boolean }
+
+    QuickOfferInput:
+      type: object
+      required: [intent]
+      properties:
+        user_token: { type: string }
+        intent: { type: string }
+        cluster_id: { type: string }
+        traits:
+          type: array
+          items: { $ref: "#/components/schemas/Trait" }
+        available_until: { type: string, format: date-time }
+        auto_subscribe: { type: boolean }
+        notification_threshold: { type: number }
+
+    QuickOfferOutput:
+      type: object
+      required: [user_token, cluster_id, profile_completeness, subscription_id, existing_matches, nl_parsed, registration_created]
+      properties:
+        user_token: { type: string }
+        cluster_id: { type: string }
+        profile_completeness: { type: number }
+        subscription_id: { type: string, nullable: true }
+        existing_matches: { type: number }
+        nl_parsed: { $ref: "#/components/schemas/NLParseResult" }
+        registration_created: { type: boolean }
+
+    QuickMatchInput:
+      type: object
+      required: [seek, offer]
+      properties:
+        seek:
+          type: object
+          required: [intent]
+          properties:
+            intent: { type: string }
+            traits:
+              type: array
+              items: { $ref: "#/components/schemas/Trait" }
+            preferences:
+              type: array
+              items: { $ref: "#/components/schemas/Preference" }
+            cluster_id: { type: string }
+        offer:
+          type: object
+          required: [intent]
+          properties:
+            intent: { type: string }
+            traits:
+              type: array
+              items: { $ref: "#/components/schemas/Trait" }
+            cluster_id: { type: string }
+        auto_connect: { type: boolean }
+
+    QuickMatchOutput:
+      type: object
+      required: [matched, seek_token, offer_token, cluster_id, advisory_score, candidate_id, connected, seek_parsed, offer_parsed]
+      properties:
+        matched: { type: boolean }
+        seek_token: { type: string }
+        offer_token: { type: string }
+        cluster_id: { type: string }
+        advisory_score: { type: number }
+        candidate_id: { type: string }
+        connected: { type: boolean }
+        seek_parsed: { $ref: "#/components/schemas/NLParseResult" }
+        offer_parsed: { $ref: "#/components/schemas/NLParseResult" }
+
+    ServerInfoOutput:
+      type: object
+      required:
+        - protocol_version
+        - server_name
+        - server_version
+        - cluster_count
+        - total_tools
+        - default_tools
+        - federation_enabled
+        - capabilities
+        - rate_limits
+        - mcp_manifest_url
+        - openapi_url
+      properties:
+        protocol_version: { type: string }
+        server_name: { type: string }
+        server_version: { type: string }
+        cluster_count: { type: number }
+        total_tools: { type: number }
+        default_tools:
+          type: array
+          items:
+            type: object
+            required: [tool_id, display_name, one_line_description]
+            properties:
+              tool_id: { type: string }
+              display_name: { type: string }
+              one_line_description: { type: string }
+        federation_enabled: { type: boolean }
+        capabilities:
+          type: object
+          required: [natural_language, funnel_modes, fast_paths, deliverables, disputes, reputation, verification, data_export]
+          properties:
+            natural_language: { type: boolean }
+            funnel_modes:
+              type: array
+              items: { type: string }
+            fast_paths: { type: boolean }
+            deliverables: { type: boolean }
+            disputes: { type: boolean }
+            reputation: { type: boolean }
+            verification: { type: boolean }
+            data_export: { type: boolean }
+        rate_limits:
+          type: object
+          required: [register_per_day, search_per_hour, propose_per_hour, onboard_per_hour, describe_per_hour, clusters_per_hour]
+          properties:
+            register_per_day: { type: number }
+            search_per_hour: { type: number }
+            propose_per_hour: { type: number }
+            onboard_per_hour: { type: number }
+            describe_per_hour: { type: number }
+            clusters_per_hour: { type: number }
+        mcp_manifest_url:
+          type: string
+          nullable: true
+        openapi_url:
+          type: string
+          nullable: true
+
+    DescribeOutput:
+      type: object
+      required: [protocol, getting_started, clusters, tools, capabilities, server, mcp_manifest_url, openapi_url]
+      properties:
+        protocol:
+          type: object
+          required: [name, version, purpose, how_it_works, key_concepts]
+          properties:
+            name: { type: string }
+            version: { type: string }
+            purpose: { type: string }
+            how_it_works: { type: string }
+            key_concepts:
+              type: object
+              required: [trait, preference, cluster, funnel, funnel_modes]
+              properties:
+                trait: { type: string }
+                preference: { type: string }
+                cluster: { type: string }
+                funnel: { type: string }
+                funnel_modes: { type: string }
+        getting_started:
+          type: object
+          required: [steps, zero_config]
+          properties:
+            steps:
+              type: array
+              items: { type: string }
+            zero_config: { type: string }
+        clusters:
+          type: object
+          required: [total_active, top_clusters, browse_operation]
+          properties:
+            total_active: { type: number }
+            top_clusters:
+              type: array
+              items:
+                type: object
+                required: [cluster_id, display_name, population, phase]
+                properties:
+                  cluster_id: { type: string }
+                  display_name: { type: string, nullable: true }
+                  population: { type: number }
+                  phase: { type: string }
+            browse_operation: { type: string }
+        tools:
+          type: object
+          required: [total_available, default_tools, browse_operation]
+          properties:
+            total_available: { type: number }
+            default_tools:
+              type: array
+              items:
+                type: object
+                required: [tool_id, display_name, one_line_description]
+                properties:
+                  tool_id: { type: string }
+                  display_name: { type: string }
+                  one_line_description: { type: string }
+            browse_operation: { type: string }
+        capabilities:
+          type: object
+          required: [natural_language, funnel_modes, federation, fast_paths, deliverables]
+          properties:
+            natural_language: { type: boolean }
+            funnel_modes:
+              type: array
+              items: { type: string }
+            federation: { type: boolean }
+            fast_paths: { type: boolean }
+            deliverables: { type: boolean }
+        server:
+          type: object
+          required: [name, version, operator]
+          properties:
+            name: { type: string }
+            version: { type: string }
+            operator:
+              type: string
+              nullable: true
+        mcp_manifest_url:
+          type: string
+          nullable: true
+        openapi_url:
+          type: string
+          nullable: true
+
+    HealthResponse:
+      allOf:
+        - $ref: "#/components/schemas/ServerInfoOutput"
+        - type: object
+          required: [status]
+          properties:
+            status: { type: string, enum: [healthy] }

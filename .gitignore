@@ -4,4 +4,12 @@ data/
 *.db
 *.db-wal
 *.db-shm
+*.db-journal
 .DS_Store
+.env
+.env.local
+.env.production
+*.log
+coverage/
+.turbo/
+tmp/

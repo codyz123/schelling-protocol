@@ -1,26 +1,18 @@
-import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import type { DatabaseConnection } from "./interface.js";
+import { createDatabaseConnection, getDatabaseConfigFromEnv, createTestDatabase } from "./factory.js";
 
-const DB_PATH = "data/schelling.db";
+let instance: DatabaseConnection | null = null;
 
-let instance: Database | null = null;
-
-export function getDatabase(): Database {
+export function getDatabase(): DatabaseConnection {
   if (instance) return instance;
 
-  mkdirSync(dirname(DB_PATH), { recursive: true });
-
-  const db = new Database(DB_PATH);
-  db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA foreign_keys = ON");
-
-  instance = db;
-  return db;
+  instance = createDatabaseConnection(getDatabaseConfigFromEnv());
+  return instance;
 }
 
-export function createInMemoryDatabase(): Database {
-  const db = new Database(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  return db;
+export function createInMemoryDatabase(): DatabaseConnection {
+  return createTestDatabase();
 }
+
+// Legacy export for backwards compatibility
+export type Database = DatabaseConnection;
