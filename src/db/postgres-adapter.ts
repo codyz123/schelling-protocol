@@ -90,7 +90,7 @@ export class PostgresConnection implements DatabaseConnection {
     });
   }
 
-  transaction<T>(fn: () => T): T {
+  transaction<T>(fn: () => T): () => T {
     throw new Error(
       "Postgres adapter: transactions not supported in synchronous mode. " +
       "Refactor to async for proper transaction support."

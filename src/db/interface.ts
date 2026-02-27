@@ -23,8 +23,8 @@ export interface DatabaseConnection {
   // Close the connection
   close(): void;
 
-  // Begin transaction
-  transaction<T>(fn: () => T): T;
+  // Begin transaction (returns a callable transaction function)
+  transaction<T>(fn: () => T): () => T;
 }
 
 export type DatabaseType = "sqlite" | "postgres";

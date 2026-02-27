@@ -62,7 +62,7 @@ export class SqliteConnection implements DatabaseConnection {
     this.db.close();
   }
 
-  transaction<T>(fn: () => T): T {
-    return this.db.transaction(fn)();
+  transaction<T>(fn: () => T): () => T {
+    return this.db.transaction(fn);
   }
 }
