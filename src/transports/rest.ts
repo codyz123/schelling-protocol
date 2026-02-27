@@ -201,6 +201,14 @@ h1{font-size:2.5rem;font-weight:700;margin-bottom:.5rem;background:linear-gradie
           );
         }
 
+        // GET /openapi.yaml
+        if (method === "GET" && url.pathname === "/openapi.yaml") {
+          const specFile = Bun.file(new URL("../../openapi.yaml", import.meta.url));
+          return new Response(specFile, {
+            headers: { ...corsHeaders, "Content-Type": "application/yaml" },
+          });
+        }
+
         // All Schelling operations are POST
         if (method !== "POST") {
           return Response.json(
