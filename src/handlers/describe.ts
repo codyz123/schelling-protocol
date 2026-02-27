@@ -55,7 +55,7 @@ interface DescribeOutput {
     operator: null;
   };
   mcp_manifest_url: null;
-  openapi_url: null;
+  openapi_url: "/openapi.yaml";
 }
 
 export async function handleDescribe(
@@ -156,7 +156,7 @@ export async function handleDescribe(
         operator: null,
       },
       mcp_manifest_url: null,
-      openapi_url: null,
+      openapi_url: "/openapi.yaml",
     };
 
     return { ok: true, data: output };

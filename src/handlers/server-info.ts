@@ -36,7 +36,7 @@ interface ServerInfoOutput {
     clusters_per_hour: number;
   };
   mcp_manifest_url: null;
-  openapi_url: null;
+  openapi_url: "/openapi.yaml";
 }
 
 // ─── handleServerInfo ────────────────────────────────────────────────
@@ -100,7 +100,7 @@ export async function handleServerInfo(
           clusters_per_hour: 100,
         },
         mcp_manifest_url: null,
-        openapi_url: null,
+        openapi_url: "/openapi.yaml",
       },
     };
   } catch (error: unknown) {

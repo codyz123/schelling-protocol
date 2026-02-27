@@ -8,6 +8,7 @@ RUN bun install --frozen-lockfile 2>/dev/null || bun install
 # Copy source (cache bust: v2)
 COPY src/ src/
 COPY migrations/ migrations/
+COPY openapi.yaml ./
 COPY tsconfig.json ./
 
 # Create data directory for SQLite (dev/fallback)

@@ -203,7 +203,7 @@ h1{font-size:2.5rem;font-weight:700;margin-bottom:.5rem;background:linear-gradie
 
         // GET /openapi.yaml
         if (method === "GET" && url.pathname === "/openapi.yaml") {
-          const specFile = Bun.file(new URL("../../openapi.yaml", import.meta.url));
+          const specFile = Bun.file(process.cwd() + "/openapi.yaml");
           return new Response(specFile, {
             headers: { ...corsHeaders, "Content-Type": "application/yaml" },
           });
