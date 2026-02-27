@@ -114,8 +114,8 @@ docker-compose up
 ### From Source
 
 ```bash
-git clone https://github.com/schelling-protocol/schelling.git
-cd schelling
+git clone https://github.com/codyz123/a2a-assistant-matchmaker.git
+cd a2a-assistant-matchmaker
 bun install
 bun src/index.ts --rest
 ```
@@ -132,6 +132,9 @@ curl -X POST http://localhost:3000/schelling/describe
 |----------|---------|-------------|
 | `SCHELLING_REST` | `false` | Enable REST mode (vs MCP stdio) |
 | `SCHELLING_REST_PORT` | `3000` | REST server port |
+| `DB_TYPE` | `sqlite` | Database backend (`sqlite` or `postgres`) |
+| `DB_PATH` | `data/schelling.db` | SQLite database path |
+| `DATABASE_URL` | — | Postgres connection string (when `DB_TYPE=postgres`) |
 
 ## API
 
