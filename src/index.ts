@@ -11,7 +11,7 @@ const ctx = { db };
 
 // Check for REST mode
 const enableRest = process.argv.includes('--rest') || process.env.SCHELLING_REST === 'true';
-const restPort = process.env.SCHELLING_REST_PORT ? parseInt(process.env.SCHELLING_REST_PORT) : 3000;
+const restPort = parseInt(process.env.PORT || process.env.SCHELLING_REST_PORT || '3000');
 
 if (enableRest) {
   // Start REST API server

@@ -7,14 +7,16 @@ RUN bun install --frozen-lockfile 2>/dev/null || bun install
 
 # Copy source
 COPY src/ src/
+COPY migrations/ migrations/
+COPY dashboard/dist/ dashboard/dist/
 COPY tsconfig.json ./
 
 # Create data directory for SQLite (dev/fallback)
 RUN mkdir -p data
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+# Railway provides its own healthcheck via railway.json
+# HEALTHCHECK removed — Railway uses PORT env dynamically
 
 # Expose REST API port
 EXPOSE 3000
