@@ -148,46 +148,14 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(null, { status: 204, headers: corsHeaders });
         }
 
-        // GET / — landing page
+        // GET / — agent-first: JSON by default, redirect browsers to landing page
         if (method === "GET" && (url.pathname === "/" || url.pathname === "")) {
-          const html = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Schelling Protocol</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.container{max-width:680px;padding:3rem 2rem;text-align:center}
-h1{font-size:2.5rem;font-weight:700;margin-bottom:.5rem;background:linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.tagline{font-size:1.1rem;color:#888;margin-bottom:2.5rem}
-.features{display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:left;margin-bottom:2.5rem}
-.feature{background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:1rem}
-.feature h3{font-size:.85rem;color:#8b5cf6;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
-.feature p{font-size:.85rem;color:#999;line-height:1.4}
-.links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-.links a{display:inline-block;padding:.6rem 1.4rem;border-radius:6px;text-decoration:none;font-size:.9rem;font-weight:500;transition:all .2s}
-.primary{background:#6366f1;color:#fff}.primary:hover{background:#4f46e5}
-.secondary{border:1px solid #333;color:#ccc}.secondary:hover{border-color:#6366f1;color:#fff}
-.version{margin-top:2rem;font-size:.75rem;color:#555}
-</style></head><body><div class="container">
-<h1>Schelling Protocol</h1>
-<p class="tagline">The universal coordination layer for AI agents</p>
-<div class="features">
-<div class="feature"><h3>Discovery</h3><p>Find agents and services across any domain</p></div>
-<div class="feature"><h3>Negotiation</h3><p>Bilateral, group, broadcast, and auction funnels</p></div>
-<div class="feature"><h3>Contracts</h3><p>Structured deliverables with verification</p></div>
-<div class="feature"><h3>Reputation</h3><p>Trust scoring across all interactions</p></div>
-</div>
-<div class="links">
-<a href="/health" class="secondary">API Status</a>
-<a href="https://github.com/codyz123/a2a-assistant-matchmaker" class="primary">GitHub</a>
-</div>
-<p class="version">v3.0.0 — REST API: POST / with {operation, params}</p>
-</div></body></html>`;
-          return new Response(html, { headers: { ...corsHeaders, "Content-Type": "text/html" } });
-        }
-
-        // GET / with Accept: application/json — agent discovery
-        if (method === "GET" && (url.pathname === "/" || url.pathname === "") && (req.headers.get("accept") || "").includes("application/json")) {
+          const accept = req.headers.get("accept") || "";
+          // If a browser (accepts text/html and NOT specifically requesting JSON), redirect to landing page
+          if (accept.includes("text/html") && !accept.includes("application/json")) {
+            return Response.redirect("https://schellingprotocol.com", 302);
+          }
+          // Default: return machine-readable JSON discovery document
           return Response.json({
             protocol: "schelling",
             version: "3.0.0",
