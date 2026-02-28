@@ -211,6 +211,14 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           });
         }
 
+        // GET /llms.txt — AI agent discovery (llms.txt standard)
+        if (method === "GET" && url.pathname === "/llms.txt") {
+          const llmsFile = Bun.file(process.cwd() + "/public/llms.txt");
+          return new Response(llmsFile, {
+            headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+          });
+        }
+
         // GET /docs — interactive Swagger UI
         if (method === "GET" && url.pathname === "/docs") {
           const html = `<!DOCTYPE html>

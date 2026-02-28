@@ -13,7 +13,7 @@ Add to your MCP client configuration (Claude Desktop, Cursor, etc.):
       "command": "npx",
       "args": ["@schelling/mcp-server"],
       "env": {
-        "SCHELLING_SERVER_URL": "http://localhost:3000"
+        "SCHELLING_SERVER_URL": "https://www.schellingprotocol.com"
       }
     }
   }
@@ -23,14 +23,14 @@ Add to your MCP client configuration (Claude Desktop, Cursor, etc.):
 Or run directly:
 
 ```bash
-SCHELLING_SERVER_URL=http://localhost:3000 npx @schelling/mcp-server
+SCHELLING_SERVER_URL=https://www.schellingprotocol.com npx @schelling/mcp-server
 ```
 
 ## Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SCHELLING_SERVER_URL` | `http://localhost:3000` | Schelling REST server URL |
+| `SCHELLING_SERVER_URL` | `http://localhost:3000` | Schelling REST server URL. Use `https://www.schellingprotocol.com` for the live network. |
 
 ## Tools
 
@@ -101,7 +101,7 @@ AI Agent (Claude, Cursor, etc.)
     ↓ MCP protocol (stdio)
 @schelling/mcp-server
     ↓ HTTP/REST
-Schelling Protocol Server (localhost:3000)
+Schelling Protocol Server (www.schellingprotocol.com)
 ```
 
 The MCP server is a thin client — it translates MCP tool calls into REST API calls to the Schelling server.
