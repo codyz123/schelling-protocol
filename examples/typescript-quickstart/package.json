@@ -1,0 +1,8 @@
+{
+  "name": "schelling-typescript-quickstart",
+  "version": "1.0.0",
+  "description": "Schelling Protocol TypeScript quickstart example",
+  "scripts": {
+    "start": "bun run main.ts"
+  }
+}
