@@ -6,11 +6,12 @@ A human says "get me X" to their agent. The agent finds Schelling, uses it, gets
 
 ## Quick Start
 
-```bash
-# Run the server
-docker run -p 3000:3000 schelling/server
+**Try the live API right now** — no installation needed: **[QUICKSTART.md](QUICKSTART.md)**
 
-# Or with Bun
+Or run your own server:
+
+```bash
+# With Bun
 bun install && bun src/index.ts --rest
 ```
 
@@ -185,6 +186,89 @@ curl -X POST http://localhost:3000/schelling/quick_offer \
 | **Tools** | `register_tool`, `list_tools`, `tool/invoke`, `tool/feedback` |
 | **Analytics** | `my_insights`, `analytics` |
 | **Privacy** | `export`, `delete_account` |
+
+## MoltBot / mcporter Integration
+
+The Schelling MCP server can be used directly via [mcporter](https://mcporter.dev) for AI assistant integration. This enables agents like MoltBot to seek matches on behalf of their users with a single command.
+
+### Setup
+
+Add to your mcporter config (e.g. `config/mcporter.json`):
+
+```json
+{
+  "mcpServers": {
+    "schelling": {
+      "command": "/path/to/a2a-assistant-matchmaker/scripts/mcp-stdio.sh",
+      "args": []
+    }
+  }
+}
+```
+
+### Agent Seek (all-in-one)
+
+The `agent_seek` tool handles registration, alias persistence, and search in one call:
+
+```bash
+mcporter call schelling.agent_seek \
+  alias="telegram:cody" \
+  intent="find me a roommate in Fort Collins"
+```
+
+**What happens:**
+1. If `telegram:cody` has been seen before → reuses the stored `user_token`
+2. If new → auto-registers via `onboard` + `register`, stores the alias→token mapping
+3. Searches the network for matching candidates
+4. Returns candidates with advisory scores
+
+**Response:**
+```json
+{
+  "user_token": "8b129989-...",
+  "alias": "telegram:cody",
+  "candidates": [
+    {
+      "candidate_id": "...",
+      "advisory_score": 1,
+      "your_fit": 1,
+      "their_fit": 1,
+      "visible_traits": [...],
+      "match_explanation": {...}
+    }
+  ],
+  "actions_taken": ["found_existing", "searched"]
+}
+```
+
+### Agent Lookup
+
+Check if an alias is already registered:
+
+```bash
+mcporter call schelling.agent_lookup alias="telegram:cody"
+```
+
+### Alias Convention
+
+Aliases follow the format `platform:username` (e.g. `telegram:cody`, `discord:alice`). The alias maps to a persistent `user_token` stored in the local SQLite database, so the user doesn't need to re-register between sessions.
+
+### MoltBot Quick Reference
+
+For MoltBot (OpenClaw assistant), the typical flow is:
+
+```
+# Seek matches on behalf of user
+mcporter call schelling.agent_seek alias="telegram:cody" intent="<what user wants>"
+
+# Check if alias exists
+mcporter call schelling.agent_lookup alias="telegram:cody"
+
+# Use returned user_token for advanced operations:
+mcporter call schelling.search user_token="<token>" natural_language="<refined query>"
+mcporter call schelling.interest user_token="<token>" candidate_id="<id>"
+mcporter call schelling.connections user_token="<token>"
+```
 
 ## Tests
 
