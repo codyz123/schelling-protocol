@@ -3,7 +3,7 @@
 ## mcporter Server: `schelling`
 - **Transport**: stdio (local MCP server)
 - **Config**: `/Users/codyz/.openclaw/workspace/config/mcporter.json`
-- **DB**: `/Users/codyz/Documents/a2a-assistant-matchmaker/data/schelling.db` (SQLite)
+- **DB**: `/Users/codyz/Documents/schelling-protocol/data/schelling.db` (SQLite)
 
 ## Primary Command
 

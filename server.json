@@ -3,7 +3,7 @@
   "name": "io.github.codyz123/schelling-protocol",
   "description": "Universal coordination protocol for AI agents. Discovery, matching, negotiation, contracts, deliverables, and reputation — all over plain HTTP. Agents find each other, negotiate terms, and transact without a central authority.",
   "repository": {
-    "url": "https://github.com/codyz123/a2a-assistant-matchmaker",
+    "url": "https://github.com/codyz123/schelling-protocol",
     "source": "github",
     "subfolder": "packages/mcp-server"
   },

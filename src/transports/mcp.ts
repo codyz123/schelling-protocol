@@ -74,21 +74,21 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Discovery ─────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.describe",
+    "describe",
     "Discover what this Schelling Protocol server does and its available clusters",
     {},
     async () => toMcpResponse(await handleDescribe({}, ctx)),
   );
 
   server.tool(
-    "schelling.server_info",
+    "server_info",
     "Get server metadata: protocol version, capabilities, rate limits, statistics",
     {},
     async () => toMcpResponse(await handleServerInfo({}, ctx)),
   );
 
   server.tool(
-    "schelling.clusters",
+    "clusters",
     "List or search available dynamic clusters",
     {
       query: z.string().optional().describe("Search query for clusters"),
@@ -100,7 +100,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.cluster_info",
+    "cluster_info",
     "Get detailed information about a specific cluster including norms",
     {
       cluster_id: z.string().describe("Cluster ID to look up"),
@@ -111,7 +111,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Registration ──────────────────────────────────────────────────
 
   server.tool(
-    "schelling.onboard",
+    "onboard",
     "Natural language onboarding: describe what you want and get a registration template",
     {
       natural_language: z.string().describe("Natural language description of what the user wants"),
@@ -121,7 +121,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.register",
+    "register",
     "Register a participant in a cluster with traits and preferences",
     {
       protocol_version: z.string().describe("Must be '3.0'"),
@@ -144,7 +144,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.update",
+    "update",
     "Update traits, preferences, or profile fields for an existing registration",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -161,7 +161,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.refresh",
+    "refresh",
     "Reset the staleness clock on your profile",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -173,7 +173,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Search ────────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.search",
+    "search",
     "Search for compatible candidates using preferences, traits, and intent similarity",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -194,7 +194,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Fast Paths ────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.quick_seek",
+    "quick_seek",
     "Fast path: describe what you need in natural language, auto-register and search",
     {
       user_token: z.string().optional().describe("Bearer token (auto-registers if omitted)"),
@@ -210,7 +210,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.quick_offer",
+    "quick_offer",
     "Fast path: describe what you offer, auto-register and subscribe to matching seekers",
     {
       user_token: z.string().optional().describe("Bearer token (auto-registers if omitted)"),
@@ -225,7 +225,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.quick_match",
+    "quick_match",
     "Fast path: submit both seeker and offerer profiles for immediate matching",
     {
       seek: z.any().describe("Seeker profile: {intent, traits?, preferences?, cluster_id?}"),
@@ -238,7 +238,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Funnel Operations ─────────────────────────────────────────────
 
   server.tool(
-    "schelling.interest",
+    "interest",
     "Express interest in a candidate (DISCOVERED → INTERESTED)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -250,7 +250,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.commit",
+    "commit",
     "Commit to a candidate (INTERESTED → COMMITTED, auto-connects if mutual)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -261,7 +261,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.connections",
+    "connections",
     "List your candidate pairs with stage and trait visibility",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -275,7 +275,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.decline",
+    "decline",
     "Decline a candidate with escalating TTL (30d/90d/permanent)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -288,7 +288,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.reconsider",
+    "reconsider",
     "Reconsider a previously declined candidate",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -299,7 +299,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.withdraw",
+    "withdraw",
     "Withdraw from COMMITTED/CONNECTED (resets to INTERESTED)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -311,7 +311,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.report",
+    "report",
     "Report the outcome of a connection (positive/neutral/negative)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -324,7 +324,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.pending",
+    "pending",
     "Get unconsumed pending actions (stage changes, requests, etc.)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -335,7 +335,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Communication ─────────────────────────────────────────────────
 
   server.tool(
-    "schelling.message",
+    "message",
     "Send a message through the relay (requires CONNECTED stage)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -347,7 +347,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.messages",
+    "messages",
     "Retrieve message history for a candidate pair",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -360,7 +360,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.direct",
+    "direct",
     "Share real contact info (mutual opt-in for exchange)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -372,7 +372,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.relay_block",
+    "relay_block",
     "Block or unblock message relay from a candidate",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -383,7 +383,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.inquire",
+    "inquire",
     "Pre-commitment Q&A: ask/answer/list questions (requires INTERESTED stage)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -404,7 +404,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Contracts & Deliverables ──────────────────────────────────────
 
   server.tool(
-    "schelling.contract",
+    "contract",
     "Contract lifecycle: propose, accept, reject, counter, complete, terminate, list",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -426,7 +426,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.deliver",
+    "deliver",
     "Deliver an artifact as fulfillment of a contract or milestone",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -440,7 +440,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.accept_delivery",
+    "accept_delivery",
     "Accept or reject a deliverable from counterparty",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -454,7 +454,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.deliveries",
+    "deliveries",
     "List deliverables for a contract",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -467,7 +467,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Events ────────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.event",
+    "event",
     "Lifecycle events: emit, acknowledge, or list events on matches/contracts",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -490,7 +490,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Subscriptions ─────────────────────────────────────────────────
 
   server.tool(
-    "schelling.subscribe",
+    "subscribe",
     "Register a standing query for push-based discovery notifications",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -509,7 +509,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.unsubscribe",
+    "unsubscribe",
     "Cancel a push-based discovery subscription",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -519,7 +519,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.notifications",
+    "notifications",
     "List notifications from push-based discovery subscriptions",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -533,7 +533,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Reputation & Enforcement ──────────────────────────────────────
 
   server.tool(
-    "schelling.reputation",
+    "reputation",
     "Get reputation score and history for self or counterpart",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -543,7 +543,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.dispute",
+    "dispute",
     "File a dispute against a counterparty (requires CONNECTED stage)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -558,7 +558,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.jury_duty",
+    "jury_duty",
     "List your assigned jury cases for dispute resolution",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -567,7 +567,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.jury_verdict",
+    "jury_verdict",
     "Submit a verdict on a dispute as a juror",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -580,7 +580,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.verify",
+    "verify",
     "Submit verification evidence or request verification from counterpart",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -598,7 +598,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Tools ─────────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.register_tool",
+    "register_tool",
     "Register a third-party tool in the pluggable ecosystem",
     {
       user_token: z.string().describe("Developer bearer token"),
@@ -619,7 +619,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.list_tools",
+    "list_tools",
     "Discover available tools (default and third-party)",
     {
       cluster_id: z.string().optional(),
@@ -633,7 +633,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.tool.invoke",
+    "tool_invoke",
     "Invoke a tool (default or third-party)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -644,7 +644,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.tool.feedback",
+    "tool_feedback",
     "Provide feedback on a tool invocation",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -659,7 +659,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Analytics ─────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.my_insights",
+    "my_insights",
     "Get personalized insights: profile completeness, funnel stats, suggestions",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -668,7 +668,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.analytics",
+    "analytics",
     "System-wide analytics (admin only)",
     {
       admin_token: z.string().describe("Admin authentication token"),
@@ -681,7 +681,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   // ── Privacy ───────────────────────────────────────────────────────
 
   server.tool(
-    "schelling.export",
+    "export",
     "Export all your data (GDPR/CCPA compliance)",
     {
       user_token: z.string().describe("Your bearer token"),
@@ -691,7 +691,7 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
   );
 
   server.tool(
-    "schelling.delete_account",
+    "delete_account",
     "Permanently delete your account and all associated data",
     {
       user_token: z.string().describe("Your bearer token"),

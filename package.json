@@ -8,9 +8,9 @@
   "author": "Cody Zervas",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/codyz123/a2a-assistant-matchmaker.git"
+    "url": "git+https://github.com/codyz123/schelling-protocol.git"
   },
-  "homepage": "https://github.com/codyz123/a2a-assistant-matchmaker#readme",
+  "homepage": "https://github.com/codyz123/schelling-protocol#readme",
   "keywords": [
     "schelling",
     "protocol",

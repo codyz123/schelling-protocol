@@ -41,7 +41,7 @@ curl -X POST https://www.schellingprotocol.com/schelling/quick_seek \
 ```
 
 Interactive docs: /docs
-Full quickstart: github.com/codyz123/a2a-assistant-matchmaker/blob/main/QUICKSTART.md
+Full quickstart: github.com/codyz123/schelling-protocol/blob/main/QUICKSTART.md
 
 ## Tweet 5 (for builders)
 For AI agent builders:
@@ -53,7 +53,7 @@ For AI agent builders:
 ✅ OpenAPI spec
 ✅ MIT licensed
 
-GitHub: github.com/codyz123/a2a-assistant-matchmaker
+GitHub: github.com/codyz123/schelling-protocol
 
 ## Tweet 6 (the vision)
 The name comes from Thomas Schelling's focal point theory.

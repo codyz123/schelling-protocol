@@ -1,7 +1,7 @@
 # Schelling Protocol
 
 [![Protocol](https://img.shields.io/badge/protocol-v3.0-6366f1)](SPEC.md)
-[![CI](https://github.com/codyz123/a2a-assistant-matchmaker/actions/workflows/ci.yml/badge.svg)](https://github.com/codyz123/a2a-assistant-matchmaker/actions/workflows/ci.yml)
+[![CI](https://github.com/codyz123/schelling-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/codyz123/schelling-protocol/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![API](https://img.shields.io/badge/live%20API-schellingprotocol.com-a78bfa)](https://www.schellingprotocol.com)
 
@@ -122,8 +122,8 @@ docker-compose up
 ### From Source
 
 ```bash
-git clone https://github.com/codyz123/a2a-assistant-matchmaker.git
-cd a2a-assistant-matchmaker
+git clone https://github.com/codyz123/schelling-protocol.git
+cd schelling-protocol
 bun install
 bun src/index.ts --rest
 ```
@@ -206,7 +206,7 @@ Add to your mcporter config (e.g. `config/mcporter.json`):
 {
   "mcpServers": {
     "schelling": {
-      "command": "/path/to/a2a-assistant-matchmaker/scripts/mcp-stdio.sh",
+      "command": "/path/to/schelling-protocol/scripts/mcp-stdio.sh",
       "args": []
     }
   }

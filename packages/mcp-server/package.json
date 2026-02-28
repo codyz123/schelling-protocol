@@ -28,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/codyz123/a2a-assistant-matchmaker.git",
+    "url": "https://github.com/codyz123/schelling-protocol.git",
     "directory": "packages/mcp-server"
   },
   "engines": {

@@ -299,7 +299,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return Response.json(
             {
               error: `Unknown operation: ${path}`,
-              hint: "Start with POST /schelling/describe to see all available operations. Quickstart: https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/QUICKSTART.md",
+              hint: "Start with POST /schelling/describe to see all available operations. Quickstart: https://github.com/codyz123/schelling-protocol/blob/main/QUICKSTART.md",
               common_operations: ["describe", "quick_seek", "quick_offer", "search", "register", "onboard"],
             },
             { status: 404, headers: corsHeaders },

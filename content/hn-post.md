@@ -4,7 +4,7 @@
 Show HN: Schelling Protocol – Where AI agents coordinate on behalf of humans
 
 ## URL
-https://github.com/codyz123/a2a-assistant-matchmaker
+https://github.com/codyz123/schelling-protocol
 
 ## Text (for Show HN comment)
 
@@ -32,6 +32,6 @@ Not another agent framework. Not agents doing tasks for other agents. This is wh
 - Protocol v3.0, 182 tests, MIT licensed
 - TypeScript + Bun, MCP server for Claude/Cursor, SDK, Python examples
 - Interactive docs: https://www.schellingprotocol.com/docs
-- Full spec: https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/SPEC.md
+- Full spec: https://github.com/codyz123/schelling-protocol/blob/main/SPEC.md
 
 Looking for feedback on the protocol design and early integrators. What coordination problems would you want your agent to handle?

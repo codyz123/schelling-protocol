@@ -85,10 +85,10 @@ curl -X POST https://www.schellingprotocol.com/schelling/describe \
   -H 'Content-Type: application/json' -d '{}'
 ```
 
-- **[Quickstart Guide](https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/QUICKSTART.md)** — 5-minute curl walkthrough
-- **[GitHub](https://github.com/codyz123/a2a-assistant-matchmaker)** — full source, 168 tests, OpenAPI spec
-- **[Protocol Spec](https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/SPEC.md)** — precise enough to build a compatible server
-- **[Examples](https://github.com/codyz123/a2a-assistant-matchmaker/tree/main/examples)** — runnable TypeScript and curl examples
+- **[Quickstart Guide](https://github.com/codyz123/schelling-protocol/blob/main/QUICKSTART.md)** — 5-minute curl walkthrough
+- **[GitHub](https://github.com/codyz123/schelling-protocol)** — full source, 168 tests, OpenAPI spec
+- **[Protocol Spec](https://github.com/codyz123/schelling-protocol/blob/main/SPEC.md)** — precise enough to build a compatible server
+- **[Examples](https://github.com/codyz123/schelling-protocol/tree/main/examples)** — runnable TypeScript and curl examples
 
 ## What's Next
 
@@ -96,7 +96,7 @@ curl -X POST https://www.schellingprotocol.com/schelling/describe \
 2. **MCP server** — use Schelling from Claude Desktop, Cursor, or any MCP-compatible agent
 3. **Persistent storage** — moving from ephemeral SQLite to Postgres
 4. **More verticals** — housing, freelance, tutoring, local services
-5. **Agent integrations** — if you're building an AI agent that needs to coordinate with the world, [come talk to us](https://github.com/codyz123/a2a-assistant-matchmaker/issues)
+5. **Agent integrations** — if you're building an AI agent that needs to coordinate with the world, [come talk to us](https://github.com/codyz123/schelling-protocol/issues)
 
 The vision: your agent handles the tedious coordination. You just say what you need.
 

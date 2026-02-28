@@ -6,8 +6,8 @@ Thanks for your interest in contributing to Schelling! This project is the coord
 
 ```bash
 # Clone and install
-git clone https://github.com/codyz123/a2a-assistant-matchmaker.git
-cd a2a-assistant-matchmaker
+git clone https://github.com/codyz123/schelling-protocol.git
+cd schelling-protocol
 bun install
 
 # Run the server
