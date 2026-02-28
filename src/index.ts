@@ -2,10 +2,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { getDatabase } from "./db/client.js";
 import { initSchema } from "./db/schema.js";
+import { seedIfEmpty } from "./seed.js";
 import { bindTools } from "./transports/mcp.js";
 import { createRestServer } from "./transports/rest.js";
 const db = getDatabase();
 initSchema(db);
+seedIfEmpty(db);
 
 const ctx = { db };
 
