@@ -49,6 +49,13 @@ export interface VerificationSummary {
   overall_trust: number;
 }
 
+export interface DimensionConfidence {
+  agent_confidence: number;
+  dimension_decidability: number;
+  signal_density: number;
+  combined: number;
+}
+
 export interface SearchResult {
   candidate_id: string;
   advisory_score: number;
@@ -67,6 +74,8 @@ export interface SearchResult {
   group_filled: number | null;
   stale: boolean;
   computed_at: string;
+  delegation_confidence: number;
+  dimension_confidence: Record<string, DimensionConfidence>;
 }
 
 export interface PendingAction {
@@ -80,11 +89,21 @@ export interface RankingExplanation {
   outcome_basis: 0;
 }
 
+export interface DelegationSummary {
+  overall_delegation_confidence: number;
+  match_ambiguity: number;
+  high_confidence_dimensions: string[];
+  low_confidence_dimensions: string[];
+  recommendation: "act_autonomously" | "present_candidates_to_user" | "seek_user_input_on_dimensions" | "defer_to_user";
+  recommendation_strength: number;
+}
+
 export interface SearchOutput {
   candidates: SearchResult[];
   total_scanned: number;
   total_matches: number;
   ranking_explanation: RankingExplanation;
+  delegation_summary: DelegationSummary;
   next_cursor: null;
   pending_actions: PendingAction[];
   nl_parsed: null;
@@ -275,6 +294,8 @@ function buildPreferences(rows: PreferenceRecord[]): Preference[] {
     value: parsePreferenceValue(row.value),
     weight: row.weight,
     label: row.label ?? undefined,
+    agent_confidence: row.agent_confidence ?? 0.5,
+    source: (row.source ?? "agent_default") as Preference["source"],
   }));
 }
 
@@ -391,6 +412,41 @@ export async function handleSearch(
     .all(input.user_token) as PreferenceRecord[];
 
   const callerPreferences = buildPreferences(callerPrefRows);
+
+  // Build agent_confidence map from preference records
+  const agentConfidenceMap = new Map<string, number>();
+  const preferenceSourceMap = new Map<string, string>();
+  for (const row of callerPrefRows) {
+    agentConfidenceMap.set(row.trait_key, row.agent_confidence ?? 0.5);
+    preferenceSourceMap.set(row.trait_key, row.source ?? "agent_default");
+  }
+
+  // Load cluster delegation priors
+  const clusterRow = db
+    .prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?")
+    .get(clusterId) as { delegation_priors: string | null } | undefined;
+
+  const delegationPriors = clusterRow?.delegation_priors
+    ? JSON.parse(clusterRow.delegation_priors)
+    : { typical_agent_autonomy: 0.5, dimension_decidability: {}, dimensions_typically_requiring_review: [], sample_size: 0 };
+
+  // Compute signal density per dimension for the caller
+  // signal_density = min(1.0, log(1 + count) / log(1 + threshold))
+  // Count includes: preferences (1), inquiry answers on this dimension, past outcomes
+  const signalDensityThreshold = 10;
+  const signalDensityMap = new Map<string, number>();
+  for (const pref of callerPreferences) {
+    // Each preference is 1 data point; inquiry answers add more
+    const inquiryCount = (db
+      .prepare(
+        "SELECT COUNT(*) as cnt FROM inquiries WHERE from_token = ? AND question LIKE ? AND status = 'answered'"
+      )
+      .get(input.user_token, `%${pref.trait_key}%`) as { cnt: number })?.cnt ?? 0;
+
+    const totalSignals = 1 + inquiryCount; // 1 for the preference itself
+    const density = Math.min(1.0, Math.log(1 + totalSignals) / Math.log(1 + signalDensityThreshold));
+    signalDensityMap.set(pref.trait_key, density);
+  }
 
   const callerTraitRows = db
     .prepare("SELECT * FROM traits WHERE user_token = ?")
@@ -666,6 +722,28 @@ export async function handleSearch(
 
     const matchExplanation = buildMatchExplanation(item.satisfaction);
 
+    // Compute per-dimension delegation confidence
+    const dimensionConfidence: Record<string, DimensionConfidence> = {};
+    let delegationSum = 0;
+    let delegationCount = 0;
+    for (const pref of callerPreferences) {
+      const ac = agentConfidenceMap.get(pref.trait_key) ?? 0.5;
+      const dd = delegationPriors.dimension_decidability?.[pref.trait_key] ?? 0.5;
+      const sd = signalDensityMap.get(pref.trait_key) ?? 0.0;
+      const combined = ac * dd * sd;
+      dimensionConfidence[pref.trait_key] = {
+        agent_confidence: quantize(ac, 4),
+        dimension_decidability: quantize(dd, 4),
+        signal_density: quantize(sd, 4),
+        combined: quantize(combined, 4),
+      };
+      delegationSum += combined;
+      delegationCount++;
+    }
+    const candidateDelegationConfidence = delegationCount > 0
+      ? quantize(delegationSum / delegationCount, 4)
+      : 0.5;
+
     results.push({
       candidate_id: candidateId,
       advisory_score: quantize(item.advisory_score, 2),
@@ -687,8 +765,77 @@ export async function handleSearch(
       group_filled: groupFilled,
       stale,
       computed_at: computedAt,
+      delegation_confidence: candidateDelegationConfidence,
+      dimension_confidence: dimensionConfidence,
     });
   }
+
+  // ── 6b. Compute delegation summary ─────────────────────────────
+
+  // Match ambiguity: based on score variance across top candidates
+  let matchAmbiguity = 0.5;
+  if (results.length >= 2) {
+    const scores = results.map(r => r.advisory_score);
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const variance = scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length;
+    // Low variance → high ambiguity (candidates are similar)
+    // Map variance to ambiguity: variance of 0 → ambiguity 1.0, high variance → low ambiguity
+    matchAmbiguity = Math.max(0, Math.min(1, 1.0 - Math.sqrt(variance) * 5));
+  } else if (results.length === 1) {
+    matchAmbiguity = 0.1; // Single candidate = low ambiguity
+  } else {
+    matchAmbiguity = 0.5;
+  }
+
+  // Overall delegation confidence: average across all candidates' delegation_confidence
+  const overallDelegation = results.length > 0
+    ? results.reduce((sum, r) => sum + r.delegation_confidence, 0) / results.length
+    : 0.5;
+
+  // Identify high/low confidence dimensions
+  const allDimConfidences = new Map<string, number[]>();
+  for (const r of results) {
+    for (const [dim, dc] of Object.entries(r.dimension_confidence)) {
+      if (!allDimConfidences.has(dim)) allDimConfidences.set(dim, []);
+      allDimConfidences.get(dim)!.push(dc.combined);
+    }
+  }
+  const highConfDims: string[] = [];
+  const lowConfDims: string[] = [];
+  for (const [dim, vals] of allDimConfidences) {
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    if (avg >= 0.6) highConfDims.push(dim);
+    else if (avg < 0.4) lowConfDims.push(dim);
+  }
+
+  // Recommendation
+  let recommendation: "act_autonomously" | "present_candidates_to_user" | "seek_user_input_on_dimensions" | "defer_to_user";
+  let recommendationStrength: number;
+
+  const effectiveConfidence = overallDelegation * (1 - matchAmbiguity * 0.3);
+
+  if (effectiveConfidence >= 0.7) {
+    recommendation = "act_autonomously";
+    recommendationStrength = Math.min(1.0, effectiveConfidence);
+  } else if (effectiveConfidence >= 0.5) {
+    recommendation = "present_candidates_to_user";
+    recommendationStrength = 0.5 + (effectiveConfidence - 0.5) * 2;
+  } else if (lowConfDims.length > 0 && effectiveConfidence >= 0.3) {
+    recommendation = "seek_user_input_on_dimensions";
+    recommendationStrength = 0.4 + effectiveConfidence;
+  } else {
+    recommendation = "defer_to_user";
+    recommendationStrength = Math.max(0.3, 1.0 - effectiveConfidence);
+  }
+
+  const delegationSummary: DelegationSummary = {
+    overall_delegation_confidence: quantize(overallDelegation, 4),
+    match_ambiguity: quantize(matchAmbiguity, 4),
+    high_confidence_dimensions: highConfDims,
+    low_confidence_dimensions: lowConfDims,
+    recommendation,
+    recommendation_strength: quantize(Math.min(1.0, recommendationStrength), 4),
+  };
 
   // ── 7. Pending actions ───────────────────────────────────────────
 
@@ -720,6 +867,7 @@ export async function handleSearch(
         adjustments: [],
         outcome_basis: 0,
       },
+      delegation_summary: delegationSummary,
       next_cursor: null,
       pending_actions: pendingActions,
       nl_parsed: null,

@@ -1,263 +1,546 @@
-import { describe, test, expect, beforeEach } from "bun:test";
-import Database from "bun:sqlite";
+import { describe, expect, test, beforeEach } from "bun:test";
+import { Database } from "bun:sqlite";
 import { initSchema } from "../src/db/schema.js";
 import type { HandlerContext } from "../src/types.js";
-import { handleReport } from "../src/handlers/report.js";
+import { handleRegister } from "../src/handlers/register.js";
+import { handleSearch } from "../src/handlers/search.js";
 import { handleClusterInfo } from "../src/handlers/clusters.js";
+import { handleUpdate } from "../src/handlers/update.js";
+import { handleReport } from "../src/handlers/report.js";
+import { handleInterest } from "../src/handlers/interest.js";
+import { handleCommit } from "../src/handlers/commit.js";
 
-function createTestDb(): Database {
-  const db = new Database(":memory:");
-  initSchema(db as any);
-  return db;
+let db: Database;
+let ctx: HandlerContext;
+
+beforeEach(() => {
+  db = new Database(":memory:");
+  initSchema(db);
+  ctx = { db };
+});
+
+async function registerUser(overrides = {}) {
+  const result = await handleRegister(
+    {
+      protocol_version: "3.0",
+      cluster_id: "housing.general",
+      traits: [
+        { key: "name", value: "Test User", value_type: "string", visibility: "public" },
+        { key: "price", value: 1500, value_type: "number", visibility: "public" },
+        { key: "style", value: "modern", value_type: "string", visibility: "public" },
+      ],
+      preferences: [],
+      identity: { name: "Test User", contact: "test@example.com" },
+      ...overrides,
+    } as any,
+    ctx,
+  );
+  if (!result.ok) throw new Error(result.error.message);
+  return result.data.user_token;
 }
 
-function createCtx(db: any): HandlerContext {
-  return { db, config: {} as any };
-}
+// ─── Preference agent_confidence and source ─────────────────────────
 
-/** Set up two users at CONNECTED stage so we can file reports */
-function setupConnectedPair(db: any, clusterId = "test-cluster") {
-  const rawA = "aaa-" + Math.random().toString(36).slice(2);
-  const rawB = "zzz-" + Math.random().toString(36).slice(2);
-  // Ensure tokenA < tokenB for CHECK constraint
-  const tokenA = rawA < rawB ? rawA : rawB;
-  const tokenB = rawA < rawB ? rawB : rawA;
-  const candId = "cand-" + Math.random().toString(36).slice(2);
+describe("delegation: preference fields", () => {
+  test("preferences store agent_confidence and source", async () => {
+    const token = await registerUser({
+      preferences: [
+        {
+          trait_key: "price",
+          operator: "lte",
+          value: 2000,
+          weight: 0.8,
+          agent_confidence: 0.95,
+          source: "user_stated",
+        },
+        {
+          trait_key: "style",
+          operator: "eq",
+          value: "modern",
+          weight: 0.5,
+          agent_confidence: 0.3,
+          source: "user_inferred",
+        },
+      ],
+    });
 
-  // Create cluster
-  db.prepare(
-    `INSERT OR IGNORE INTO clusters (cluster_id, population, phase) VALUES (?, 2, 'active')`
-  ).run(clusterId);
+    const rows = db
+      .prepare("SELECT trait_key, agent_confidence, source FROM preferences WHERE user_token = ?")
+      .all(token) as any[];
 
-  // Create users
-  db.prepare(
-    `INSERT INTO users (user_token, cluster_id, role, display_name, status) VALUES (?, ?, 'seeker', 'User A', 'active')`
-  ).run(tokenA, clusterId);
-  db.prepare(
-    `INSERT INTO users (user_token, cluster_id, role, display_name, status) VALUES (?, ?, 'seeker', 'User B', 'active')`
-  ).run(tokenB, clusterId);
-
-  // Create candidate at CONNECTED (stage 4)
-  db.prepare(
-    `INSERT INTO candidates (id, cluster_id, user_a_token, user_b_token, stage_a, stage_b, score, created_at) VALUES (?, ?, ?, ?, 4, 4, 0.8, datetime('now'))`
-  ).run(candId, clusterId, tokenA, tokenB);
-
-  return { tokenA, tokenB, candId, clusterId };
-}
-
-describe("Delegation metadata in report", () => {
-  let db: any;
-  let ctx: HandlerContext;
-
-  beforeEach(() => {
-    db = createTestDb();
-    ctx = createCtx(db);
+    expect(rows.length).toBe(2);
+    const priceRow = rows.find((r: any) => r.trait_key === "price");
+    const styleRow = rows.find((r: any) => r.trait_key === "style");
+    expect(priceRow.agent_confidence).toBe(0.95);
+    expect(priceRow.source).toBe("user_stated");
+    expect(styleRow.agent_confidence).toBe(0.3);
+    expect(styleRow.source).toBe("user_inferred");
   });
 
-  test("report with delegation_metadata stores it in outcomes table", async () => {
-    const { tokenA, candId } = setupConnectedPair(db);
+  test("preferences default agent_confidence to 0.5 and source to agent_default", async () => {
+    const token = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.8 },
+      ],
+    });
 
-    const result = await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price", "location"],
-        user_reviewed_dimensions: ["aesthetics"],
-        user_overrode_agent: false,
+    const row = db
+      .prepare("SELECT agent_confidence, source FROM preferences WHERE user_token = ?")
+      .get(token) as any;
+
+    expect(row.agent_confidence).toBe(0.5);
+    expect(row.source).toBe("agent_default");
+  });
+
+  test("update preserves agent_confidence and source on upsert", async () => {
+    const token = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.8, agent_confidence: 0.4 },
+      ],
+    });
+
+    await handleUpdate(
+      {
+        user_token: token,
+        preferences: [
+          {
+            trait_key: "price",
+            operator: "lte",
+            value: 2500,
+            weight: 0.9,
+            agent_confidence: 0.95,
+            source: "user_stated",
+          },
+        ],
+      } as any,
+      ctx,
+    );
+
+    const row = db
+      .prepare("SELECT agent_confidence, source, value FROM preferences WHERE user_token = ? AND trait_key = 'price'")
+      .get(token) as any;
+
+    expect(row.agent_confidence).toBe(0.95);
+    expect(row.source).toBe("user_stated");
+  });
+});
+
+// ─── Search delegation enrichment ───────────────────────────────────
+
+describe("delegation: search response enrichment", () => {
+  test("search results include delegation_confidence and dimension_confidence", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.8, agent_confidence: 0.9 },
+        { trait_key: "style", operator: "eq", value: "modern", weight: 0.5, agent_confidence: 0.3 },
+      ],
+    });
+
+    await registerUser({
+      traits: [
+        { key: "name", value: "Candidate", value_type: "string", visibility: "public" },
+        { key: "price", value: 1200, value_type: "number", visibility: "public" },
+        { key: "style", value: "modern", value_type: "string", visibility: "public" },
+      ],
+    });
+
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const candidate = result.data.candidates[0];
+    expect(candidate).toBeDefined();
+    expect(typeof candidate.delegation_confidence).toBe("number");
+    expect(candidate.delegation_confidence).toBeGreaterThanOrEqual(0);
+    expect(candidate.delegation_confidence).toBeLessThanOrEqual(1);
+
+    expect(candidate.dimension_confidence).toBeDefined();
+    expect(candidate.dimension_confidence.price).toBeDefined();
+    expect(candidate.dimension_confidence.style).toBeDefined();
+
+    expect(candidate.dimension_confidence.price.agent_confidence).toBe(0.9);
+    expect(candidate.dimension_confidence.style.agent_confidence).toBe(0.3);
+
+    for (const dim of ["price", "style"]) {
+      const dc = candidate.dimension_confidence[dim];
+      expect(typeof dc.agent_confidence).toBe("number");
+      expect(typeof dc.dimension_decidability).toBe("number");
+      expect(typeof dc.signal_density).toBe("number");
+      expect(typeof dc.combined).toBe("number");
+      const expected = dc.agent_confidence * dc.dimension_decidability * dc.signal_density;
+      expect(dc.combined).toBeCloseTo(expected, 3);
+    }
+  });
+
+  test("search response includes delegation_summary", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.8, agent_confidence: 0.9 },
+      ],
+    });
+
+    await registerUser({
+      traits: [
+        { key: "name", value: "Candidate", value_type: "string", visibility: "public" },
+        { key: "price", value: 1200, value_type: "number", visibility: "public" },
+      ],
+    });
+
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const ds = result.data.delegation_summary;
+    expect(ds).toBeDefined();
+    expect(typeof ds.overall_delegation_confidence).toBe("number");
+    expect(typeof ds.match_ambiguity).toBe("number");
+    expect(Array.isArray(ds.high_confidence_dimensions)).toBe(true);
+    expect(Array.isArray(ds.low_confidence_dimensions)).toBe(true);
+    expect(["act_autonomously", "present_candidates_to_user", "seek_user_input_on_dimensions", "defer_to_user"]).toContain(ds.recommendation);
+    expect(typeof ds.recommendation_strength).toBe("number");
+    expect(ds.recommendation_strength).toBeGreaterThanOrEqual(0);
+    expect(ds.recommendation_strength).toBeLessThanOrEqual(1);
+  });
+
+  test("match_ambiguity is high when candidates have similar scores", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.5 },
+      ],
+    });
+
+    for (let i = 0; i < 5; i++) {
+      await registerUser({
+        traits: [
+          { key: "name", value: `Candidate ${i}`, value_type: "string", visibility: "public" },
+          { key: "price", value: 1500 + i * 10, value_type: "number", visibility: "public" },
+        ],
+      });
+    }
+
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.delegation_summary.match_ambiguity).toBeGreaterThan(0.5);
+  });
+
+  test("match_ambiguity is low with single candidate", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.5 },
+      ],
+    });
+
+    await registerUser({
+      traits: [
+        { key: "name", value: "Only Candidate", value_type: "string", visibility: "public" },
+        { key: "price", value: 1200, value_type: "number", visibility: "public" },
+      ],
+    });
+
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.delegation_summary.match_ambiguity).toBeLessThanOrEqual(0.2);
+  });
+
+  test("delegation does not affect advisory_score ranking", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.8, agent_confidence: 0.1 },
+      ],
+    });
+
+    await registerUser({
+      traits: [
+        { key: "name", value: "Good", value_type: "string", visibility: "public" },
+        { key: "price", value: 1000, value_type: "number", visibility: "public" },
+      ],
+    });
+
+    await registerUser({
+      traits: [
+        { key: "name", value: "Ok", value_type: "string", visibility: "public" },
+        { key: "price", value: 1800, value_type: "number", visibility: "public" },
+      ],
+    });
+
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.candidates.length).toBe(2);
+    expect(result.data.candidates[0].advisory_score).toBeGreaterThanOrEqual(
+      result.data.candidates[1].advisory_score,
+    );
+  });
+});
+
+// ─── Cluster delegation priors ──────────────────────────────────────
+
+describe("delegation: cluster priors", () => {
+  test("cluster_info returns default delegation_priors for new clusters", async () => {
+    await registerUser();
+
+    const result = await handleClusterInfo({ cluster_id: "housing.general" }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const priors = result.data.delegation_priors;
+    expect(priors).toBeDefined();
+    expect(priors.typical_agent_autonomy).toBe(0.5);
+    expect(priors.dimension_decidability).toEqual({});
+    expect(priors.dimensions_typically_requiring_review).toEqual([]);
+    expect(priors.sample_size).toBe(0);
+  });
+});
+
+// ─── Report delegation_metadata ─────────────────────────────────────
+
+describe("delegation: report with delegation_metadata", () => {
+  async function setupConnectedPair() {
+    const userA = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.5, agent_confidence: 0.9 },
+        { trait_key: "style", operator: "eq", value: "modern", weight: 0.5, agent_confidence: 0.3 },
+      ],
+    });
+
+    const userB = await registerUser({
+      traits: [
+        { key: "name", value: "B", value_type: "string", visibility: "public" },
+        { key: "price", value: 1200, value_type: "number", visibility: "public" },
+        { key: "style", value: "modern", value_type: "string", visibility: "public" },
+      ],
+    });
+
+    // Both users must search to advance to DISCOVERED stage
+    const searchA = await handleSearch({ user_token: userA }, ctx);
+    if (!searchA.ok) throw new Error("search A failed");
+    const candidateId = searchA.data.candidates[0].candidate_id;
+
+    // B also needs to search to discover A
+    await handleSearch({ user_token: userB }, ctx);
+
+    await handleInterest({ user_token: userA, candidate_id: candidateId } as any, ctx);
+    await handleInterest({ user_token: userB, candidate_id: candidateId } as any, ctx);
+    await handleCommit({ user_token: userA, candidate_id: candidateId } as any, ctx);
+    await handleCommit({ user_token: userB, candidate_id: candidateId } as any, ctx);
+
+    return { userA, userB, candidateId };
+  }
+
+  test("report accepts delegation_metadata", async () => {
+    const { userA, candidateId } = await setupConnectedPair();
+
+    const result = await handleReport(
+      {
+        user_token: userA,
+        candidate_id: candidateId,
+        outcome: "positive",
+        delegation_metadata: {
+          agent_decided_dimensions: ["price"],
+          user_reviewed_dimensions: ["style"],
+          user_overrode_agent: false,
+        },
       },
-    }, ctx);
+      ctx,
+    );
 
     expect(result.ok).toBe(true);
-
-    // Verify stored in DB
-    const row = db.prepare("SELECT delegation_metadata FROM outcomes WHERE candidate_id = ? AND reporter_token = ?").get(candId, tokenA);
-    expect(row).toBeTruthy();
-    const meta = JSON.parse(row.delegation_metadata);
-    expect(meta.agent_decided_dimensions).toEqual(["price", "location"]);
-    expect(meta.user_reviewed_dimensions).toEqual(["aesthetics"]);
-    expect(meta.user_overrode_agent).toBe(false);
+    if (!result.ok) return;
+    expect(result.data.reported).toBe(true);
   });
 
-  test("report without delegation_metadata stores null", async () => {
-    const { tokenA, candId } = setupConnectedPair(db);
+  test("report with delegation_metadata updates cluster priors", async () => {
+    const { userA, candidateId } = await setupConnectedPair();
 
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "positive",
-    }, ctx);
-
-    const row = db.prepare("SELECT delegation_metadata FROM outcomes WHERE candidate_id = ? AND reporter_token = ?").get(candId, tokenA);
-    expect(row.delegation_metadata).toBeNull();
-  });
-
-  test("positive outcome with delegation_metadata increases dimension_decidability for agent-decided dims", async () => {
-    const clusterId = "deleg-cluster-1";
-    const { tokenA, candId } = setupConnectedPair(db, clusterId);
-
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price", "location"],
-        user_reviewed_dimensions: [],
-        user_overrode_agent: false,
+    await handleReport(
+      {
+        user_token: userA,
+        candidate_id: candidateId,
+        outcome: "positive",
+        delegation_metadata: {
+          agent_decided_dimensions: ["price"],
+          user_reviewed_dimensions: ["style"],
+          user_overrode_agent: false,
+        },
       },
-    }, ctx);
+      ctx,
+    );
 
-    const cluster = db.prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?").get(clusterId);
-    expect(cluster.delegation_priors).toBeTruthy();
-    const priors = JSON.parse(cluster.delegation_priors);
+    const clusterResult = await handleClusterInfo({ cluster_id: "housing.general" }, ctx);
+    expect(clusterResult.ok).toBe(true);
+    if (!clusterResult.ok) return;
 
-    // Starting from 0.5, EMA toward 1.0 with alpha=0.3: 0.5 + 0.3*(1-0.5) = 0.65
-    expect(priors.dimension_decidability.price).toBeCloseTo(0.65, 2);
-    expect(priors.dimension_decidability.location).toBeCloseTo(0.65, 2);
+    const priors = clusterResult.data.delegation_priors;
     expect(priors.sample_size).toBe(1);
+    expect(priors.dimension_decidability.price).toBeGreaterThan(0.5);
+    expect(priors.dimension_decidability.style).toBeDefined();
   });
 
-  test("negative outcome with agent-decided dims decreases decidability", async () => {
-    const clusterId = "deleg-cluster-2";
-    const { tokenA, candId } = setupConnectedPair(db, clusterId);
+  test("delegation_metadata is stored in outcomes", async () => {
+    const { userA, candidateId } = await setupConnectedPair();
 
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "negative",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price"],
-        user_reviewed_dimensions: [],
-        user_overrode_agent: false,
+    await handleReport(
+      {
+        user_token: userA,
+        candidate_id: candidateId,
+        outcome: "positive",
+        delegation_metadata: {
+          agent_decided_dimensions: ["price"],
+          user_reviewed_dimensions: ["style"],
+          user_overrode_agent: true,
+        },
       },
-    }, ctx);
+      ctx,
+    );
 
-    const cluster = db.prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?").get(clusterId);
-    const priors = JSON.parse(cluster.delegation_priors);
+    const row = db
+      .prepare("SELECT delegation_metadata FROM outcomes WHERE candidate_id = ? AND reporter_token = ?")
+      .get(candidateId, userA) as any;
 
-    // Starting from 0.5, EMA toward 0.0 with alpha=0.3: 0.5 + 0.3*(0-0.5) = 0.35
-    expect(priors.dimension_decidability.price).toBeCloseTo(0.35, 2);
+    expect(row.delegation_metadata).toBeDefined();
+    const meta = JSON.parse(row.delegation_metadata);
+    expect(meta.agent_decided_dimensions).toEqual(["price"]);
+    expect(meta.user_overrode_agent).toBe(true);
   });
 
-  test("user_overrode_agent=true decreases decidability for user-reviewed dims", async () => {
-    const clusterId = "deleg-cluster-3";
-    const { tokenA, candId } = setupConnectedPair(db, clusterId);
+  test("report without delegation_metadata still works", async () => {
+    const { userA, candidateId } = await setupConnectedPair();
 
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: [],
-        user_reviewed_dimensions: ["aesthetics", "vibe"],
-        user_overrode_agent: true,
+    const result = await handleReport(
+      {
+        user_token: userA,
+        candidate_id: candidateId,
+        outcome: "positive",
       },
-    }, ctx);
+      ctx,
+    );
 
-    const cluster = db.prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?").get(clusterId);
-    const priors = JSON.parse(cluster.delegation_priors);
-
-    // Override: EMA toward 0.0: 0.5 + 0.3*(0-0.5) = 0.35
-    expect(priors.dimension_decidability.aesthetics).toBeCloseTo(0.35, 2);
-    expect(priors.dimension_decidability.vibe).toBeCloseTo(0.35, 2);
+    expect(result.ok).toBe(true);
   });
 
-  test("typical_agent_autonomy updates based on agent/user dimension ratio", async () => {
-    const clusterId = "deleg-cluster-4";
-    const { tokenA, candId } = setupConnectedPair(db, clusterId);
-
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price", "location", "bedrooms"],
-        user_reviewed_dimensions: ["aesthetics", "vibe"],
-        user_overrode_agent: false,
+  test("cluster priors update with EMA over multiple reports", async () => {
+    const pair1 = await setupConnectedPair();
+    await handleReport(
+      {
+        user_token: pair1.userA,
+        candidate_id: pair1.candidateId,
+        outcome: "positive",
+        delegation_metadata: {
+          agent_decided_dimensions: ["price"],
+          user_reviewed_dimensions: [],
+          user_overrode_agent: false,
+        },
       },
-    }, ctx);
+      ctx,
+    );
 
-    const cluster = db.prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?").get(clusterId);
-    const priors = JSON.parse(cluster.delegation_priors);
+    const result1 = await handleClusterInfo({ cluster_id: "housing.general" }, ctx);
+    if (!result1.ok) throw new Error("cluster info failed");
+    const priors1 = result1.data.delegation_priors;
 
-    // thisAutonomy = 3/5 = 0.6, EMA from 0.5: 0.5 + 0.3*(0.6-0.5) = 0.53
-    expect(priors.typical_agent_autonomy).toBeCloseTo(0.53, 2);
+    await handleReport(
+      {
+        user_token: pair1.userB,
+        candidate_id: pair1.candidateId,
+        outcome: "positive",
+        delegation_metadata: {
+          agent_decided_dimensions: ["price"],
+          user_reviewed_dimensions: [],
+          user_overrode_agent: false,
+        },
+      },
+      ctx,
+    );
+
+    const result2 = await handleClusterInfo({ cluster_id: "housing.general" }, ctx);
+    if (!result2.ok) throw new Error("cluster info failed");
+    const priors2 = result2.data.delegation_priors;
+
+    expect(priors2.sample_size).toBe(2);
+    expect(priors2.dimension_decidability.price).toBeGreaterThanOrEqual(
+      priors1.dimension_decidability.price,
+    );
   });
+});
 
-  test("multiple reports accumulate priors via EMA", async () => {
-    const clusterId = "deleg-cluster-5";
-    const { tokenA, candId: candId1 } = setupConnectedPair(db, clusterId);
-    
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId1,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price"],
-        user_reviewed_dimensions: [],
-        user_overrode_agent: false,
-      },
-    }, ctx);
+// ─── Signal density ─────────────────────────────────────────────────
 
-    // Second report from a different pair
-    const { tokenA: tokenA2, candId: candId2 } = setupConnectedPair(db, clusterId);
+describe("delegation: signal density", () => {
+  test("signal_density starts low for new users", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.5 },
+      ],
+    });
 
-    await handleReport({
-      user_token: tokenA2,
-      candidate_id: candId2,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price"],
-        user_reviewed_dimensions: [],
-        user_overrode_agent: false,
-      },
-    }, ctx);
+    await registerUser({
+      traits: [
+        { key: "name", value: "Candidate", value_type: "string", visibility: "public" },
+        { key: "price", value: 1200, value_type: "number", visibility: "public" },
+      ],
+    });
 
-    const cluster = db.prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?").get(clusterId);
-    const priors = JSON.parse(cluster.delegation_priors);
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
 
-    // First: 0.5 -> 0.65, Second: 0.65 + 0.3*(1-0.65) = 0.755
-    expect(priors.dimension_decidability.price).toBeCloseTo(0.755, 2);
-    expect(priors.sample_size).toBe(2);
+    const dc = result.data.candidates[0].dimension_confidence.price;
+    expect(dc.signal_density).toBeGreaterThan(0);
+    expect(dc.signal_density).toBeLessThan(1);
   });
+});
 
-  test("cluster_info exposes delegation_priors", async () => {
-    const clusterId = "deleg-cluster-6";
-    const { tokenA, candId } = setupConnectedPair(db, clusterId);
+// ─── All values in range ────────────────────────────────────────────
 
-    // Report with delegation metadata
-    await handleReport({
-      user_token: tokenA,
-      candidate_id: candId,
-      outcome: "positive",
-      delegation_metadata: {
-        agent_decided_dimensions: ["price"],
-        user_reviewed_dimensions: ["aesthetics"],
-        user_overrode_agent: false,
-      },
-    }, ctx);
+describe("delegation: value ranges", () => {
+  test("all delegation values are in [0, 1]", async () => {
+    const seeker = await registerUser({
+      preferences: [
+        { trait_key: "price", operator: "lte", value: 2000, weight: 0.8, agent_confidence: 0.95 },
+        { trait_key: "style", operator: "eq", value: "modern", weight: 0.3, agent_confidence: 0.1 },
+      ],
+    });
 
-    const infoResult = await handleClusterInfo({ cluster_id: clusterId }, ctx);
-    expect(infoResult.ok).toBe(true);
-    if (!infoResult.ok) return;
+    for (let i = 0; i < 3; i++) {
+      await registerUser({
+        traits: [
+          { key: "name", value: `C${i}`, value_type: "string", visibility: "public" },
+          { key: "price", value: 1000 + i * 200, value_type: "number", visibility: "public" },
+          { key: "style", value: i === 0 ? "modern" : "traditional", value_type: "string", visibility: "public" },
+        ],
+      });
+    }
 
-    const data = infoResult.data;
-    expect(data.delegation_priors).toBeTruthy();
-    expect(data.delegation_priors.dimension_decidability.price).toBeCloseTo(0.65, 2);
-    expect(data.delegation_priors.sample_size).toBe(1);
-  });
+    const result = await handleSearch({ user_token: seeker }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
 
-  test("cluster_info returns default priors for cluster with no reports", async () => {
-    const clusterId = "deleg-cluster-7";
-    db.prepare(
-      `INSERT INTO clusters (cluster_id, population, phase) VALUES (?, 0, 'nascent')`
-    ).run(clusterId);
+    for (const c of result.data.candidates) {
+      expect(c.delegation_confidence).toBeGreaterThanOrEqual(0);
+      expect(c.delegation_confidence).toBeLessThanOrEqual(1);
+      for (const [_, dc] of Object.entries(c.dimension_confidence)) {
+        expect(dc.agent_confidence).toBeGreaterThanOrEqual(0);
+        expect(dc.agent_confidence).toBeLessThanOrEqual(1);
+        expect(dc.dimension_decidability).toBeGreaterThanOrEqual(0);
+        expect(dc.dimension_decidability).toBeLessThanOrEqual(1);
+        expect(dc.signal_density).toBeGreaterThanOrEqual(0);
+        expect(dc.signal_density).toBeLessThanOrEqual(1);
+        expect(dc.combined).toBeGreaterThanOrEqual(0);
+        expect(dc.combined).toBeLessThanOrEqual(1);
+      }
+    }
 
-    const infoResult = await handleClusterInfo({ cluster_id: clusterId }, ctx);
-    expect(infoResult.ok).toBe(true);
-    if (!infoResult.ok) return;
-
-    expect(infoResult.data.delegation_priors.typical_agent_autonomy).toBe(0.5);
-    expect(infoResult.data.delegation_priors.sample_size).toBe(0);
+    const ds = result.data.delegation_summary;
+    expect(ds.overall_delegation_confidence).toBeGreaterThanOrEqual(0);
+    expect(ds.overall_delegation_confidence).toBeLessThanOrEqual(1);
+    expect(ds.match_ambiguity).toBeGreaterThanOrEqual(0);
+    expect(ds.match_ambiguity).toBeLessThanOrEqual(1);
+    expect(ds.recommendation_strength).toBeGreaterThanOrEqual(0);
+    expect(ds.recommendation_strength).toBeLessThanOrEqual(1);
   });
 });

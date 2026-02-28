@@ -28,7 +28,7 @@ export interface InquireAnswerInput {
   inquiry_id: string;
   answer: string;
   confidence?: number;
-  source?: "agent_knowledge" | "human_confirmed";
+  source?: "agent_knowledge" | "user_stated" | "user_confirmed" | "human_confirmed";
   idempotency_key?: string;
 }
 

@@ -387,8 +387,8 @@ export async function handleRegister(
     const insertPref = ctx.db.prepare(
       `INSERT INTO preferences (
         id, user_token, trait_key, operator, value, weight, label,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        agent_confidence, source, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
     );
 
     for (const pref of preferences) {
@@ -400,6 +400,8 @@ export async function handleRegister(
         JSON.stringify(pref.value),
         pref.weight,
         pref.label ?? null,
+        pref.agent_confidence ?? 0.5,
+        pref.source ?? "agent_default",
       );
     }
 

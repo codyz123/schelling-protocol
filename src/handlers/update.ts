@@ -274,13 +274,15 @@ export async function handleUpdate(
     const upsertPref = ctx.db.prepare(
       `INSERT INTO preferences (
         id, user_token, trait_key, operator, value, weight, label,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        agent_confidence, source, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
       ON CONFLICT (user_token, trait_key) DO UPDATE SET
         operator = excluded.operator,
         value = excluded.value,
         weight = excluded.weight,
         label = excluded.label,
+        agent_confidence = excluded.agent_confidence,
+        source = excluded.source,
         updated_at = datetime('now')`,
     );
 
@@ -293,6 +295,8 @@ export async function handleUpdate(
         JSON.stringify(pref.value),
         pref.weight,
         pref.label ?? null,
+        pref.agent_confidence ?? 0.5,
+        pref.source ?? "agent_default",
       );
     }
 

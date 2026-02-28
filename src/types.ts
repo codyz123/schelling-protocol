@@ -202,12 +202,16 @@ export function jaccardSimilarity(a: string, b: string): number {
   return union === 0 ? 0 : intersection / union;
 }
 
+export type PreferenceSource = "user_stated" | "user_inferred" | "cluster_prior" | "agent_default";
+
 export interface Preference {
   trait_key: string;
   operator: PreferenceOperator;
   value: string | number | boolean | string[] | number[];
   weight: number;
   label?: string;
+  agent_confidence?: number;
+  source?: PreferenceSource;
 }
 
 // ─── Funnel Mode ────────────────────────────────────────────────────
@@ -300,6 +304,8 @@ export interface PreferenceRecord {
   value: string;       // JSON-encoded
   weight: number;
   label: string | null;
+  agent_confidence: number;
+  source: string;
   created_at: string;
   updated_at: string;
 }

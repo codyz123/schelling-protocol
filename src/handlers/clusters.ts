@@ -57,6 +57,13 @@ interface SuggestedTrait {
   enum_values: string[] | null;
 }
 
+interface DelegationPriors {
+  typical_agent_autonomy: number;
+  dimension_decidability: Record<string, number>;
+  dimensions_typically_requiring_review: string[];
+  sample_size: number;
+}
+
 interface ClusterInfoOutput {
   cluster_id: string;
   display_name: string | null;
@@ -72,6 +79,7 @@ interface ClusterInfoOutput {
     proposal_timeout_hours: number;
   };
   suggested_traits: SuggestedTrait[];
+  delegation_priors: DelegationPriors;
   metadata: Record<string, unknown> | null;
   created_at: string;
   last_activity: string;
@@ -265,6 +273,14 @@ export async function handleClusterInfo(
           proposal_timeout_hours: cluster.proposal_timeout_hours,
         },
         suggested_traits: suggestedTraits,
+        delegation_priors: cluster.delegation_priors
+          ? JSON.parse(cluster.delegation_priors) as DelegationPriors
+          : {
+              typical_agent_autonomy: 0.5,
+              dimension_decidability: {},
+              dimensions_typically_requiring_review: [],
+              sample_size: 0,
+            },
         metadata,
         created_at: cluster.created_at,
         last_activity: cluster.last_activity,
