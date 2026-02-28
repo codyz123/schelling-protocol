@@ -612,3 +612,10 @@ CREATE TRIGGER cleanup_idempotency_keys_trigger
   AFTER INSERT ON idempotency_keys
   FOR EACH ROW
   EXECUTE FUNCTION cleanup_idempotency_keys();
+
+-- ─── Core: Agent Aliases ───────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS agent_aliases (
+  alias             TEXT PRIMARY KEY,
+  user_token        TEXT REFERENCES users(user_token)
+);

@@ -601,3 +601,10 @@ CREATE TRIGGER IF NOT EXISTS cleanup_idempotency_keys
     DELETE FROM idempotency_keys
     WHERE created_at < datetime('now', '-1 day');
   END;
+
+-- ─── Core: Agent Aliases ───────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS agent_aliases (
+  alias             TEXT PRIMARY KEY,
+  user_token        TEXT REFERENCES users(user_token)
+);

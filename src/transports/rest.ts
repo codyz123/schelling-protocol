@@ -40,6 +40,7 @@ import { handleMyInsights } from "../handlers/my-insights.js";
 import { handleAnalytics } from "../handlers/analytics.js";
 import { handleRefresh } from "../handlers/refresh.js";
 import { handleReconsider } from "../handlers/reconsider.js";
+import { handleAgentSeek, handleAgentLookup } from "../handlers/agent-seek.js";
 import {
   handleQuickSeek,
   handleQuickOffer,
@@ -69,6 +70,8 @@ const OPERATIONS: Record<string, HandlerFn> = {
   refresh: handleRefresh,
   // Search
   search: handleSearch,
+  agent_seek: handleAgentSeek,
+  agent_lookup: handleAgentLookup,
   quick_seek: handleQuickSeek,
   quick_offer: handleQuickOffer,
   quick_match: handleQuickMatch,
