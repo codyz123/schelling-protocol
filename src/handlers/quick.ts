@@ -55,7 +55,11 @@ const CLUSTER_KEYWORDS: Record<string, string> = {
 };
 
 const BUDGET_PATTERN = /budget\s*\$?\s*(\d+)(?:\s*[-–]\s*(\d+))?/i;
-const LOCATION_PATTERN = /(?:location|city|in)\s*[:=]?\s*([A-Za-z\s]+?)(?:\.|,|$)/i;
+const RATE_PATTERN = /\$\s*(\d+)\s*\/\s*(hr|hour|day|week|month|mo)\b/i;
+const PRICE_PATTERN = /\$\s*(\d[\d,]*)/i;
+// Word-boundary "in" only — won't match "looking" or "finding"
+const LOCATION_PATTERN = /\bin\s+([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)/;
+const LOCATION_PATTERN_KV = /(?:location|city)\s*[:=]\s*([A-Za-z\s]+?)(?:\.|,|$)/i;
 const SKILL_PATTERN = /(?:skills?|expertise|proficient|experienced)\s*[:=]?\s*([^.;]+)/i;
 const AVAILABILITY_PATTERN = /(?:available|availability)\s*[:=]?\s*([^.;]+)/i;
 
@@ -94,8 +98,36 @@ function parseIntent(intent: string): NLParseResult {
     }
   }
 
-  // Extract location
-  const locationMatch = intent.match(LOCATION_PATTERN);
+  // Extract rate (e.g., "$100/hr")
+  const rateMatch = intent.match(RATE_PATTERN);
+  if (rateMatch) {
+    traits.push({
+      key: "rate",
+      value: parseInt(rateMatch[1].replace(/,/g, ""), 10),
+      value_type: "number",
+      visibility: "public",
+    });
+    traits.push({
+      key: "rate_unit",
+      value: rateMatch[2].toLowerCase().replace(/^hr$/, "hour"),
+      value_type: "string",
+      visibility: "public",
+    });
+  } else if (!budgetMatch) {
+    // Extract standalone price (e.g., "$1500")
+    const priceMatch = intent.match(PRICE_PATTERN);
+    if (priceMatch) {
+      traits.push({
+        key: "price",
+        value: parseInt(priceMatch[1].replace(/,/g, ""), 10),
+        value_type: "number",
+        visibility: "public",
+      });
+    }
+  }
+
+  // Extract location — try word-boundary "in [City]" first, then key=value form
+  const locationMatch = intent.match(LOCATION_PATTERN) || intent.match(LOCATION_PATTERN_KV);
   if (locationMatch) {
     traits.push({
       key: "location",
