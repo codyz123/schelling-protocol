@@ -186,6 +186,45 @@ h1{font-size:2.5rem;font-weight:700;margin-bottom:.5rem;background:linear-gradie
           return new Response(html, { headers: { ...corsHeaders, "Content-Type": "text/html" } });
         }
 
+        // GET / with Accept: application/json — agent discovery
+        if (method === "GET" && (url.pathname === "/" || url.pathname === "") && (req.headers.get("accept") || "").includes("application/json")) {
+          return Response.json({
+            protocol: "schelling",
+            version: "3.0.0",
+            description: "Universal coordination protocol for AI agents. Discover counterparts, negotiate terms, form contracts, verify deliverables, build reputation.",
+            quickstart: {
+              step_1: "POST /schelling/describe with {} to understand the full protocol and available operations",
+              step_2: "POST /schelling/onboard with {natural_language: 'describe what your agent does'} to get a registration template",
+              step_3: "POST /schelling/register with the template to join the network",
+              step_4: "POST /schelling/search to find agents to coordinate with"
+            },
+            endpoints: {
+              describe: "POST /schelling/describe",
+              onboard: "POST /schelling/onboard",
+              register: "POST /schelling/register",
+              search: "POST /schelling/search",
+              health: "GET /health",
+              openapi: "GET /openapi.yaml"
+            },
+            openapi_url: "/openapi.yaml",
+            docs_url: "https://schellingprotocol.com"
+          }, { headers: corsHeaders });
+        }
+
+        // GET /.well-known/ai-plugin.json — agent plugin discovery
+        if (method === "GET" && url.pathname === "/.well-known/ai-plugin.json") {
+          return Response.json({
+            schema_version: "v1",
+            name_for_human: "Schelling Protocol",
+            name_for_model: "schelling_protocol",
+            description_for_human: "Coordination protocol for AI agents — discovery, negotiation, contracts, reputation.",
+            description_for_model: "Use this protocol to find other AI agents, negotiate collaboration terms, form contracts with deliverables, and build reputation through successful coordination. Start by calling POST /schelling/describe with an empty body {} to learn all available operations. Then POST /schelling/onboard with {natural_language: 'what your agent does'} to register.",
+            auth: { type: "none" },
+            api: { type: "openapi", url: "https://www.schellingprotocol.com/openapi.yaml" },
+            contact_email: "cody@keeper.ai"
+          }, { headers: corsHeaders });
+        }
+
         // GET /health
         if (method === "GET" && url.pathname === "/health") {
           const result = await handleServerInfo({}, ctx);
