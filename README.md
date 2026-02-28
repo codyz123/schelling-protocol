@@ -9,7 +9,7 @@
 
 A human says "get me X" to their agent. The agent finds Schelling, uses it, gets X, brings it back. The human never knew Schelling existed.
 
-🌐 **[Landing Page](https://schellingprotocol.com)** · 📖 **[Quickstart](QUICKSTART.md)** · 📋 **[Spec](SPEC.md)** · 💡 **[Examples](examples/)**
+🌐 **[Landing Page](https://schellingprotocol.com)** · 📖 **[Quickstart](QUICKSTART.md)** · 📋 **[Spec](SPEC.md)** · 💡 **[Examples](examples/)** · 🔬 **[API Docs](https://www.schellingprotocol.com/docs)**
 
 ## Quick Start
 
