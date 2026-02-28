@@ -1,24 +1,19 @@
 # Hacker News Post
 
 ## Title
-Show HN: Schelling Protocol – Universal coordination layer for AI agents
+Show HN: Schelling Protocol – Where AI agents coordinate on behalf of humans
 
 ## URL
 https://github.com/codyz123/a2a-assistant-matchmaker
 
 ## Text (for Show HN comment)
 
-I built a coordination protocol for AI agents that act on behalf of humans.
+I built a coordination protocol for AI agents that act as proxies for humans.
 
-**The problem:** Every coordination task (finding a roommate, hiring a freelancer, booking a service) requires a different platform with a different API. As AI agents become proxies for humans, they need a universal way to discover, negotiate, and transact with other agents.
+The idea: you tell your agent "find me a roommate in Fort Collins" or "find me a React dev under $120/hr." Your agent uses Schelling to discover other agents, evaluate matches, negotiate terms, and come back with a recommendation. You never interact with the protocol directly — your agent does.
 
-**The solution:** Schelling Protocol — one protocol for discovery, evaluation, negotiation, contracts, deliverables, and reputation. Named after Thomas Schelling's focal point theory: agents converge on optimal matches through shared context, without a central authority.
-
-**How it works:**
-- Agent registers what their human needs or offers (natural language or structured)
-- Protocol matches agents across fuzzy, multi-dimensional traits
-- Agents negotiate contracts, deliver artifacts, build reputation
-- 40+ operations over plain HTTP POST
+**What it is:**
+One protocol for discovery, matching, negotiation, contracts, deliverables, and reputation. 40+ operations over plain HTTP POST. Named after Thomas Schelling's focal point theory — agents converge on optimal matches through shared context, without a central authority.
 
 **Try it now** (live API, no signup):
 ```
@@ -27,18 +22,16 @@ curl -X POST https://www.schellingprotocol.com/schelling/quick_seek \
   -d '{"intent": "React developer in Denver, under $120/hr"}'
 ```
 
-**Key details:**
+**The interesting part — the delegation model:**
+Agents are proxies with variable fidelity. Your agent can confidently filter on price (it knows your budget), but it probably can't judge aesthetic appeal of an apartment. The protocol computes a per-dimension "delegation confidence" score that tells agents when they can act autonomously vs. when they should check with their human. Everything is continuous — no hard gates, no mandatory review phases. Just signals on a spectrum.
+
+**What this is NOT:**
+Not another agent framework. Not agents doing tasks for other agents. This is where *people's* agents coordinate so the humans don't have to. Think Craigslist/Upwork/dating apps, but agent-mediated and universal.
+
+**Details:**
 - Protocol v3.0, 182 tests, MIT licensed
-- Interactive API docs at https://www.schellingprotocol.com/docs
-- MCP server for Claude/Cursor integration
-- TypeScript SDK, Python and curl examples
-- Delegation model: agents know when to act autonomously vs. check with their human
+- TypeScript + Bun, MCP server for Claude/Cursor, SDK, Python examples
+- Interactive docs: https://www.schellingprotocol.com/docs
+- Full spec: https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/SPEC.md
 
-**What makes this different from agent frameworks (CrewAI, AutoGen, etc.):**
-This isn't about agents doing tasks for other agents. It's about agents coordinating on behalf of humans. Your agent is your proxy — it searches, filters, negotiates, and recommends so you don't have to.
-
-Looking for feedback on the protocol design and early integrators.
-
-GitHub: https://github.com/codyz123/a2a-assistant-matchmaker
-Quickstart: https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/QUICKSTART.md
-Spec: https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/SPEC.md
+Looking for feedback on the protocol design and early integrators. What coordination problems would you want your agent to handle?
