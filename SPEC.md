@@ -16,6 +16,8 @@ Design goals:
 - Universal primitives: traits and preferences are generic, domain-agnostic structures.
 - Progressive trust: information is revealed as parties advance through the funnel.
 - Practicality: minimal onboarding, fast paths, and tool hooks for real-world usage.
+- Continuous over categorical: the protocol avoids hard gates, boolean flags, and mandatory phases. Scores, weights, and confidences are floats on a spectrum. Agents decide how to act on signals — the protocol provides information, not mandates.
+- Delegation awareness: agents are proxies with variable fidelity. The protocol helps agents understand when they can act autonomously vs when they should seek human input, without ever requiring either.
 
 The reference server enforces only what is defined below; behavior beyond these rules is out of scope.
 
@@ -128,15 +130,19 @@ Preference schema:
   "operator": "gte",
   "value": 3,
   "weight": 0.8,
-  "label": "Minimum experience"
+  "label": "Minimum experience",
+  "agent_confidence": 0.95,
+  "source": "user_stated"
 }
 ```
 
 Operators:
 `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`, `exists`, `range`, `contains_any`, `contains_all`, `regex`.
 
-- `weight` in [0.0, 1.0].
-- `weight == 1.0` is a hard filter.
+- `weight` in [0.0, 1.0]. Higher weight means more important.
+- There is no hard cutoff. A `weight` of 1.0 is the strongest possible preference signal, but the matching algorithm treats it as a very strong soft preference, not an absolute filter. Agents that want to enforce hard constraints should set `weight: 1.0` and filter results client-side — the protocol returns scored candidates, not pass/fail verdicts.
+- `agent_confidence` (optional, 0.0-1.0): how confident the agent is that this preference accurately represents the user's actual desires. High values (e.g. 0.95 for "must have 2 bedrooms") mean the agent can filter on this autonomously. Low values (e.g. 0.3 for "modern aesthetic") mean the agent is guessing and should weight human input more heavily when evaluating candidates on this dimension. Default: 0.5 (neutral — agent has not explicitly calibrated this). See §15 Delegation Model.
+- `source` (optional): provenance of the preference. Values: `user_stated` (user explicitly said this), `user_inferred` (agent inferred from user behavior/history), `cluster_prior` (derived from cluster defaults), `agent_default` (agent's own assumption). Helps the protocol and counterparty agents calibrate trust in the preference.
 
 ### 4.5 Intent Embeddings
 
@@ -198,7 +204,7 @@ Time decay:
 
 ### 5.1 Funnel Stages
 
-Stages are numeric and monotonic except for explicit withdrawal:
+Stages represent progressive mutual investment. They are numeric, generally forward-moving, but not rigidly linear — agents may skip stages via fast paths or withdraw at any point:
 - 0 UNDISCOVERED
 - 1 DISCOVERED
 - 2 INTERESTED
@@ -211,6 +217,9 @@ Transitions:
 - COMMITTED is set via `commit`.
 - CONNECTED is auto-elevated when both sides reach COMMITTED.
 - `withdraw` can move a party back from COMMITTED/CONNECTED to INTERESTED.
+- Fast paths (`quick_seek`, `quick_offer`, `quick_match`) may advance through multiple stages in a single call. The lifecycle adapts to the agent's confidence and urgency.
+
+Agents are not required to progress linearly. An agent with high delegation confidence may jump from DISCOVERED to COMMITTED. An agent that needs user review may linger at DISCOVERED indefinitely while gathering information. The stages track state, not prescribe behavior.
 
 Progressive disclosure:
 - `public` traits visible at DISCOVERED.
@@ -219,15 +228,19 @@ Progressive disclosure:
 - `after_connect` visible when mutual min stage >= CONNECTED.
 - `private` never visible to counterparties.
 
-### 5.2 Lifecycle Sequence (recommended)
+Note: visibility tiers interact with delegation confidence. Dimensions gated behind later stages tend to be more subjective/sensitive, which naturally correlates with lower dimension_decidability. This is emergent, not enforced.
 
-1) Onboard
+### 5.2 Lifecycle Sequence (typical, not mandatory)
+
+A common flow, but agents may reorder, skip, or repeat steps based on their needs and delegation confidence:
+
+1) Onboard (optional — can register directly)
 2) Register
 3) Search
-4) Interest
+4) Interest (or skip via fast paths)
 5) Commit
-6) Contract
-7) Deliver
+6) Contract (optional — some matches need no formal contract)
+7) Deliver (if contract exists)
 8) Accept/Verify
 9) Report outcome
 10) Reputation updates
@@ -351,6 +364,19 @@ Response:
     "proposal_timeout_hours": 72
   },
   "suggested_traits": [],
+  "delegation_priors": {
+    "typical_agent_autonomy": 0.72,
+    "dimension_decidability": {
+      "work.hourly_rate_usd": 0.95,
+      "work.years_experience": 0.92,
+      "location.city": 0.88,
+      "work.culture_fit": 0.30,
+      "work.management_style": 0.35
+    },
+    "dimensions_typically_requiring_review": ["work.culture_fit", "work.management_style"],
+    "sample_size": 142,
+    "last_updated": "2026-02-27T00:00:00.000Z"
+  },
   "metadata": null,
   "created_at": "2026-02-01 00:00:00",
   "last_activity": "2026-02-27 12:00:00"
@@ -388,10 +414,19 @@ Response (example):
       { "key": "work.hourly_rate_usd", "value": 120, "value_type": "number", "visibility": "public" }
     ],
     "preferences": [],
-    "intents": []
+    "intents": [],
+    "note": "Set agent_confidence on each preference to indicate how well you know your user's desires on that dimension. Default 0.5 (neutral)."
   },
   "clarification_needed": null,
-  "cluster_priors": {}
+  "cluster_priors": {
+    "typical_agent_autonomy": 0.65,
+    "dimension_decidability": {
+      "work.hourly_rate_usd": 0.95,
+      "location.city": 0.88,
+      "work.years_experience": 0.92
+    },
+    "sample_size": 0
+  }
 }
 ```
 
@@ -492,12 +527,29 @@ Response (example):
       "group_size": null,
       "group_filled": null,
       "stale": false,
+      "delegation_confidence": 0.58,
+      "dimension_confidence": {
+        "price": { "agent_confidence": 0.98, "dimension_decidability": 0.95, "signal_density": 0.9, "combined": 0.84 },
+        "aesthetics.style": { "agent_confidence": 0.30, "dimension_decidability": 0.35, "signal_density": 0.5, "combined": 0.05 }
+      },
       "computed_at": "2026-02-27T12:00:00.000Z"
     }
   ],
   "total_scanned": 100,
   "total_matches": 12,
   "ranking_explanation": { "model_tier": "prior", "adjustments": [], "outcome_basis": 0 },
+  "delegation_summary": {
+    "overall_delegation_confidence": 0.62,
+    "match_ambiguity": 0.71,
+    "high_confidence_dimensions": ["location", "bedrooms", "price"],
+    "low_confidence_dimensions": ["aesthetics.style", "neighborhood.vibe"],
+    "recommendation": "present_candidates_to_user",
+    "recommendation_strength": 0.78,
+    "cluster_priors": {
+      "typical_agent_autonomy": 0.55,
+      "dimensions_typically_requiring_review": ["aesthetics", "neighborhood", "layout"]
+    }
+  },
   "next_cursor": null,
   "pending_actions": [],
   "nl_parsed": null
@@ -645,8 +697,19 @@ Response:
 #### report (outcome)
 Request:
 ```json
-{ "user_token": "...", "candidate_id": "cand-1", "outcome": "positive" }
+{
+  "user_token": "...",
+  "candidate_id": "cand-1",
+  "outcome": "positive",
+  "delegation_metadata": {
+    "agent_decided_dimensions": ["price", "location", "bedrooms"],
+    "user_reviewed_dimensions": ["aesthetics", "neighborhood_vibe"],
+    "user_overrode_agent": false
+  }
+}
 ```
+
+- `delegation_metadata` (optional): reports which dimensions the agent decided autonomously vs consulted its user on. Used to update cluster-level delegation priors over time. `user_overrode_agent` indicates whether the user's review led to a different choice than the agent would have made — a strong signal for calibrating dimension decidability.
 Response:
 ```json
 { "reported": true, "reported_at": "2026-02-27T12:00:00.000Z" }
@@ -673,6 +736,9 @@ Response:
 ```json
 { "user_token": "...", "candidate_id": "cand-1", "action": "answer", "inquiry_id": "inq-1", "answer": "Weekdays", "confidence": 0.8, "source": "agent_knowledge" }
 ```
+
+- `confidence` (0.0-1.0): how confident the agent is in the accuracy of this answer. This is a continuous signal — a `user_stated` answer at 0.95 is more trustworthy than an `agent_knowledge` answer at 0.6, but counterparty agents can weight this however they choose.
+- `source`: `agent_knowledge` (agent inferred from context/history), `user_stated` (user explicitly provided this answer), `user_confirmed` (agent answered, then user reviewed and confirmed). Source and confidence together give counterparty agents a rich signal — e.g., `source: "agent_knowledge", confidence: 0.4` suggests the agent is guessing and the counterparty may want to verify directly.
 
 #### inquire (list)
 ```json
@@ -950,7 +1016,7 @@ Jury selection (reference server):
 - Active users not directly connected to either party.
 - Not assigned to a jury in the last 90 days.
 - Different `agent_model` from both parties.
-- Reputation score >= 0.6 (computed locally in dispute handler).
+- Reputation score is used as a weighting factor for jury eligibility and verdict influence — higher reputation jurors have more weight. The reference server uses a minimum threshold of 0.6 for practical purposes, but implementations may use continuous weighting instead.
 - Minimum 3 jurors; otherwise status becomes `operator_review`.
 
 Verdicts:
@@ -968,7 +1034,7 @@ Verdicts:
 
 Reputation is computed per user from `reputation_events`:
 - Base score: 0.5
-- Event impacts (before decay):
+- Event impacts (before decay) — these are reference values; implementations may adjust weights based on cluster context and transaction volume:
   - positive_outcome: +0.05
   - neutral_outcome: +0.01
   - negative_outcome: -0.08
@@ -983,6 +1049,8 @@ Reputation is computed per user from `reputation_events`:
   - enforcement_action: -0.10
   - abandonment: -0.03
   - completion: +0.03
+
+Reputation scores are continuous (0.0-1.0) and should be treated as signals, not pass/fail thresholds. An agent with reputation 0.48 is not categorically different from one at 0.52.
 
 Time decay:
 - events older than 1 year: impact * 0.5
@@ -1063,14 +1131,100 @@ Federation is not implemented in the reference server. `federation_enabled` and 
 
 ---
 
-## 15. Transport Summary
+## 15. Delegation Model
+
+### Philosophy
+
+Agents are proxies with variable fidelity. An agent searching for an apartment on behalf of its user can confidently filter on price and bedroom count, but may have no basis for judging aesthetic appeal or neighborhood vibe. The protocol's job is not to mandate when agents must consult their users — it's to provide the signals agents need to make that determination themselves.
+
+Everything in the delegation model is continuous, not categorical. There are no required review gates, no mandatory human-in-the-loop phases, no boolean "needs approval" flags. Every signal is a float on a spectrum, and agents decide how to act on them based on their own risk tolerance and their user's preferences.
+
+### Delegation Confidence
+
+Delegation confidence is a per-dimension, per-candidate score that estimates how safely an agent can make a decision on behalf of its user without consulting them. It is computed from multiple inputs:
+
+**Agent confidence** (`agent_confidence` on preferences, 0.0-1.0): How well the agent knows its user's preferences on this dimension. An agent that has had 50 conversations about aesthetics with its user has higher agent_confidence on aesthetics than one working from a single sentence. This is self-reported by the agent at registration time.
+
+**Dimension decidability** (cluster-level prior, 0.0-1.0): How inherently decidable a dimension is by agents in general. Price (0.95) is highly decidable — it's a number, agents are good at numbers. Aesthetic style (0.35) is poorly decidable — it's subjective, visual, and taste-dependent. These priors are learned from transaction outcomes within each cluster and update over time. New clusters start with neutral priors (0.5).
+
+**Match ambiguity** (0.0-1.0): When search results are tightly clustered (many candidates at similar scores), the agent has less basis for autonomous selection. When one candidate dominates, the agent can proceed more confidently. Computed per-search as a function of score variance across top candidates. High ambiguity (0.8+) means candidates are hard to distinguish; low ambiguity (0.2) means there's a clear winner. Exposed in the search response's `delegation_summary.match_ambiguity`. This modulates `recommendation_strength` but does not directly enter per-dimension delegation confidence — it's a search-level signal, not a dimension-level one.
+
+**Signal density** (0.0-1.0): How many data points the protocol has about this user's preferences on this dimension — explicit preferences, inquiry answers, past transaction patterns. More signal → higher confidence. Exposed per-dimension in search results as `signal_density`. Computed as a saturating function of data point count (e.g., `min(1.0, log(1 + count) / log(1 + threshold))`). New users with no history start at 0.0 on all dimensions.
+
+**Combined delegation confidence** per dimension:
+```
+combined = agent_confidence × dimension_decidability × signal_density
+```
+All three inputs are in [0.0, 1.0], so the output is also in [0.0, 1.0]. This is a simplified model; implementations may use more sophisticated combination functions (e.g., weighted geometric mean). The key invariant is that all inputs are continuous and the output is continuous.
+
+### Recommendation Strength
+
+The search response includes a `delegation_summary` with a `recommendation` and `recommendation_strength` (0.0-1.0):
+
+- `recommendation` is a soft label: `act_autonomously`, `present_candidates_to_user`, `seek_user_input_on_dimensions`, `defer_to_user`. These are hints, not commands.
+- `recommendation_strength` indicates how strongly the protocol recommends this course of action. 0.5 = genuinely ambiguous, the protocol has no strong opinion. 0.95 = very strong signal.
+
+An aggressive agent might act autonomously at recommendation_strength 0.6. A cautious agent might present to its user at 0.9. That's a property of the agent, not the protocol.
+
+### Cluster Priors
+
+Each cluster accumulates delegation priors over time:
+
+- `typical_agent_autonomy`: the average delegation confidence across all transactions in this cluster. Apartment clusters (~0.55) are lower than commodity purchasing clusters (~0.85).
+- `dimension_decidability`: per-dimension scores learned from outcome data. Dimensions where agent-autonomous decisions lead to the same satisfaction scores as human-reviewed ones get higher decidability. Dimensions where human review correlates with better outcomes get lower decidability.
+- `dimensions_typically_requiring_review`: convenience list of dimensions with decidability below a threshold (0.5 by default). Advisory only.
+- `sample_size`: number of completed transactions informing these priors. Low sample sizes mean the priors are unreliable.
+
+Cluster priors are seeded at 0.5 (neutral) for new clusters and update as transactions complete with outcome reports. The update mechanism uses exponential moving average to weight recent transactions more heavily.
+
+### How Agents Should Use This
+
+The protocol provides delegation signals. Agents consume them however they want. Typical patterns:
+
+1. **High delegation confidence across all dimensions**: Agent proceeds autonomously — express interest, commit, negotiate contract.
+2. **High on some, low on others**: Agent filters autonomously on high-confidence dimensions, then presents shortlisted candidates to its user for review on low-confidence dimensions.
+3. **Low across the board**: Agent presents search results directly to its user with minimal filtering.
+4. **Mixed with high match ambiguity**: Even if agent_confidence is high, tightly clustered results suggest presenting options rather than picking one.
+
+None of these patterns are enforced. An agent that ignores delegation signals entirely and always acts autonomously is protocol-compliant. An agent that always defers to its user is also compliant. The protocol's role is to make the information available.
+
+### Updating Priors
+
+Delegation priors update from two sources:
+
+1. **Outcome reports** (`report` operation): When a transaction completes, the outcome (positive/neutral/negative) is correlated with which dimensions were agent-decided vs user-reviewed. Over time, this reveals which dimensions benefit from human input.
+
+2. **Agent feedback**: Agents can optionally report which dimensions they decided autonomously vs consulted their user on, via the `report` operation's metadata. This enriches the cluster's understanding of decision patterns.
+
+### Interaction with Progressive Disclosure
+
+Delegation confidence interacts naturally with visibility tiers. Low-decidability dimensions often involve traits that are `after_interest` or `after_commit` visibility — the protocol already defers full information on subjective dimensions to later funnel stages. Agents should factor visibility into their delegation calculations: a dimension they can't yet see data for naturally has lower effective confidence.
+
+### Non-Goals
+
+The delegation model does NOT:
+- Require agents to consult their users at any point
+- Gate funnel progression on human approval
+- Define a "shortlist" or "review" phase in the lifecycle
+- Mandate specific UX patterns for human-in-the-loop
+- Assume any particular agent architecture or capability
+
+It provides information. Agents decide.
+
+### Relationship to Ranking
+
+Delegation confidence does NOT affect candidate ranking or `advisory_score`. Candidates are ranked purely by fit scores (preference satisfaction, intent similarity, reputation). Delegation signals are orthogonal metadata that help agents decide what to do with results, not which results to see. An agent searching for apartments gets the same ranked list whether its delegation confidence is 0.2 or 0.9 — the difference is in how autonomously it acts on that list.
+
+---
+
+## 16. Transport Summary
 
 - REST: `POST /schelling/{operation}` with JSON body.
 - MCP: stdio transport, tools named `schelling.*`, forwarding to REST.
 
 ---
 
-## 16. Implementation Notes and Edge Cases
+## 17. Implementation Notes and Edge Cases
 
 - Idempotency keys are supported on many operations (register, update, interest, commit, decline, withdraw, report, contract actions, deliver, accept_delivery, verify, event emit, etc.). A duplicate idempotency key returns the cached response.
 - Candidate pairs are ordered by token; a server must treat `(a,b)` and `(b,a)` as the same pair.
