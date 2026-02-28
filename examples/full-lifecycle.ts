@@ -1,0 +1,1 @@
+../scripts/demo-lifecycle.ts
