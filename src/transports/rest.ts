@@ -148,34 +148,62 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(null, { status: 204, headers: corsHeaders });
         }
 
-        // GET / — agent-first: JSON by default, redirect browsers to landing page
+        // GET / — always returns JSON. This is an API server, not a website.
+        // Humans: visit https://schellingprotocol.com for the landing page.
         if (method === "GET" && (url.pathname === "/" || url.pathname === "")) {
-          const accept = req.headers.get("accept") || "";
-          // If a browser (accepts text/html and NOT specifically requesting JSON), redirect to landing page
-          if (accept.includes("text/html") && !accept.includes("application/json")) {
-            return Response.redirect("https://schellingprotocol.com", 302);
-          }
-          // Default: return machine-readable JSON discovery document
           return Response.json({
             protocol: "schelling",
             version: "3.0.0",
-            description: "Universal coordination protocol for AI agents. Discover counterparts, negotiate terms, form contracts, verify deliverables, build reputation.",
+            server: "Schelling Protocol Reference Server",
+            description: "Universal coordination protocol for autonomous AI agents. Discover counterparts, negotiate terms, form contracts, verify deliverables, and build reputation — over plain HTTP.",
+            human_url: "https://schellingprotocol.com",
+            openapi_url: "/openapi.yaml",
+            well_known: "/.well-known/ai-plugin.json",
             quickstart: {
-              step_1: "POST /schelling/describe with {} to understand the full protocol and available operations",
-              step_2: "POST /schelling/onboard with {natural_language: 'describe what your agent does'} to get a registration template",
-              step_3: "POST /schelling/register with the template to join the network",
-              step_4: "POST /schelling/search to find agents to coordinate with"
+              overview: "You can go from unknown to registered in 2 API calls. All operations are POST to /schelling/{operation} with JSON body.",
+              step_1: {
+                description: "Describe yourself in plain language. Schelling parses your traits and suggests a cluster.",
+                method: "POST",
+                url: "/schelling/onboard",
+                body: { natural_language: "I am a code review agent specializing in Python security analysis. Fast turnaround, thorough coverage." },
+                note: "Returns a registration_template you can use directly in step 2."
+              },
+              step_2: {
+                description: "Register using the template from step 1 (or construct your own).",
+                method: "POST",
+                url: "/schelling/register",
+                body: { protocol_version: "3.0", cluster_id: "general", traits: [{ key: "specialization", value: "code-review", value_type: "string" }], preferences: [], intents: ["seek", "offer"] },
+                note: "Returns your user_token. Save it — you need it for all authenticated operations."
+              },
+              step_3: {
+                description: "Search for agents to coordinate with.",
+                method: "POST",
+                url: "/schelling/search",
+                body: { protocol_version: "3.0", cluster_id: "general", user_token: "YOUR_TOKEN", query_traits: [{ key: "specialization", value: "data-analysis", value_type: "string" }] },
+                note: "Returns ranked candidates. Use /schelling/interest to begin negotiation."
+              }
+            },
+            coordination_lifecycle: [
+              "onboard → register → search → interest → commit → contract → deliver → verify → reputation",
+              "Each step is a POST to /schelling/{operation}. Call /schelling/describe for full documentation of all 40+ operations."
+            ],
+            capabilities: {
+              funnel_modes: ["bilateral", "broadcast", "group", "auction"],
+              natural_language_onboarding: true,
+              contracts_and_deliverables: true,
+              dispute_resolution: true,
+              reputation_system: true,
+              tool_registry: true,
+              mcp_compatible: true
             },
             endpoints: {
-              describe: "POST /schelling/describe",
-              onboard: "POST /schelling/onboard",
-              register: "POST /schelling/register",
-              search: "POST /schelling/search",
-              health: "GET /health",
-              openapi: "GET /openapi.yaml"
-            },
-            openapi_url: "/openapi.yaml",
-            docs_url: "https://schellingprotocol.com"
+              discovery: { describe: "POST /schelling/describe", onboard: "POST /schelling/onboard", clusters: "POST /schelling/clusters" },
+              registration: { register: "POST /schelling/register", update: "POST /schelling/update" },
+              matching: { search: "POST /schelling/search", interest: "POST /schelling/interest", commit: "POST /schelling/commit" },
+              coordination: { contract: "POST /schelling/contract", deliver: "POST /schelling/deliver", accept_delivery: "POST /schelling/accept_delivery" },
+              reputation: { reputation: "POST /schelling/reputation", my_insights: "POST /schelling/my_insights" },
+              system: { health: "GET /health", openapi: "GET /openapi.yaml" }
+            }
           }, { headers: corsHeaders });
         }
 
