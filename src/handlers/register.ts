@@ -129,6 +129,7 @@ export async function handleRegister(
       error: {
         code: "VERSION_MISMATCH",
         message: `Unsupported protocol version: ${input.protocol_version}. Expected: ${PROTOCOL_VERSION}`,
+        hint: 'Include "protocol_version": "3.0" in your request body. Or use quick_seek/quick_offer which handle this automatically.',
       },
     };
   }

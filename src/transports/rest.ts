@@ -214,7 +214,10 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         // All Schelling operations are POST
         if (method !== "POST") {
           return Response.json(
-            { error: "Method not allowed. All Schelling operations use POST." },
+            {
+              error: "Method not allowed. All Schelling operations use POST.",
+              hint: "Try: curl -X POST https://www.schellingprotocol.com/schelling/describe -H 'Content-Type: application/json' -d '{}'",
+            },
             { status: 405, headers: corsHeaders },
           );
         }
@@ -226,7 +229,10 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           params = body ? JSON.parse(body) : {};
         } catch {
           return Response.json(
-            { error: "Invalid JSON in request body" },
+            {
+              error: "Invalid JSON in request body",
+              hint: "Send a JSON object as the request body. Empty body? Use: -d '{}'",
+            },
             { status: 400, headers: corsHeaders },
           );
         }
@@ -250,7 +256,11 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         const handler = NESTED_OPERATIONS[path] || OPERATIONS[path];
         if (!handler) {
           return Response.json(
-            { error: `Unknown operation: ${path}` },
+            {
+              error: `Unknown operation: ${path}`,
+              hint: "Start with POST /schelling/describe to see all available operations. Quickstart: https://github.com/codyz123/a2a-assistant-matchmaker/blob/main/QUICKSTART.md",
+              common_operations: ["describe", "quick_seek", "quick_offer", "search", "register", "onboard"],
+            },
             { status: 404, headers: corsHeaders },
           );
         }

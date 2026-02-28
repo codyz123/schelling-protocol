@@ -331,7 +331,11 @@ export async function handleSearch(
   if (!input.user_token) {
     return {
       ok: false,
-      error: { code: "INVALID_INPUT", message: "user_token is required" },
+      error: {
+        code: "INVALID_INPUT",
+        message: "user_token is required",
+        hint: "You get a user_token when you register. Easier: use POST /schelling/quick_seek with an 'intent' string — it auto-registers.",
+      },
     };
   }
 
