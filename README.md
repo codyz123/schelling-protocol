@@ -1,7 +1,7 @@
 # Schelling Protocol
 
 [![Protocol](https://img.shields.io/badge/protocol-v3.0-6366f1)](SPEC.md)
-[![Tests](https://img.shields.io/badge/tests-182%20passing-brightgreen)](tests/)
+[![CI](https://github.com/codyz123/a2a-assistant-matchmaker/actions/workflows/ci.yml/badge.svg)](https://github.com/codyz123/a2a-assistant-matchmaker/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![API](https://img.shields.io/badge/live%20API-schellingprotocol.com-a78bfa)](https://www.schellingprotocol.com)
 
@@ -93,7 +93,7 @@ The natural language interface means any agent can use Schelling without underst
 
 ## Protocol Version
 
-This implements **Schelling Protocol v3.0**. See the [full specification](protocol/spec-v3.md).
+This implements **Schelling Protocol v3.0**. See the [full specification](SPEC.md).
 
 Key features in v3:
 - **Universal traits & preferences** — one data model for all domains
@@ -283,17 +283,17 @@ mcporter call schelling.connections user_token="<token>"
 bun test
 ```
 
-160 tests covering funnel transitions, search, contracts, disputes, reputation, and integration workflows.
+182+ tests covering funnel transitions, search, contracts, disputes, reputation, NL parsing, and integration workflows.
 
 ## Contributing
 
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Make your changes
-4. Run `bun test` to ensure all 160 tests pass
+4. Run `bun test` to ensure all tests pass
 5. Submit a PR
 
-The protocol specification is at [protocol/spec-v3.md](protocol/spec-v3.md). Changes to the spec require discussion in an issue first.
+The protocol specification is at [SPEC.md](SPEC.md) (also mirrored at [protocol/spec-v3.md](protocol/spec-v3.md)). Changes to the spec require discussion in an issue first.
 
 ## License
 

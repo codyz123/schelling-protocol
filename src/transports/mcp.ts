@@ -52,6 +52,7 @@ import {
   handleToolInvoke,
   handleToolFeedback,
 } from "../handlers/tools.js";
+import { handleAgentSeek, handleAgentLookup } from "../handlers/agent-seek.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -697,5 +698,27 @@ export function bindTools(server: McpServer, ctx: HandlerContext): void {
       confirmation: z.string().describe("Must be exactly 'PERMANENTLY_DELETE'"),
     },
     async (params) => toMcpResponse(await handleDeleteAccount(params, ctx)),
+  );
+
+  // ── Agent Convenience (alias-based) ───────────────────────────────
+
+  server.tool(
+    "agent_seek",
+    "All-in-one: register (or reuse existing alias) + search for matches. Designed for AI agents acting on behalf of users.",
+    {
+      alias: z.string().describe("Persistent alias for the agent/user, e.g. 'telegram:cody'"),
+      intent: z.string().describe("Natural language description of what the user is looking for"),
+      cluster_id: z.string().optional().describe("Cluster to search (auto-detected if omitted)"),
+    },
+    async (params) => toMcpResponse(await handleAgentSeek(params, ctx)),
+  );
+
+  server.tool(
+    "agent_lookup",
+    "Look up an existing alias to get the associated user_token (returns null if not found)",
+    {
+      alias: z.string().describe("Alias to look up, e.g. 'telegram:cody'"),
+    },
+    async (params) => toMcpResponse(await handleAgentLookup(params, ctx)),
   );
 }

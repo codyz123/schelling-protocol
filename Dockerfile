@@ -28,4 +28,8 @@ ENV SCHELLING_REST_PORT=3000
 # ENV DB_TYPE=postgres
 # ENV DATABASE_URL=postgres://user:pass@host:5432/schelling
 
-CMD ["bun", "src/index.ts", "--rest"]
+# Copy seed script
+COPY scripts/auto-seed.ts scripts/
+
+# Start server, then auto-seed in background if DB is empty
+CMD ["sh", "-c", "bun src/index.ts --rest & sleep 2 && bun scripts/auto-seed.ts && wait"]
