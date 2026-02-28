@@ -109,6 +109,9 @@ CREATE TABLE IF NOT EXISTS preferences (
     CHECK (operator IN ('eq','neq','gt','gte','lt','lte','in','contains','exists','range','contains_any','regex','contains_all','near')),
   value             TEXT NOT NULL,               -- JSON-encoded value
   weight            REAL NOT NULL CHECK (weight >= 0.0 AND weight <= 1.0),
+  agent_confidence  REAL NOT NULL DEFAULT 0.5 CHECK (agent_confidence >= 0.0 AND agent_confidence <= 1.0),
+  source            TEXT NOT NULL DEFAULT 'agent_default'
+    CHECK (source IN ('user_stated','user_inferred','cluster_prior','agent_default')),
   label             TEXT,
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
@@ -136,6 +139,7 @@ CREATE TABLE IF NOT EXISTS clusters (
   phase                    TEXT NOT NULL DEFAULT 'nascent'
     CHECK (phase IN ('nascent','growing','active','popular','declining','dead')),
   metadata                 TEXT,                 -- JSON: additional cluster settings
+  delegation_priors        TEXT,                 -- JSON: delegation model priors
   created_at               TEXT NOT NULL DEFAULT (datetime('now')),
   last_activity            TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -220,6 +224,7 @@ CREATE TABLE IF NOT EXISTS outcomes (
   reporter_token    TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
   outcome           TEXT NOT NULL CHECK (outcome IN ('positive','neutral','negative')),
   feedback          TEXT,                        -- JSON: structured feedback
+  delegation_metadata TEXT,                    -- JSON: delegation decision metadata
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (candidate_id, reporter_token)
 );
@@ -306,7 +311,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
   required          INTEGER NOT NULL DEFAULT 0,
   answer            TEXT,
   answer_confidence REAL,
-  answer_source     TEXT CHECK (answer_source IS NULL OR answer_source IN ('agent_knowledge','human_confirmed')),
+  answer_source     TEXT CHECK (answer_source IS NULL OR answer_source IN ('agent_knowledge','user_stated','user_confirmed','human_confirmed')),
   status            TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','answered')),
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),

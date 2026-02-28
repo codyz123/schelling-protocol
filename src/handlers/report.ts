@@ -10,17 +10,86 @@ import { checkIdempotency, recordIdempotency } from "../core/funnel.js";
 
 // ─── Input / Output ────────────────────────────────────────────────
 
+export interface DelegationMetadata {
+  agent_decided_dimensions: string[];
+  user_reviewed_dimensions: string[];
+  user_overrode_agent: boolean;
+}
+
 export interface ReportInput {
   user_token: string;
   candidate_id: string;
   outcome: "positive" | "neutral" | "negative";
   feedback?: Record<string, unknown>;
+  delegation_metadata?: DelegationMetadata;
   idempotency_key?: string;
 }
 
 export interface ReportOutput {
   reported: true;
   reported_at: string;
+}
+
+// ─── Delegation Priors ─────────────────────────────────────────────
+
+interface DelegationPriors {
+  dimension_decidability: Record<string, number>;
+  typical_agent_autonomy: number;
+  sample_size: number;
+}
+
+const EMA_ALPHA = 0.3; // Weight for new observations
+
+function getDefaultPriors(): DelegationPriors {
+  return {
+    dimension_decidability: {},
+    typical_agent_autonomy: 0.5,
+    sample_size: 0,
+  };
+}
+
+function updateDelegationPriors(
+  priors: DelegationPriors,
+  metadata: DelegationMetadata,
+  outcome: "positive" | "neutral" | "negative",
+): DelegationPriors {
+  const updated: DelegationPriors = {
+    dimension_decidability: { ...priors.dimension_decidability },
+    typical_agent_autonomy: priors.typical_agent_autonomy,
+    sample_size: priors.sample_size + 1,
+  };
+
+  const isPositive = outcome === "positive";
+
+  // For agent-decided dimensions with positive outcome: increase decidability
+  for (const dim of metadata.agent_decided_dimensions) {
+    const current = updated.dimension_decidability[dim] ?? 0.5;
+    if (isPositive) {
+      updated.dimension_decidability[dim] = current + EMA_ALPHA * (1.0 - current);
+    } else {
+      updated.dimension_decidability[dim] = current + EMA_ALPHA * (0.0 - current);
+    }
+  }
+
+  // For user-reviewed dimensions where user overrode agent: decrease decidability
+  for (const dim of metadata.user_reviewed_dimensions) {
+    const current = updated.dimension_decidability[dim] ?? 0.5;
+    if (metadata.user_overrode_agent) {
+      updated.dimension_decidability[dim] = current + EMA_ALPHA * (0.0 - current);
+    } else if (isPositive) {
+      updated.dimension_decidability[dim] = current + EMA_ALPHA * (0.7 - current);
+    }
+  }
+
+  // Update typical_agent_autonomy: ratio of agent-decided dimensions
+  const allDims = metadata.agent_decided_dimensions.length + metadata.user_reviewed_dimensions.length;
+  if (allDims > 0) {
+    const thisAutonomy = metadata.agent_decided_dimensions.length / allDims;
+    updated.typical_agent_autonomy =
+      updated.typical_agent_autonomy + EMA_ALPHA * (thisAutonomy - updated.typical_agent_autonomy);
+  }
+
+  return updated;
 }
 
 // ─── Handler ───────────────────────────────────────────────────────
@@ -109,12 +178,12 @@ export async function handleReport(
   const reportedAt = new Date().toISOString();
   const otherUserToken = otherToken(input.user_token, candidate);
 
-  // ── Atomic: insert outcome + record reputation event ──────────
+  // ── Atomic: insert outcome + record reputation event + update delegation priors
   const doReport = ctx.db.transaction(() => {
     ctx.db
       .prepare(
-        `INSERT INTO outcomes (id, candidate_id, reporter_token, outcome, feedback, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO outcomes (id, candidate_id, reporter_token, outcome, feedback, delegation_metadata, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         randomUUID(),
@@ -122,6 +191,7 @@ export async function handleReport(
         input.user_token,
         input.outcome,
         input.feedback ? JSON.stringify(input.feedback) : null,
+        input.delegation_metadata ? JSON.stringify(input.delegation_metadata) : null,
         reportedAt,
       );
 
@@ -140,6 +210,28 @@ export async function handleReport(
       input.outcome,
       input.feedback ? JSON.stringify(input.feedback) : null,
     );
+
+    // ── Update delegation priors on the cluster ───────────────────
+    if (input.delegation_metadata) {
+      const clusterRow = ctx.db
+        .prepare("SELECT delegation_priors FROM clusters WHERE cluster_id = ?")
+        .get(candidate.cluster_id) as { delegation_priors: string | null } | undefined;
+
+      let priors: DelegationPriors = getDefaultPriors();
+      if (clusterRow?.delegation_priors) {
+        try {
+          priors = JSON.parse(clusterRow.delegation_priors) as DelegationPriors;
+        } catch {
+          priors = getDefaultPriors();
+        }
+      }
+
+      const updatedPriors = updateDelegationPriors(priors, input.delegation_metadata, input.outcome);
+
+      ctx.db
+        .prepare("UPDATE clusters SET delegation_priors = ? WHERE cluster_id = ?")
+        .run(JSON.stringify(updatedPriors), candidate.cluster_id);
+    }
   });
 
   try {
