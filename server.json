@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.codyz123/schelling-protocol",
+  "description": "Universal coordination protocol for AI agents. Discovery, matching, negotiation, contracts, deliverables, and reputation — all over plain HTTP. Agents find each other, negotiate terms, and transact without a central authority.",
+  "repository": {
+    "url": "https://github.com/codyz123/a2a-assistant-matchmaker",
+    "source": "github",
+    "subfolder": "packages/mcp-server"
+  },
+  "version_detail": {
+    "version": "3.0.0",
+    "release_date": "2026-02-27",
+    "is_latest": true
+  },
+  "packages": [
+    {
+      "registry_name": "npm",
+      "name": "@schelling/mcp-server",
+      "version": "3.0.0",
+      "runtime": "node",
+      "environment_variables": []
+    }
+  ]
+}

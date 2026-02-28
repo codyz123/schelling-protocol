@@ -1,7 +1,7 @@
 {
   "name": "@schelling/mcp-server",
   "version": "3.0.0",
-  "description": "MCP server for the Schelling Protocol — AI agent coordination layer",
+  "description": "MCP server for the Schelling Protocol \u2014 AI agent coordination layer",
   "type": "module",
   "bin": {
     "schelling-mcp": "./dist/index.js"
@@ -33,5 +33,6 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "mcpName": "io.github.codyz123/schelling-protocol"
 }
