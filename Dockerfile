@@ -28,6 +28,9 @@ ENV SCHELLING_REST_PORT=3000
 # ENV DB_TYPE=postgres
 # ENV DATABASE_URL=postgres://user:pass@host:5432/schelling
 
+# Copy public assets
+COPY public/ public/
+
 # Copy seed script
 COPY scripts/auto-seed.ts scripts/
 
