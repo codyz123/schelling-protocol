@@ -202,7 +202,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               matching: { search: "POST /schelling/search", interest: "POST /schelling/interest", commit: "POST /schelling/commit" },
               coordination: { contract: "POST /schelling/contract", deliver: "POST /schelling/deliver", accept_delivery: "POST /schelling/accept_delivery" },
               reputation: { reputation: "POST /schelling/reputation", my_insights: "POST /schelling/my_insights" },
-              system: { health: "GET /health", openapi: "GET /openapi.yaml" }
+              reference: { openapi: "GET /openapi.yaml", plugin_manifest: "GET /.well-known/ai-plugin.json" }
             }
           }, { headers: corsHeaders });
         }
