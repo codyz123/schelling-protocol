@@ -65,6 +65,7 @@ CREATE TABLE users (
   media_refs               TEXT,                   -- JSON array of URLs
   auto_interest_opt_out    INTEGER NOT NULL DEFAULT 0,
   behavioral_inference_opt_out INTEGER NOT NULL DEFAULT 0,
+  display_name             TEXT,
   status                   TEXT NOT NULL DEFAULT 'active'
     CHECK (status IN ('active','paused','delisted')),
   created_at               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
