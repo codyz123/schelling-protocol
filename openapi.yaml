@@ -277,6 +277,90 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /schelling/agent_seek:
+    post:
+      operationId: agentSeek
+      summary: One-call agent convenience — register (or find existing) by alias and search
+      description: |
+        All-in-one operation for AI agents: provide an alias (e.g. "telegram:cody")
+        and a natural language intent. The server handles registration, alias persistence,
+        and search in one call. If the alias has been seen before, reuses the stored user_token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [alias, intent]
+              properties:
+                alias:
+                  type: string
+                  description: "Persistent alias in format platform:username (e.g. telegram:cody)"
+                  example: "telegram:cody"
+                intent:
+                  type: string
+                  description: "Natural language description of what the user needs"
+                  example: "looking for a roommate in Fort Collins, dog-friendly, under $1000"
+                cluster_id:
+                  type: string
+                  description: "Optional cluster to search in"
+      responses:
+        "200":
+          description: Search results with user_token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_token:
+                    type: string
+                  alias:
+                    type: string
+                  candidates:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SearchCandidate"
+                  actions_taken:
+                    type: array
+                    items:
+                      type: string
+                      enum: [registered, found_existing, searched]
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /schelling/agent_lookup:
+    post:
+      operationId: agentLookup
+      summary: Check if an alias is already registered
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [alias]
+              properties:
+                alias:
+                  type: string
+                  example: "telegram:cody"
+      responses:
+        "200":
+          description: Lookup result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alias:
+                    type: string
+                  user_token:
+                    type: string
+                    nullable: true
+                  found:
+                    type: boolean
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
   /schelling/interest:
     post:
       operationId: interest
