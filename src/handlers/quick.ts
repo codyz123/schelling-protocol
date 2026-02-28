@@ -8,7 +8,13 @@ import type {
   CandidateRecord,
   Trait,
 } from "../types.js";
-import { Stage, orderTokens, PROTOCOL_VERSION } from "../types.js";
+import {
+  Stage,
+  orderTokens,
+  PROTOCOL_VERSION,
+  normalizeString,
+  jaccardSimilarity,
+} from "../types.js";
 
 // ─── NL Parser ─────────────────────────────────────────────────────
 // Simple keyword-based intent parser: extracts cluster hints, trait-like
@@ -222,14 +228,35 @@ function computeTraitOverlap(
 
   for (const key of keysA) {
     if (keysB.has(key)) {
-      const valA = traitsA.find((t) => t.key === key)?.value;
-      const valB = traitsB.find((t) => t.key === key)?.value;
-      overlap += valA === valB ? 1.0 : 0.3;
+      const rawA = traitsA.find((t) => t.key === key)?.value;
+      const rawB = traitsB.find((t) => t.key === key)?.value;
+      const valA = parseTraitValue(rawA ?? "");
+      const valB = parseTraitValue(rawB ?? "");
+      if (typeof valA === "string" && typeof valB === "string") {
+        const normA = normalizeString(valA);
+        const normB = normalizeString(valB);
+        if (normA === normB) {
+          overlap += 1.0;
+        } else {
+          const jaccard = jaccardSimilarity(valA, valB);
+          overlap += jaccard > 0 ? 0.3 + 0.7 * jaccard : 0.3;
+        }
+      } else {
+        overlap += valA === valB ? 1.0 : 0.3;
+      }
     }
     total++;
   }
 
   return total > 0 ? overlap / total : 0.3;
+}
+
+function parseTraitValue(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
 }
 
 // ─── handleQuickSeek ───────────────────────────────────────────────

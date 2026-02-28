@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS preferences (
   user_token        TEXT NOT NULL REFERENCES users(user_token) ON DELETE CASCADE,
   trait_key         TEXT NOT NULL,
   operator          TEXT NOT NULL
-    CHECK (operator IN ('eq','neq','gt','gte','lt','lte','in','contains','exists','range','contains_any','regex','contains_all')),
+    CHECK (operator IN ('eq','neq','gt','gte','lt','lte','in','contains','exists','range','contains_any','regex','contains_all','near')),
   value             TEXT NOT NULL,               -- JSON-encoded value
   weight            REAL NOT NULL CHECK (weight >= 0.0 AND weight <= 1.0),
   label             TEXT,

@@ -173,7 +173,34 @@ export const VERIFICATION_TRUST: Record<VerificationTier, number> = {
 export type PreferenceOperator =
   | "eq" | "neq" | "gt" | "gte" | "lt" | "lte"
   | "in" | "contains" | "exists" | "range"
-  | "contains_any" | "regex" | "contains_all";
+  | "contains_any" | "regex" | "contains_all" | "near";
+
+export function normalizeString(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenizeNormalized(input: string): string[] {
+  const normalized = normalizeString(input);
+  return normalized.length > 0 ? normalized.split(" ") : [];
+}
+
+export function jaccardSimilarity(a: string, b: string): number {
+  const tokensA = tokenizeNormalized(a);
+  const tokensB = tokenizeNormalized(b);
+  if (tokensA.length === 0 && tokensB.length === 0) return 0;
+  const setA = new Set(tokensA);
+  const setB = new Set(tokensB);
+  let intersection = 0;
+  for (const token of setA) {
+    if (setB.has(token)) intersection++;
+  }
+  const union = new Set([...setA, ...setB]).size;
+  return union === 0 ? 0 : intersection / union;
+}
 
 export interface Preference {
   trait_key: string;
@@ -606,11 +633,32 @@ export function evaluatePreference(
 
   switch (op) {
     case "eq":
-      pass = traitValue === target;
-      score = pass ? 1.0 : 0.0;
+      if (typeof traitValue === "string" && typeof target === "string") {
+        const normalizedTrait = normalizeString(traitValue);
+        const normalizedTarget = normalizeString(target);
+        pass = normalizedTrait === normalizedTarget;
+        if (pass) {
+          score = 1.0;
+        } else {
+          const jaccard = jaccardSimilarity(traitValue, target);
+          if (jaccard >= 0.5) {
+            pass = true;
+            score = jaccard;
+          } else {
+            score = 0.0;
+          }
+        }
+      } else {
+        pass = traitValue === target;
+        score = pass ? 1.0 : 0.0;
+      }
       break;
     case "neq":
-      pass = traitValue !== target;
+      if (typeof traitValue === "string" && typeof target === "string") {
+        pass = normalizeString(traitValue) !== normalizeString(target);
+      } else {
+        pass = traitValue !== target;
+      }
       score = pass ? 1.0 : 0.0;
       break;
     case "gt":
@@ -630,26 +678,57 @@ export function evaluatePreference(
       score = pass ? Math.min(1.0, 0.5 + ((target as number) - (traitValue as number)) / (Math.abs(target as number) || 1) * 0.5) : 0.0;
       break;
     case "in":
-      pass = Array.isArray(target) && target.includes(traitValue as string);
-      score = pass ? 1.0 : 0.0;
+      if (Array.isArray(target)) {
+        if (typeof traitValue === "string") {
+          const normalizedTrait = normalizeString(traitValue);
+          const normalizedTarget = target.map((v) =>
+            typeof v === "string" ? normalizeString(v) : v,
+          );
+          pass = normalizedTarget.includes(normalizedTrait);
+        } else {
+          pass = target.includes(traitValue as string);
+        }
+        score = pass ? 1.0 : 0.0;
+      }
       break;
     case "contains":
-      pass = Array.isArray(traitValue) && (traitValue as string[]).includes(target as string);
-      score = pass ? 1.0 : 0.0;
+      if (Array.isArray(traitValue)) {
+        if (typeof target === "string") {
+          const normalizedTarget = normalizeString(target);
+          const normalizedTraitValues = (traitValue as unknown[]).map((v) =>
+            typeof v === "string" ? normalizeString(v) : v,
+          );
+          pass = normalizedTraitValues.includes(normalizedTarget);
+        } else {
+          pass = (traitValue as unknown[]).includes(target);
+        }
+        score = pass ? 1.0 : 0.0;
+      }
       break;
     case "contains_all":
       if (Array.isArray(traitValue) && Array.isArray(target)) {
-        const tv = traitValue as string[];
-        pass = (target as string[]).every(v => tv.includes(v));
-        score = pass ? 1.0 : (target as string[]).filter(v => tv.includes(v)).length / (target as string[]).length;
+        const tv = (traitValue as unknown[]).map((v) =>
+          typeof v === "string" ? normalizeString(v) : v,
+        );
+        const tg = (target as unknown[]).map((v) =>
+          typeof v === "string" ? normalizeString(v) : v,
+        );
+        const matches = tg.filter((v) => tv.includes(v));
+        pass = matches.length === tg.length;
+        score = tg.length > 0 ? (pass ? 1.0 : matches.length / tg.length) : 0.0;
       }
       break;
     case "contains_any":
       if (Array.isArray(traitValue) && Array.isArray(target)) {
-        const tv = traitValue as string[];
-        const matches = (target as string[]).filter(v => tv.includes(v)).length;
+        const tv = (traitValue as unknown[]).map((v) =>
+          typeof v === "string" ? normalizeString(v) : v,
+        );
+        const tg = (target as unknown[]).map((v) =>
+          typeof v === "string" ? normalizeString(v) : v,
+        );
+        const matches = tg.filter((v) => tv.includes(v)).length;
         pass = matches > 0;
-        score = matches / (target as string[]).length;
+        score = tg.length > 0 ? matches / tg.length : 0.0;
       }
       break;
     case "exists":
@@ -670,6 +749,15 @@ export function evaluatePreference(
         }
       }
       break;
+    case "near": {
+      const v = traitValue as number;
+      const t = target as number;
+      const tolerance = Math.abs(t) * 0.2 || 1;
+      const distance = Math.abs(v - t);
+      score = Math.max(0, 1.0 - distance / tolerance);
+      pass = score > 0;
+      break;
+    }
     case "regex":
       try {
         if (typeof target === "string" && target.length <= 200) {

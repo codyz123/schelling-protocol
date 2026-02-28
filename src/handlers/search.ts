@@ -33,6 +33,13 @@ export interface PreferenceSatisfactionDetail {
   missing: boolean;
 }
 
+export interface MatchExplanation {
+  summary: string;
+  strong_matches: string[];
+  partial_matches: string[];
+  mismatches: string[];
+}
+
 export interface VerificationSummary {
   total_traits: number;
   unverified: number;
@@ -49,6 +56,7 @@ export interface SearchResult {
   their_fit: number;
   intent_similarity: number | null;
   preference_satisfaction: Record<string, PreferenceSatisfactionDetail>;
+  match_explanation: MatchExplanation;
   visible_traits: Trait[];
   intents: string[];
   agent_capabilities: Capability[];
@@ -106,6 +114,58 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / denom;
 }
 
+function formatTraitKey(key: string): string {
+  return key.replace(/_/g, " ");
+}
+
+function buildMatchExplanation(
+  satisfaction: Record<string, PreferenceSatisfactionDetail>,
+): MatchExplanation {
+  const strong_matches: string[] = [];
+  const partial_matches: string[] = [];
+  const mismatches: string[] = [];
+
+  for (const [traitKey, detail] of Object.entries(satisfaction)) {
+    const label = formatTraitKey(traitKey);
+    if (detail.missing) {
+      mismatches.push(label);
+      continue;
+    }
+    if (detail.satisfied) {
+      if (detail.score >= 0.8) {
+        strong_matches.push(label);
+      } else if (detail.score > 0) {
+        partial_matches.push(label);
+      } else {
+        mismatches.push(label);
+      }
+    } else {
+      mismatches.push(label);
+    }
+  }
+
+  const summaryParts: string[] = [];
+  if (strong_matches.length > 0) {
+    summaryParts.push(`Strong: ${strong_matches.join(", ")}.`);
+  }
+  if (partial_matches.length > 0) {
+    summaryParts.push(`Partial: ${partial_matches.join(", ")}.`);
+  }
+  if (mismatches.length > 0) {
+    summaryParts.push(`Mismatch: ${mismatches.join(", ")}.`);
+  }
+  if (summaryParts.length === 0) {
+    summaryParts.push("No preference signals.");
+  }
+
+  return {
+    summary: summaryParts.join(" "),
+    strong_matches,
+    partial_matches,
+    mismatches,
+  };
+}
+
 interface FitResult {
   fit: number;
   satisfaction: Record<string, PreferenceSatisfactionDetail>;
@@ -128,7 +188,8 @@ function computePreferenceFit(
   for (const pref of preferences) {
     const hasTrait = candidateTraits.has(pref.trait_key);
     const traitValue = candidateTraits.get(pref.trait_key);
-    const traitMissing = !hasTrait;
+    const traitMissing =
+      !hasTrait || traitValue === null || traitValue === undefined;
 
     const { pass, score } = evaluatePreference(pref, traitValue, traitMissing);
 
@@ -146,6 +207,9 @@ function computePreferenceFit(
 
     // Soft preference: weight < 1.0
     if (pref.weight < 1.0) {
+      if (traitMissing) {
+        continue;
+      }
       weightedSum += score * pref.weight;
       totalWeight += pref.weight;
     }
@@ -596,6 +660,8 @@ export async function handleSearch(
         24 * 60 * 60 * 1000
       : false;
 
+    const matchExplanation = buildMatchExplanation(item.satisfaction);
+
     results.push({
       candidate_id: candidateId,
       advisory_score: quantize(item.advisory_score, 2),
@@ -606,6 +672,7 @@ export async function handleSearch(
           ? quantize(item.intent_similarity, 2)
           : null,
       preference_satisfaction: item.satisfaction,
+      match_explanation: matchExplanation,
       visible_traits: item.publicTraits,
       intents,
       agent_capabilities: agentCapabilities,
