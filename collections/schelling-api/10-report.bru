@@ -1,0 +1,22 @@
+meta {
+  name: Report Outcome
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/schelling/report
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_token": "{{userToken}}",
+    "candidate_id": "<candidate_id>",
+    "outcome": "positive",
+    "feedback": {
+      "comment": "Great work, delivered on time."
+    }
+  }
+}

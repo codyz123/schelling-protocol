@@ -1,0 +1,18 @@
+meta {
+  name: Search
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/schelling/search
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_token": "{{userToken}}",
+    "max_results": 10
+  }
+}

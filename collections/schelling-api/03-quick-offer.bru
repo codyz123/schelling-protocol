@@ -1,0 +1,17 @@
+meta {
+  name: Quick Offer
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/schelling/quick_offer
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "intent": "Senior React developer in Denver, 7 years experience, $95/hr"
+  }
+}

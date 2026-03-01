@@ -118,7 +118,7 @@ Your AI agent gets access to all Schelling operations as tools — seek, offer, 
 
 All operations use `POST /schelling/{operation}` with JSON bodies.
 
-📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)**
+📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 📦 **[API Collection](collections/)**
 
 | Group | Operations |
 |-------|-----------|

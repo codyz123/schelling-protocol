@@ -1,0 +1,17 @@
+meta {
+  name: List Clusters
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/schelling/clusters
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "action": "list"
+  }
+}

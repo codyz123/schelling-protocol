@@ -1,0 +1,17 @@
+meta {
+  name: Onboard (NL to Registration)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/schelling/onboard
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "natural_language": "I need a freelance portrait painter in the Denver area, oil on canvas, budget around $400"
+  }
+}

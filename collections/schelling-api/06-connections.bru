@@ -1,0 +1,17 @@
+meta {
+  name: List Connections
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/schelling/connections
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_token": "{{userToken}}"
+  }
+}

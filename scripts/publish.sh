@@ -1,29 +1,27 @@
-#!/bin/bash
-# Publish Schelling packages to npm + submit to MCP Registry
-# Prerequisites: npm adduser (one-time auth)
-set -e
+#!/usr/bin/env bash
+# Publish @schelling/sdk and @schelling/mcp-server to npm
+# Prerequisites: npm login (run `npm login` first)
+set -euo pipefail
 
-echo "=== Building packages ==="
-cd "$(dirname "$0")/.."
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "Building SDK..."
-cd packages/sdk && bun run build && cd ../..
+echo "=== Building @schelling/sdk ==="
+cd "$ROOT/packages/sdk"
+bun run build
 
-echo "Building MCP Server..."
-cd packages/mcp-server && bun run build && cd ../..
+echo "=== Building @schelling/mcp-server ==="
+cd "$ROOT/packages/mcp-server"
+bun run build
 
-echo ""
-echo "=== Publishing to npm ==="
-echo "Publishing @schelling/sdk..."
-cd packages/sdk && npm publish --access public && cd ../..
+echo "=== Publishing @schelling/sdk ==="
+cd "$ROOT/packages/sdk"
+npm publish --access public
 
-echo "Publishing @schelling/mcp-server..."
-cd packages/mcp-server && npm publish --access public && cd ../..
+echo "=== Publishing @schelling/mcp-server ==="
+cd "$ROOT/packages/mcp-server"
+npm publish --access public
 
-echo ""
-echo "=== npm packages published! ==="
-echo ""
-echo "Next step: Submit to MCP Registry"
-echo "Run: npx @anthropic-ai/mcp-publisher publish server.json"
-echo ""
-echo "Or manually submit via https://registry.modelcontextprotocol.io"
+echo "✅ Both packages published!"
+echo "Users can now:"
+echo "  npm install @schelling/sdk"
+echo "  npx @schelling/mcp-server"

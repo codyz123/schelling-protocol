@@ -1,0 +1,24 @@
+meta {
+  name: Propose Contract
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/schelling/contract
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_token": "{{userToken}}",
+    "candidate_id": "<candidate_id>",
+    "action": "propose",
+    "terms": {
+      "scope": "Build a React dashboard",
+      "rate": "$120/hr",
+      "duration": "3 months"
+    }
+  }
+}

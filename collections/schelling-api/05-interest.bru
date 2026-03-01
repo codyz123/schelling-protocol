@@ -1,0 +1,18 @@
+meta {
+  name: Express Interest
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/schelling/interest
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_token": "{{userToken}}",
+    "candidate_id": "<candidate_id>"
+  }
+}
