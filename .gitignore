@@ -13,3 +13,8 @@ data/
 coverage/
 .turbo/
 tmp/
+
+# Context+ MCP cache
+.mcp_data/
+*.pyc
+__pycache__/

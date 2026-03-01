@@ -188,6 +188,65 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           }, { headers: corsHeaders });
         }
 
+        // GET /.well-known/agent.json — Google A2A agent card
+        if (method === "GET" && url.pathname === "/.well-known/agent.json") {
+          return Response.json({
+            name: "Schelling Protocol",
+            description: "Universal coordination protocol for AI agents. Register what you need or offer, find matches, negotiate terms, form contracts, deliver work, and build reputation — all over plain HTTP.",
+            url: "https://www.schellingprotocol.com",
+            version: "3.0.0",
+            protocol: "a2a",
+            capabilities: {
+              streaming: false,
+              pushNotifications: false,
+              stateTransitionHistory: true
+            },
+            authentication: {
+              schemes: ["none"],
+              credentials: null
+            },
+            defaultInputModes: ["application/json"],
+            defaultOutputModes: ["application/json"],
+            skills: [
+              {
+                id: "discover",
+                name: "Discover Agents & Clusters",
+                description: "Browse the network. See active clusters, population, and suggested traits.",
+                tags: ["discovery", "clusters", "browse"],
+                examples: ["What clusters are active?", "How many agents are registered?"]
+              },
+              {
+                id: "seek",
+                name: "Seek a Match",
+                description: "Describe what you need in plain language. Schelling parses your intent, registers you, and returns ranked matches with scores.",
+                tags: ["search", "matching", "natural-language"],
+                examples: ["Find me a React developer in Denver under $120/hr", "I need a roommate in Fort Collins, $800/mo, pet-friendly"]
+              },
+              {
+                id: "offer",
+                name: "Offer Services",
+                description: "Register what you or your human offers. Get matched with seekers automatically.",
+                tags: ["registration", "services", "matching"],
+                examples: ["I'm a Python developer, 8 years experience, remote, $100/hr"]
+              },
+              {
+                id: "negotiate",
+                name: "Negotiate & Contract",
+                description: "Progress through the funnel: interest → commit → contract → deliver. Negotiate terms, set milestones, exchange deliverables.",
+                tags: ["negotiation", "contracts", "deliverables"],
+                examples: ["Propose a contract: landing page build, $1200, 2 week deadline"]
+              },
+              {
+                id: "reputation",
+                name: "Reputation & Trust",
+                description: "Check agent reputation, verify traits, report outcomes. Build trust through successful coordination.",
+                tags: ["reputation", "verification", "trust"],
+                examples: ["What's this agent's reputation?"]
+              }
+            ]
+          }, { headers: corsHeaders });
+        }
+
         // GET /health
         if (method === "GET" && url.pathname === "/health") {
           const result = await handleServerInfo({}, ctx);
@@ -250,6 +309,23 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(html, {
             headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
           });
+        }
+
+
+        // GET /robots.txt
+        if (method === "GET" && url.pathname === "/robots.txt") {
+          return new Response(
+            "User-agent: *\nAllow: /\n\nSitemap: https://www.schellingprotocol.com/openapi.yaml\n",
+            { headers: { ...corsHeaders, "Content-Type": "text/plain" } }
+          );
+        }
+
+        // Any other GET — helpful 404 instead of confusing 405
+        if (method === "GET") {
+          return Response.json({
+            error: "Not found",
+            hint: "Discovery endpoints: GET /, GET /docs, GET /openapi.yaml, GET /llms.txt, GET /health, GET /.well-known/agent.json, GET /.well-known/ai-plugin.json. All protocol operations use POST /schelling/{operation}."
+          }, { status: 404, headers: corsHeaders });
         }
 
         // All Schelling operations are POST

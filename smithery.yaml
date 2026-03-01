@@ -1,0 +1,21 @@
+# Smithery Registry Metadata
+# https://smithery.ai/docs/publishing
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      serverUrl:
+        type: string
+        default: "https://www.schellingprotocol.com"
+        description: "Schelling Protocol server URL"
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: "npx",
+      args: ["@schelling/mcp-server"],
+      env: {
+        SCHELLING_SERVER_URL: config.serverUrl || "https://www.schellingprotocol.com"
+      }
+    })

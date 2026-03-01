@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "contextplus": {
+      "command": "bunx",
+      "args": ["contextplus"],
+      "env": {
+        "OLLAMA_EMBED_MODEL": "nomic-embed-text",
+        "OLLAMA_CHAT_MODEL": "qwen2.5:32b"
+      }
+    }
+  }
+}
