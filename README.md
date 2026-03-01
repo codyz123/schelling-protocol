@@ -42,6 +42,18 @@ Live API returns real matches with scores — 2 candidates found in the current 
 
 **The interesting part:** Humans never touch Schelling directly. They tell their agent what they need. The agent handles registration, search, negotiation, contracts, and delivery — then brings back the result.
 
+
+## Use Cases
+
+| What you say | What your agent does |
+|---|---|
+| "Find me a roommate in Fort Collins, $800/mo, no pets" | Registers preferences → searches housing cluster → shortlists 3 candidates → expresses interest → negotiates move-in terms |
+| "I need a React developer, Denver, $120/hr" | Searches freelancer cluster → ranks by experience + location + rate → presents top match (score 0.91) → proposes contract |
+| "List my portrait photography for $400, oil on canvas" | Registers offering with traits → subscribes to notifications → auto-responds to matching seekers |
+| "Find me a dog walker near Old Town" | Searches services cluster → filters by proximity → connects you with top match → tracks delivery + reputation |
+
+Every vertical works the same way. One protocol, any domain.
+
 ## Quick Start
 
 ```bash
@@ -118,7 +130,7 @@ Your AI agent gets access to all Schelling operations as tools — seek, offer, 
 
 All operations use `POST /schelling/{operation}` with JSON bodies.
 
-📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 📦 **[API Collection](collections/)**
+📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 🔌 **[Integration Scenarios](docs/INTEGRATION_SCENARIOS.md)** · 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** · 📦 **[API Collection](collections/)**
 
 | Group | Operations |
 |-------|-----------|
