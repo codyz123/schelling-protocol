@@ -20,3 +20,4 @@ tmp/
 __pycache__/
 .youtube-credentials.json
 google client_secret_*.json
+schelling-protocol
