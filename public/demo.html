@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schelling Protocol — Interactive Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #fff; }
+    .subtitle { color: #888; margin-bottom: 32px; font-size: 15px; }
+    .subtitle a { color: #818cf8; text-decoration: none; }
+    .subtitle a:hover { text-decoration: underline; }
+    
+    .scenarios { display: grid; gap: 12px; margin-bottom: 32px; }
+    .scenario-btn { background: #1a1a2e; border: 1px solid #2a2a4a; padding: 14px 18px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.15s; }
+    .scenario-btn:hover { border-color: #818cf8; background: #1e1e3a; }
+    .scenario-btn.active { border-color: #818cf8; background: #1e1e3a; }
+    .scenario-btn .label { font-weight: 600; color: #fff; font-size: 14px; }
+    .scenario-btn .desc { color: #888; font-size: 13px; margin-top: 4px; }
+    
+    .step-nav { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .step-btn { background: #1a1a2e; border: 1px solid #2a2a4a; color: #aaa; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+    .step-btn:hover { border-color: #818cf8; color: #fff; }
+    .step-btn.active { background: #818cf8; color: #fff; border-color: #818cf8; }
+    .step-btn.done { background: #1a3a2e; color: #4ade80; border-color: #2a5a3e; }
+    
+    .panel { background: #111122; border: 1px solid #2a2a4a; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+    .panel-header { padding: 12px 16px; background: #1a1a2e; border-bottom: 1px solid #2a2a4a; display: flex; justify-content: space-between; align-items: center; }
+    .panel-header .title { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .panel-body { padding: 16px; }
+    
+    .method { display: inline-block; background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; margin-right: 8px; }
+    .url { color: #818cf8; font-family: 'SF Mono', Monaco, monospace; font-size: 13px; }
+    
+    textarea { width: 100%; background: #0a0a1a; border: 1px solid #2a2a4a; color: #e0e0e0; font-family: 'SF Mono', Monaco, monospace; font-size: 13px; padding: 12px; border-radius: 6px; resize: vertical; min-height: 80px; }
+    textarea:focus { outline: none; border-color: #818cf8; }
+    
+    pre { background: #0a0a1a; border: 1px solid #2a2a4a; border-radius: 6px; padding: 12px; font-size: 13px; font-family: 'SF Mono', Monaco, monospace; overflow-x: auto; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; color: #a0f0a0; }
+    
+    .run-btn { background: #818cf8; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; }
+    .run-btn:hover { background: #6366f1; }
+    .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+    .status { font-size: 13px; color: #888; }
+    .status.error { color: #f87171; }
+    .status.success { color: #4ade80; }
+    
+    .custom-section { margin-top: 40px; padding-top: 32px; border-top: 1px solid #2a2a4a; }
+    .custom-section h2 { font-size: 20px; color: #fff; margin-bottom: 16px; }
+    
+    .input-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .input-row input { flex: 1; background: #0a0a1a; border: 1px solid #2a2a4a; color: #e0e0e0; font-family: 'SF Mono', Monaco, monospace; font-size: 13px; padding: 10px 12px; border-radius: 6px; }
+    .input-row input:focus { outline: none; border-color: #818cf8; }
+    
+    .curl-box { margin-top: 12px; }
+    .curl-box pre { color: #d4d4d4; font-size: 12px; }
+    .copy-btn { background: transparent; border: 1px solid #2a2a4a; color: #888; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .copy-btn:hover { border-color: #818cf8; color: #fff; }
+    
+    @media (max-width: 600px) {
+      .input-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>◉ Schelling Protocol — Try It</h1>
+  <p class="subtitle">
+    Live API at <a href="https://www.schellingprotocol.com">schellingprotocol.com</a> · 
+    <a href="/docs">API Docs</a> · 
+    <a href="https://github.com/codyz123/schelling-protocol">GitHub</a>
+  </p>
+
+  <h2 style="font-size: 16px; color: #aaa; margin-bottom: 12px;">Pick a scenario</h2>
+  <div class="scenarios" id="scenarios"></div>
+
+  <div id="workflow" style="display:none;">
+    <div class="step-nav" id="step-nav"></div>
+    
+    <div class="panel">
+      <div class="panel-header">
+        <span class="title">Request</span>
+        <span><span class="method">POST</span><span class="url" id="endpoint"></span></span>
+      </div>
+      <div class="panel-body">
+        <textarea id="request-body" rows="6"></textarea>
+        <div class="actions">
+          <button class="run-btn" id="run-btn" onclick="runStep()">Run ▶</button>
+          <span class="status" id="status"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="response-panel" style="display:none;">
+      <div class="panel-header">
+        <span class="title">Response</span>
+        <span class="status" id="response-status"></span>
+      </div>
+      <div class="panel-body">
+        <pre id="response-body"></pre>
+      </div>
+    </div>
+
+    <div class="curl-box" id="curl-box">
+      <div class="panel-header" style="background: transparent; border: none; padding: 0 0 8px;">
+        <span class="title" style="font-size: 12px;">cURL equivalent</span>
+        <button class="copy-btn" onclick="copyCurl()">Copy</button>
+      </div>
+      <pre id="curl-cmd"></pre>
+    </div>
+  </div>
+
+  <div class="custom-section">
+    <h2>Free-form</h2>
+    <div class="input-row">
+      <input id="custom-op" placeholder="Operation (e.g. quick_seek)" value="quick_seek" />
+    </div>
+    <textarea id="custom-body" rows="4" placeholder='{"intent": "React developer in Denver"}'></textarea>
+    <div class="actions" style="margin-top: 12px;">
+      <button class="run-btn" onclick="runCustom()">Run ▶</button>
+      <span class="status" id="custom-status"></span>
+    </div>
+    <div class="panel" id="custom-response-panel" style="display:none; margin-top: 12px;">
+      <div class="panel-header">
+        <span class="title">Response</span>
+      </div>
+      <div class="panel-body">
+        <pre id="custom-response"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const SCENARIOS = [
+  {
+    label: "🔍 Find a developer",
+    desc: "Search for a React developer in Denver using natural language",
+    steps: [
+      { name: "Describe", op: "describe", body: {} },
+      { name: "Seek", op: "quick_seek", body: { intent: "React developer in Denver, 5+ years experience, under $130/hr" } },
+      { name: "Browse clusters", op: "clusters", body: {} },
+    ]
+  },
+  {
+    label: "🏠 List a room for rent",
+    desc: "Offer a room and see who's looking",
+    steps: [
+      { name: "Offer", op: "quick_offer", body: { intent: "Room for rent in Fort Collins, $850/mo, pet-friendly, available March 15, near CSU campus" } },
+      { name: "Search seekers", op: "quick_seek", body: { intent: "Someone looking for housing in Fort Collins under $1000" } },
+    ]
+  },
+  {
+    label: "🤝 Full lifecycle",
+    desc: "Register → search → express interest → check connections",
+    steps: [
+      { name: "Onboard", op: "onboard", body: { description: "I'm a freelance photographer in Denver, specializing in portraits and events. $200/session." } },
+      { name: "Search", op: "quick_seek", body: { intent: "photographer in Denver" } },
+      { name: "Clusters", op: "clusters", body: {} },
+    ]
+  },
+  {
+    label: "🧠 Explore the protocol",
+    desc: "See what's in the network right now",
+    steps: [
+      { name: "Describe", op: "describe", body: {} },
+      { name: "Clusters", op: "clusters", body: {} },
+      { name: "Seek anything", op: "quick_seek", body: { intent: "anything available in Fort Collins" } },
+    ]
+  },
+];
+
+let currentScenario = null;
+let currentStep = 0;
+let stepResults = [];
+
+function renderScenarios() {
+  const el = document.getElementById('scenarios');
+  el.innerHTML = SCENARIOS.map((s, i) => `
+    <div class="scenario-btn" onclick="selectScenario(${i})" id="sc-${i}">
+      <div class="label">${s.label}</div>
+      <div class="desc">${s.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectScenario(i) {
+  currentScenario = i;
+  currentStep = 0;
+  stepResults = [];
+  document.querySelectorAll('.scenario-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('sc-' + i).classList.add('active');
+  document.getElementById('workflow').style.display = 'block';
+  renderSteps();
+  loadStep(0);
+}
+
+function renderSteps() {
+  const s = SCENARIOS[currentScenario];
+  document.getElementById('step-nav').innerHTML = s.steps.map((step, i) => `
+    <button class="step-btn ${i === currentStep ? 'active' : ''} ${stepResults[i] ? 'done' : ''}" onclick="loadStep(${i})">${i + 1}. ${step.name}</button>
+  `).join('');
+}
+
+function loadStep(i) {
+  currentStep = i;
+  const step = SCENARIOS[currentScenario].steps[i];
+  document.getElementById('endpoint').textContent = `/schelling/${step.op}`;
+  document.getElementById('request-body').value = JSON.stringify(step.body, null, 2);
+  document.getElementById('status').textContent = '';
+  document.getElementById('status').className = 'status';
+  document.getElementById('response-panel').style.display = stepResults[i] ? 'block' : 'none';
+  if (stepResults[i]) {
+    document.getElementById('response-body').textContent = stepResults[i];
+  }
+  updateCurl();
+  renderSteps();
+}
+
+function updateCurl() {
+  const step = SCENARIOS[currentScenario].steps[currentStep];
+  const body = document.getElementById('request-body').value;
+  const hasBody = body.trim() && body.trim() !== '{}';
+  const curl = `curl -s -X POST ${API}/schelling/${step.op}${hasBody ? ` \\\n  -H 'Content-Type: application/json' \\\n  -d '${body.replace(/\n\s*/g, ' ')}'` : ''} | jq`;
+  document.getElementById('curl-cmd').textContent = curl;
+}
+
+document.getElementById('request-body').addEventListener('input', updateCurl);
+
+async function runStep() {
+  const step = SCENARIOS[currentScenario].steps[currentStep];
+  const btn = document.getElementById('run-btn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Running...';
+  status.className = 'status';
+  
+  try {
+    let body = document.getElementById('request-body').value.trim();
+    const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+    if (body && body !== '{}') opts.body = body;
+    
+    const res = await fetch(`${API}/schelling/${step.op}`, opts);
+    const data = await res.json();
+    const pretty = JSON.stringify(data, null, 2);
+    
+    stepResults[currentStep] = pretty;
+    document.getElementById('response-panel').style.display = 'block';
+    document.getElementById('response-body').textContent = pretty;
+    document.getElementById('response-status').textContent = res.status;
+    document.getElementById('response-status').className = res.ok ? 'status success' : 'status error';
+    status.textContent = res.ok ? '✓ Success' : `✗ ${res.status}`;
+    status.className = res.ok ? 'status success' : 'status error';
+    
+    renderSteps();
+    
+    // Auto-advance after 500ms
+    if (currentStep < SCENARIOS[currentScenario].steps.length - 1) {
+      setTimeout(() => { loadStep(currentStep + 1); }, 800);
+    }
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+    status.className = 'status error';
+  }
+  btn.disabled = false;
+}
+
+async function runCustom() {
+  const op = document.getElementById('custom-op').value.trim();
+  const status = document.getElementById('custom-status');
+  status.textContent = 'Running...';
+  
+  try {
+    let body = document.getElementById('custom-body').value.trim();
+    const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = body;
+    
+    const res = await fetch(`${API}/schelling/${op}`, opts);
+    const data = await res.json();
+    document.getElementById('custom-response-panel').style.display = 'block';
+    document.getElementById('custom-response').textContent = JSON.stringify(data, null, 2);
+    status.textContent = res.ok ? '✓ Success' : `✗ ${res.status}`;
+    status.className = res.ok ? 'status success' : 'status error';
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+    status.className = 'status error';
+  }
+}
+
+function copyCurl() {
+  navigator.clipboard.writeText(document.getElementById('curl-cmd').textContent);
+}
+
+renderScenarios();
+</script>
+</body>
+</html>

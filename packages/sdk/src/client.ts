@@ -40,9 +40,17 @@ export class Schelling {
   private readonly baseUrl: string;
   private token: string | undefined;
 
-  constructor(serverUrl: string, token?: string) {
+  constructor(serverUrl: string, options?: string | { token?: string; maxRetries?: number; retryDelayMs?: number }) {
     this.baseUrl = serverUrl.replace(/\/$/, "");
-    this.token = token;
+    if (typeof options === "string") {
+      this.token = options;
+      this.maxRetries = 2;
+      this.retryDelayMs = 1000;
+    } else {
+      this.token = options?.token;
+      this.maxRetries = options?.maxRetries ?? 2;
+      this.retryDelayMs = options?.retryDelayMs ?? 1000;
+    }
   }
 
   /** Get or set the current bearer token */
@@ -55,6 +63,10 @@ export class Schelling {
 
   // ─── Raw HTTP ────────────────────────────────────────────────────
 
+  /** Maximum retries for transient failures (5xx, network errors) */
+  readonly maxRetries: number;
+  private readonly retryDelayMs: number;
+
   private async post<T = unknown>(
     operation: string,
     params: Record<string, unknown> | object = {},
@@ -64,24 +76,58 @@ export class Schelling {
       payload.user_token = this.token;
     }
 
-    const res = await fetch(`${this.baseUrl}/schelling/${operation}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const url = `${this.baseUrl}/schelling/${operation}`;
+    const body = JSON.stringify(payload);
+    let lastError: Error | undefined;
 
-    const data: unknown = await res.json();
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
 
-    if (!res.ok) {
-      const err = data as SchellingErrorBody;
-      throw new SchellingError(
-        err.code || "UNKNOWN",
-        err.message || `HTTP ${res.status}`,
-        res.status,
-      );
+        const data: unknown = await res.json();
+
+        if (!res.ok) {
+          const err = data as SchellingErrorBody;
+          const error = new SchellingError(
+            err.code || "UNKNOWN",
+            err.message || `HTTP ${res.status}`,
+            res.status,
+          );
+          // Only retry on 5xx (server errors), not 4xx (client errors)
+          if (res.status >= 500 && attempt < this.maxRetries) {
+            lastError = error;
+            await this.sleep(this.retryDelayMs * (attempt + 1));
+            continue;
+          }
+          throw error;
+        }
+
+        return data as T;
+      } catch (e) {
+        if (e instanceof SchellingError) throw e;
+        // Network error (fetch failed entirely)
+        lastError = e as Error;
+        if (attempt < this.maxRetries) {
+          await this.sleep(this.retryDelayMs * (attempt + 1));
+          continue;
+        }
+        throw new SchellingError(
+          "NETWORK_ERROR",
+          `Failed to reach ${this.baseUrl}: ${(e as Error).message}. Is the server running?`,
+          0,
+        );
+      }
     }
 
-    return data as T;
+    throw lastError || new SchellingError("UNKNOWN", "Request failed after retries", 0);
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // ─── Discovery ───────────────────────────────────────────────────

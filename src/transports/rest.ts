@@ -312,6 +312,14 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         }
 
 
+        // GET /demo — interactive API playground
+        if (method === "GET" && url.pathname === "/demo") {
+          const demoFile = Bun.file(process.cwd() + "/public/demo.html");
+          return new Response(demoFile, {
+            headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+
         // GET /robots.txt
         if (method === "GET" && url.pathname === "/robots.txt") {
           return new Response(
@@ -324,7 +332,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         if (method === "GET") {
           return Response.json({
             error: "Not found",
-            hint: "Discovery endpoints: GET /, GET /docs, GET /openapi.yaml, GET /llms.txt, GET /health, GET /.well-known/agent.json, GET /.well-known/ai-plugin.json. All protocol operations use POST /schelling/{operation}."
+            hint: "Discovery endpoints: GET /, GET /docs, GET /demo, GET /openapi.yaml, GET /llms.txt, GET /health, GET /.well-known/agent.json, GET /.well-known/ai-plugin.json. All protocol operations use POST /schelling/{operation}."
           }, { status: 404, headers: corsHeaders });
         }
 
