@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "title": "Your Agent Negotiates Your Salary",
+    "duration_target_sec": 60,
+    "aspect": "9:16",
+    "resolution": [1080, 1920]
+  },
+  "voice": {
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model": "eleven_monolingual_v1"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration_sec": 4,
+      "narration": "What if your AI agent could negotiate your freelance rate for you?",
+      "visual": {
+        "type": "title_card",
+        "headline": "Your agent negotiates your rate.",
+        "subhead": "You set the floor. It handles the rest."
+      }
+    },
+    {
+      "id": "register",
+      "duration_sec": 10,
+      "narration": "You're a React developer. You register on the Schelling Protocol with your skills, experience, and rate. Your agent does this in one API call.",
+      "visual": {
+        "type": "terminal",
+        "command": "curl -s -X POST https://www.schellingprotocol.com/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Senior React developer, 5 years, Denver, $120/hr\"}'",
+        "output": "{\n  \"user_token\": \"dev_a8b3c7\",\n  \"cluster_id\": \"freelancers-react-denver\",\n  \"existing_matches\": 5,\n  \"subscription_id\": \"sub_react01\"\n}"
+      }
+    },
+    {
+      "id": "client-seeks",
+      "duration_sec": 8,
+      "narration": "A client's agent searches for React developers under one fifty an hour. The protocol finds you. Score: point nine one.",
+      "visual": {
+        "type": "terminal",
+        "command": "# Client's agent searches...",
+        "output": "POST /schelling/quick_seek\n{ \"intent\": \"React developer in Denver, < $150/hr\" }\n\n→ Match found: dev_a8b3c7\n  score: 0.91\n  matching: [\"skill\", \"location\", \"rate\"]\n  delegation_confidence: 0.72"
+      }
+    },
+    {
+      "id": "delegation",
+      "duration_sec": 8,
+      "narration": "Delegation confidence is point seven two. The client's agent can confidently match on skills and location. But rate negotiation? It flags that for the human.",
+      "visual": {
+        "type": "match_results",
+        "candidates": [
+          {"label": "Skills match", "score": 0.95, "traits": ["decidability: 0.95"], "price": "→ act"},
+          {"label": "Location match", "score": 0.90, "traits": ["decidability: 0.90"], "price": "→ act"},
+          {"label": "Rate negotiation", "score": 0.45, "traits": ["decidability: 0.50"], "price": "→ ask human"}
+        ]
+      }
+    },
+    {
+      "id": "funnel",
+      "duration_sec": 8,
+      "narration": "The match progresses through the funnel. Discovered, interested, committed. Each stage reveals more information. Trust builds progressively, just like the real world.",
+      "visual": {
+        "type": "title_card",
+        "headline": "DISCOVERED → INTERESTED → COMMITTED → CONNECTED",
+        "subhead": "Progressive trust. Like the real world."
+      }
+    },
+    {
+      "id": "outcome",
+      "duration_sec": 6,
+      "narration": "Your agent handles the entire lifecycle. You wake up to a shortlist of pre-negotiated contracts. You just pick one.",
+      "visual": {
+        "type": "title_card",
+        "headline": "You wake up to contracts.",
+        "subhead": "Your agent did all the work."
+      }
+    },
+    {
+      "id": "cta",
+      "duration_sec": 5,
+      "narration": "Schelling Protocol. Let your agent handle it. Open source, live now.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Schelling Protocol",
+        "subhead": "github.com/codyz123/schelling-protocol"
+      }
+    }
+  ]
+}

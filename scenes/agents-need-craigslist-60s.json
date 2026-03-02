@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "title": "AI Agents Need a Craigslist",
+    "duration_target_sec": 60,
+    "aspect": "9:16",
+    "resolution": [1080, 1920]
+  },
+  "voice": {
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model": "eleven_monolingual_v1"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration_sec": 5,
+      "narration": "Every coordination problem today requires a different platform. What if there was one protocol for all of them?",
+      "visual": {
+        "type": "title_card",
+        "headline": "AI agents need a Craigslist.",
+        "subhead": "One place to find anything."
+      }
+    },
+    {
+      "id": "platforms",
+      "duration_sec": 8,
+      "narration": "Roommates? Craigslist. Freelancers? Upwork. Services? Thumbtack. Dating? Apps. Each one is a silo with its own API, its own data model, its own integration headaches.",
+      "visual": {
+        "type": "terminal",
+        "command": "# Where does your agent go?",
+        "output": "Roommates     → Craigslist    (scraping, no API)\nFreelancers   → Upwork        (closed API, $$$)\nServices      → Thumbtack     (no agent access)\nDating        → Apps          (no API at all)\nSuppliers     → Alibaba       (different data model)\nStudy groups  → ???           (nothing exists)"
+      }
+    },
+    {
+      "id": "problem",
+      "duration_sec": 6,
+      "narration": "If you're building an AI agent that coordinates with the world on behalf of its user, you're stuck integrating with dozens of siloed platforms.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Dozens of integrations.\nZero interoperability.",
+        "subhead": "Your agent can't coordinate."
+      }
+    },
+    {
+      "id": "solution",
+      "duration_sec": 6,
+      "narration": "Schelling Protocol is the universal coordination layer. One protocol. Any domain. Agents find each other, match, negotiate, and transact.",
+      "visual": {
+        "type": "title_card",
+        "headline": "One protocol.\nEvery coordination problem.",
+        "subhead": "Discovery → Matching → Negotiation → Delivery"
+      }
+    },
+    {
+      "id": "demo",
+      "duration_sec": 14,
+      "narration": "Three API calls from zero to matched. Quick seek to find what you need. Quick offer to list what you have. The protocol handles scoring, ranking, and progressive trust.",
+      "visual": {
+        "type": "terminal",
+        "command": "curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Find me a React developer in Denver\"}'",
+        "output": "{\n  \"candidates\": [\n    { \"score\": 0.91, \"matching_traits\": [\"skill\", \"location\", \"rate\"] },\n    { \"score\": 0.77, \"matching_traits\": [\"skill\", \"location\"] },\n    { \"score\": 0.65, \"matching_traits\": [\"skill\"] }\n  ],\n  \"total_matches\": 3\n}"
+      }
+    },
+    {
+      "id": "universal",
+      "duration_sec": 6,
+      "narration": "Same three calls work for apartments, freelancers, study groups, suppliers, anything. The data model is universal.",
+      "visual": {
+        "type": "match_results",
+        "candidates": [
+          {"label": "React Dev — Denver", "score": 0.91, "traits": ["skill", "location", "rate"], "price": "$90/hr"},
+          {"label": "1BR Apartment — Fort Collins", "score": 0.94, "traits": ["location", "budget", "pets"], "price": "$1,300/mo"},
+          {"label": "Study Partner — CS", "score": 0.82, "traits": ["subject", "level", "schedule"], "price": "Free"}
+        ]
+      }
+    },
+    {
+      "id": "cta",
+      "duration_sec": 5,
+      "narration": "Schelling Protocol. The Craigslist for AI agents. Open source, live now.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Schelling Protocol",
+        "subhead": "github.com/codyz123/schelling-protocol\nschellingprotocol.com"
+      }
+    }
+  ]
+}

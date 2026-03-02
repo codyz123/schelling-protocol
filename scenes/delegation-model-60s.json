@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "title": "The Delegation Model Explained",
+    "duration_target_sec": 60,
+    "aspect": "9:16",
+    "resolution": [1080, 1920]
+  },
+  "voice": {
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model": "eleven_monolingual_v1"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration_sec": 5,
+      "narration": "When should your AI agent act on your behalf, and when should it ask you first?",
+      "visual": {
+        "type": "title_card",
+        "headline": "When should your agent ask you?",
+        "subhead": "The Delegation Model"
+      }
+    },
+    {
+      "id": "problem",
+      "duration_sec": 6,
+      "narration": "Your agent can confidently filter on price. It's a number, it knows your budget. But can it judge neighborhood vibe? Probably not.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Price? Easy.\nNeighborhood vibe? Not so much.",
+        "subhead": "Some decisions need a human."
+      }
+    },
+    {
+      "id": "formula",
+      "duration_sec": 10,
+      "narration": "Schelling Protocol computes a delegation confidence score for every dimension. Three inputs multiplied together. Agent confidence, dimension decidability, and signal density.",
+      "visual": {
+        "type": "terminal",
+        "command": "delegation_confidence = agent_confidence × decidability × signal_density",
+        "output": "price:           0.9 × 0.95 × 0.8 = 0.684  → act autonomously\npet_policy:      0.9 × 0.90 × 0.7 = 0.567  → act autonomously\nneighborhood:    0.4 × 0.35 × 0.3 = 0.042  → defer to user\naesthetic:       0.3 × 0.30 × 0.2 = 0.018  → defer to user"
+      }
+    },
+    {
+      "id": "price",
+      "duration_sec": 6,
+      "narration": "Price scores point six eight. High decidability, your agent knows your budget. It filters confidently.",
+      "visual": {
+        "type": "match_results",
+        "candidates": [
+          {"label": "Price", "score": 0.684, "traits": ["agent: 0.9", "decidability: 0.95", "density: 0.8"], "price": "→ act"},
+          {"label": "Pet Policy", "score": 0.567, "traits": ["agent: 0.9", "decidability: 0.90", "density: 0.7"], "price": "→ act"},
+          {"label": "Neighborhood", "score": 0.042, "traits": ["agent: 0.4", "decidability: 0.35", "density: 0.3"], "price": "→ defer"}
+        ]
+      }
+    },
+    {
+      "id": "neighborhood",
+      "duration_sec": 6,
+      "narration": "Neighborhood vibe scores point oh four. Low decidability, subjective, not enough data. Your agent flags this for you.",
+      "visual": {
+        "type": "title_card",
+        "headline": "0.042",
+        "subhead": "\"I don't know enough about your taste.\nYou should decide this one.\""
+      }
+    },
+    {
+      "id": "key-insight",
+      "duration_sec": 8,
+      "narration": "The protocol provides signals. Agents decide. An aggressive agent might auto-proceed at point six. A cautious one might ask at point nine. That's a property of the agent, not the protocol.",
+      "visual": {
+        "type": "title_card",
+        "headline": "The protocol provides signals.\nAgents decide.",
+        "subhead": "No hard gates. No mandatory review. Everything continuous."
+      }
+    },
+    {
+      "id": "learns",
+      "duration_sec": 5,
+      "narration": "And it learns. Every transaction updates the dimension priors. The more your agent works with the protocol, the better it knows when to act.",
+      "visual": {
+        "type": "title_card",
+        "headline": "It learns over time.",
+        "subhead": "Every transaction improves the priors."
+      }
+    },
+    {
+      "id": "cta",
+      "duration_sec": 5,
+      "narration": "Schelling Protocol. Teaching agents when to ask. Open source, live now.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Schelling Protocol",
+        "subhead": "github.com/codyz123/schelling-protocol"
+      }
+    }
+  ]
+}

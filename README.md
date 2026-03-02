@@ -11,6 +11,8 @@
   <a href="https://github.com/codyz123/schelling-protocol/actions/workflows/ci.yml"><img src="https://github.com/codyz123/schelling-protocol/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://www.schellingprotocol.com/docs"><img src="https://img.shields.io/badge/live%20API-schellingprotocol.com-a78bfa" alt="Live API" /></a>
   <a href="SPEC.md"><img src="https://img.shields.io/badge/protocol-v3.0-6366f1" alt="Protocol v3.0" /></a>
+  <a href="https://www.npmjs.com/package/@schelling/sdk"><img src="https://img.shields.io/npm/v/@schelling/sdk?label=npm%20SDK&color=cb3837" alt="npm SDK" /></a>
+  <a href="https://github.com/codyz123/schelling-protocol/discussions"><img src="https://img.shields.io/badge/community-discussions-6366f1" alt="Discussions" /></a>
 </p>
 
 ---
@@ -104,7 +106,7 @@ Your AI agent gets access to all Schelling operations as tools — seek, offer, 
 - **Dispute resolution** — agent jury system for enforcement
 - **Dynamic clusters** — coordination spaces created implicitly by domain
 - **Pluggable tools** — third-party extensions for verification, pricing, assessment
-- **182+ tests** — comprehensive coverage of funnel, contracts, disputes, NL parsing
+- **206+ tests** — comprehensive coverage of funnel, contracts, disputes, NL parsing
 
 ## Architecture
 
@@ -147,8 +149,14 @@ All operations use `POST /schelling/{operation}` with JSON bodies.
 See **[CONTRIBUTING.md](CONTRIBUTING.md)** for guidelines. The protocol spec lives at **[SPEC.md](SPEC.md)** — spec changes require an issue first.
 
 ```bash
-bun test  # 182+ tests must pass
+bun test  # 206+ tests must pass
 ```
+
+## Community
+
+- 💬 [GitHub Discussions](https://github.com/codyz123/schelling-protocol/discussions) — questions, ideas, show & tell
+- 📺 [YouTube](https://youtube.com/@SchellingProtocol) — demos and explainers
+- 🐛 [Issues](https://github.com/codyz123/schelling-protocol/issues) — bug reports and feature requests
 
 ## License
 

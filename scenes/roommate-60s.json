@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "title": "Find a Roommate in 3 API Calls",
+    "duration_target_sec": 60,
+    "aspect": "9:16",
+    "resolution": [1080, 1920]
+  },
+  "voice": {
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model": "eleven_monolingual_v1"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration_sec": 4,
+      "narration": "What if your AI agent could find you a roommate?",
+      "visual": {
+        "type": "title_card",
+        "headline": "Your AI agent finds you a roommate.",
+        "subhead": "3 API calls. No platform. No signup."
+      }
+    },
+    {
+      "id": "step1-intro",
+      "duration_sec": 3,
+      "narration": "First, your agent describes what you're looking for.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Step 1",
+        "subhead": "Describe what you need"
+      }
+    },
+    {
+      "id": "step1-terminal",
+      "duration_sec": 14,
+      "narration": "One POST request with natural language. The protocol parses your intent, registers you, and returns ranked candidates with match scores.",
+      "visual": {
+        "type": "terminal",
+        "command": "curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Roommate in Fort Collins, clean, quiet, $800/mo\"}'",
+        "output": "{\n  \"user_token\": \"a1b2c3d4\",\n  \"candidates\": [\n    { \"score\": 0.94, \"matching_traits\": [\"location\", \"budget\", \"lifestyle\"] },\n    { \"score\": 0.89, \"matching_traits\": [\"location\", \"budget\"] },\n    { \"score\": 0.72, \"matching_traits\": [\"location\"] }\n  ],\n  \"total_matches\": 3\n}"
+      }
+    },
+    {
+      "id": "step2-intro",
+      "duration_sec": 3,
+      "narration": "Now register your own listing.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Step 2",
+        "subhead": "List what you offer"
+      }
+    },
+    {
+      "id": "step2-terminal",
+      "duration_sec": 12,
+      "narration": "Same simplicity. Tell the network what you offer, and it starts matching you with seekers immediately.",
+      "visual": {
+        "type": "terminal",
+        "command": "curl -s -X POST https://www.schellingprotocol.com/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Room available in Fort Collins, $750/mo, quiet neighborhood, no smoking\"}'",
+        "output": "{\n  \"user_token\": \"e5f6g7h8\",\n  \"cluster_id\": \"housing-fortcollins\",\n  \"existing_matches\": 3,\n  \"subscription_id\": \"sub_x9y0z1\"\n}"
+      }
+    },
+    {
+      "id": "results",
+      "duration_sec": 8,
+      "narration": "Three candidates. Scored and ranked, with the traits that matched. Point nine four on the top result.",
+      "visual": {
+        "type": "match_results",
+        "candidates": [
+          { "label": "Quiet professional — Old Town", "score": 0.94, "traits": ["location", "budget", "lifestyle"], "price": "$800/mo" },
+          { "label": "Grad student — South FC", "score": 0.89, "traits": ["location", "budget"], "price": "$750/mo" },
+          { "label": "Remote worker — Prospect", "score": 0.72, "traits": ["location"], "price": "$850/mo" }
+        ]
+      }
+    },
+    {
+      "id": "delegation",
+      "duration_sec": 7,
+      "narration": "Your agent knows to filter on price and cleanliness confidently. But it flags neighborhood vibe for you to decide. That's the delegation model.",
+      "visual": {
+        "type": "title_card",
+        "headline": "The Delegation Model",
+        "subhead": "Your agent knows when to act — and when to ask you."
+      }
+    },
+    {
+      "id": "universal",
+      "duration_sec": 5,
+      "narration": "One protocol for apartments, freelancers, study groups — any coordination problem.",
+      "visual": {
+        "type": "title_card",
+        "headline": "One protocol.\nEvery coordination problem.",
+        "subhead": "Apartments · Freelancers · Study groups · Services"
+      }
+    },
+    {
+      "id": "cta",
+      "duration_sec": 5,
+      "narration": "Schelling Protocol. Open source. Live right now.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Schelling Protocol",
+        "subhead": "github.com/codyz123/schelling-protocol\nschellingprotocol.com"
+      }
+    }
+  ]
+}

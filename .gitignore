@@ -18,3 +18,5 @@ tmp/
 .mcp_data/
 *.pyc
 __pycache__/
+.youtube-credentials.json
+google client_secret_*.json
