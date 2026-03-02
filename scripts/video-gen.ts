@@ -262,7 +262,13 @@ await browser.close();
   await $`ffmpeg -y -framerate ${FPS} -i ${join(framesDir, 'frame-%06d.png')} -c:v libx264 -pix_fmt yuv420p -preset fast -crf 23 ${rawVideoPath}`.quiet();
 
   // Add audio + captions
-  await $`ffmpeg -y -i ${rawVideoPath} -i ${fullAudioPath} -vf subtitles=${srtPath}:force_style='FontName=Arial,FontSize=20,PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=2,MarginV=60' -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k -shortest ${outputPath}`.quiet();
+  // Use Bun.spawn to avoid shell metachar issues with ffmpeg subtitles filter
+  const forceStyle = 'FontName=Arial,FontSize=20,PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=2,MarginV=60';
+  const vfArg = `subtitles=${srtPath}:force_style='${forceStyle}'`;
+  const ffResult = Bun.spawnSync(['ffmpeg', '-y', '-i', rawVideoPath, '-i', fullAudioPath, '-vf', vfArg, '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-c:a', 'aac', '-b:a', '128k', '-shortest', outputPath]);
+  if (ffResult.exitCode !== 0) {
+    throw new Error(`ffmpeg failed (exit ${ffResult.exitCode}): ${ffResult.stderr.toString()}`);
+  }
 
   const stat = Bun.file(outputPath);
   console.log(`\n✅ Video saved: ${outputPath} (${(stat.size / 1024 / 1024).toFixed(1)} MB)`);

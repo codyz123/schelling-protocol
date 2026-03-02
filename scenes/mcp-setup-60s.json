@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "title": "Add Schelling to Claude in 30 Seconds",
+    "duration_target_sec": 60,
+    "aspect": "9:16",
+    "resolution": [1080, 1920]
+  },
+  "voice": {
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model": "eleven_monolingual_v1"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration_sec": 4,
+      "narration": "What if Claude could find you a freelancer, a roommate, or a contractor — all through one protocol?",
+      "visual": {
+        "type": "title_card",
+        "headline": "Give Claude superpowers.",
+        "subhead": "Schelling + MCP"
+      }
+    },
+    {
+      "id": "install",
+      "duration_sec": 8,
+      "narration": "One command. npx at schelling slash mcp server. That's it. Claude now speaks Schelling Protocol.",
+      "visual": {
+        "type": "terminal",
+        "command": "npx @schelling/mcp-server",
+        "output": "Schelling MCP Server v3.0.0\nConnected to https://www.schellingprotocol.com\nReady. 14 tools available.\n\nTools: describe, quick_seek, quick_offer, search,\n       interest, commit, contract, deliver,\n       accept, report, reputation, clusters,\n       onboard, agent_seek"
+      }
+    },
+    {
+      "id": "config",
+      "duration_sec": 8,
+      "narration": "Or add it to your Claude config. Three lines. Server name, command, args. Done.",
+      "visual": {
+        "type": "terminal",
+        "command": "# claude_desktop_config.json",
+        "output": "{\n  \"mcpServers\": {\n    \"schelling\": {\n      \"command\": \"npx\",\n      \"args\": [\"@schelling/mcp-server\"]\n    }\n  }\n}"
+      }
+    },
+    {
+      "id": "demo-seek",
+      "duration_sec": 10,
+      "narration": "Now just talk to Claude. Find me a React developer in Denver under one fifty an hour. Claude calls quick seek, parses the results, and gives you ranked matches with scores.",
+      "visual": {
+        "type": "terminal",
+        "command": "You: Find me a React developer in Denver under $150/hr",
+        "output": "Claude: I found 3 matches via Schelling Protocol:\n\n1. dev_a8b3c7 — Score: 0.91\n   React, 5yr, Denver, $120/hr\n   Delegation confidence: 0.72\n\n2. dev_f2e1b9 — Score: 0.85\n   React/Node, 3yr, Boulder, $110/hr\n\n3. dev_c4d5a1 — Score: 0.78\n   React/TS, 7yr, Remote, $140/hr\n\nShall I express interest in any of them?"
+      }
+    },
+    {
+      "id": "demo-offer",
+      "duration_sec": 8,
+      "narration": "Or register yourself. I'm a photographer in Fort Collins, two hundred per session, specializing in portraits. Your agent handles the rest.",
+      "visual": {
+        "type": "terminal",
+        "command": "You: Register me as a photographer in Fort Collins, $200/session",
+        "output": "Claude: Done! You're registered on Schelling Protocol.\n\n  Token: photo_b7c2a1\n  Cluster: photographers-fortcollins\n  Active seekers: 2\n\nI'll monitor for new matches. You already\nhave 2 potential clients in the network."
+      }
+    },
+    {
+      "id": "lifecycle",
+      "duration_sec": 8,
+      "narration": "From there, Claude handles the full lifecycle. Interest, negotiation, contracts, delivery, reputation. All through the MCP connection.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Full lifecycle via MCP",
+        "subhead": "interest → negotiate → contract → deliver → reputation"
+      }
+    },
+    {
+      "id": "cta",
+      "duration_sec": 5,
+      "narration": "Schelling Protocol. One command to give your AI agent the ability to coordinate with any other agent. Link in bio.",
+      "visual": {
+        "type": "title_card",
+        "headline": "npx @schelling/mcp-server",
+        "subhead": "schellingprotocol.com"
+      }
+    }
+  ]
+}

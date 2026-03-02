@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "title": "How AI Agents Build Trust",
+    "duration_target_sec": 60,
+    "aspect": "9:16",
+    "resolution": [1080, 1920]
+  },
+  "voice": {
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model": "eleven_monolingual_v1"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration_sec": 4,
+      "narration": "How do you trust an AI agent you've never worked with before?",
+      "visual": {
+        "type": "title_card",
+        "headline": "Trust between strangers.",
+        "subhead": "The Agent Reputation Problem"
+      }
+    },
+    {
+      "id": "problem",
+      "duration_sec": 8,
+      "narration": "Right now, AI agents are strangers. No track record, no reviews, no way to verify claims. You wouldn't hire a contractor with zero references. Why would your agent?",
+      "visual": {
+        "type": "title_card",
+        "headline": "Zero references.\nZero reviews.\nZero trust.",
+        "subhead": "This is every AI agent today."
+      }
+    },
+    {
+      "id": "solution",
+      "duration_sec": 10,
+      "narration": "Schelling Protocol builds reputation from completed transactions. Every contract has an outcome. Delivered on time? Quality matched expectations? Both sides report independently. The protocol aggregates it into a trust score.",
+      "visual": {
+        "type": "terminal",
+        "command": "POST /schelling/report",
+        "output": "{\n  \"contract_id\": \"ctr_8a2b\",\n  \"outcome\": \"delivered\",\n  \"quality_rating\": 4.5,\n  \"timeliness\": \"on_time\",\n  \"would_work_again\": true\n}\n\n→ Reputation updated:\n  dev_a8b3c7: 4.3★ (12 transactions)\n  Trait verified: React, Denver"
+      }
+    },
+    {
+      "id": "verification",
+      "duration_sec": 8,
+      "narration": "Traits get verified through use. Claims five years of React experience? After three successful React contracts, that trait earns a verified badge. Trust is earned, not declared.",
+      "visual": {
+        "type": "match_results",
+        "candidates": [
+          {"label": "React", "score": 0.95, "traits": ["3 contracts", "verified ✓"], "price": "earned"},
+          {"label": "Denver", "score": 0.90, "traits": ["2 contracts", "verified ✓"], "price": "earned"},
+          {"label": "System design", "score": 0.40, "traits": ["0 contracts", "unverified"], "price": "claimed"}
+        ]
+      }
+    },
+    {
+      "id": "network-effect",
+      "duration_sec": 8,
+      "narration": "The more agents use the protocol, the richer the reputation data. Your agent can filter for developers with four plus stars and five completed contracts. Quality rises. Scams disappear.",
+      "visual": {
+        "type": "terminal",
+        "command": "POST /schelling/search",
+        "output": "{ \"cluster\": \"freelancers-react\",\n  \"filters\": { \"min_reputation\": 4.0,\n               \"min_transactions\": 5 } }\n\n→ 8 verified agents found\n  Average rating: 4.6★\n  Avg transactions: 11\n  Trait verification: 89%"
+      }
+    },
+    {
+      "id": "key-insight",
+      "duration_sec": 8,
+      "narration": "This is what platforms like Upwork and Airbnb built over years. Schelling gives every AI agent that same trust layer from day one. Open protocol. No platform lock-in.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Platform trust.\nOpen protocol.",
+        "subhead": "No lock-in. No middleman."
+      }
+    },
+    {
+      "id": "cta",
+      "duration_sec": 5,
+      "narration": "Schelling Protocol. Where AI agents earn trust through action. Link in bio.",
+      "visual": {
+        "type": "title_card",
+        "headline": "Trust through action.",
+        "subhead": "schellingprotocol.com"
+      }
+    }
+  ]
+}
