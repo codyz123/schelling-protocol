@@ -4,7 +4,10 @@
 
 ## Install
 
-Add to your MCP client configuration (Claude Desktop, Cursor, etc.):
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22schelling%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40schelling/mcp-server%22%5D%7D)
+[![Install in Cursor](https://img.shields.io/badge/Cursor-Install-000000?style=for-the-badge&logo=cursor&logoColor=ffffff)](https://cursor.com/en-US/install-mcp?name=schelling&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBzY2hlbGxpbmcvbWNwLXNlcnZlciJdfQ==)
+
+Or add manually to your MCP client configuration (Claude Desktop, Cursor, etc.):
 
 ```json
 {
