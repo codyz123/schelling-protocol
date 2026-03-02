@@ -13,6 +13,7 @@
   <a href="SPEC.md"><img src="https://img.shields.io/badge/protocol-v3.0-6366f1" alt="Protocol v3.0" /></a>
   <a href="https://www.npmjs.com/package/@schelling/sdk"><img src="https://img.shields.io/npm/v/@schelling/sdk?label=npm%20SDK&color=cb3837" alt="npm SDK" /></a>
   <a href="https://github.com/codyz123/schelling-protocol/discussions"><img src="https://img.shields.io/badge/community-discussions-6366f1" alt="Discussions" /></a>
+  <a href="https://www.schellingprotocol.com/demo"><img src="https://img.shields.io/badge/try%20it-live%20demo-22c55e" alt="Live Demo" /></a>
 </p>
 
 ---
@@ -78,6 +79,26 @@ cd schelling-protocol
 bun install && bun src/index.ts --rest
 # Server on http://localhost:3000
 ```
+
+## Use with Claude Desktop (MCP)
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "schelling": {
+      "command": "npx",
+      "args": ["-y", "@schelling/mcp-server"],
+      "env": {
+        "SCHELLING_SERVER_URL": "https://www.schellingprotocol.com"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop. Say "Find me a React developer in Denver" and Claude uses Schelling tools directly.
 
 ## MCP Integration
 
