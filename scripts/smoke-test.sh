@@ -62,7 +62,7 @@ check "quick_offer returns user_token" "$OFFER" '"user_token"'
 # 7. Error handling
 echo "── Error Handling ──"
 ERR_METHOD=$(curl -s "$API/schelling/describe" -H 'Accept: application/json')
-check "GET returns method error" "$ERR_METHOD" 'Method not allowed'
+check "GET schelling path returns helpful 404" "$ERR_METHOD" 'Not found'
 
 ERR_UNKNOWN=$(curl -s -X POST "$API/schelling/nonexistent" -H 'Content-Type: application/json' -d '{}')
 check "Unknown op returns error" "$ERR_UNKNOWN" 'Unknown operation'
@@ -74,6 +74,33 @@ check "Missing version returns error" "$ERR_VERSION" 'VERSION_MISMATCH'
 echo "── CORS ──"
 CORS=$(curl -sf -I -X OPTIONS "$API/schelling/describe" -H 'Origin: https://schellingprotocol.com' -H 'Access-Control-Request-Method: POST' 2>&1)
 check "OPTIONS returns CORS headers" "$CORS" 'access-control-allow-origin'
+
+# 9. Discovery endpoints
+echo "── Discovery Endpoints ──"
+DOCS=$(curl -sf "$API/docs" | head -20)
+check "GET /docs serves Swagger UI" "$DOCS" 'swagger-ui'
+
+DEMO=$(curl -sf "$API/demo" | head -20)
+check "GET /demo serves playground" "$DEMO" 'Interactive Demo'
+
+LLMS=$(curl -sf "$API/llms.txt" | head -5)
+check "GET /llms.txt serves AI discovery" "$LLMS" 'Schelling'
+
+AGENT=$(curl -sf "$API/.well-known/agent.json")
+check "GET /.well-known/agent.json serves A2A card" "$AGENT" '"skills"'
+
+ROBOTS=$(curl -sf "$API/robots.txt")
+check "GET /robots.txt serves crawl rules" "$ROBOTS" 'User-agent'
+
+# 10. Clusters
+echo "── Clusters ──"
+CLUSTERS=$(curl -sf -X POST "$API/schelling/clusters" -H 'Content-Type: application/json' -d '{"action":"list"}')
+check "clusters list returns data" "$CLUSTERS" '"clusters"'
+
+# 11. Full lifecycle spot check
+echo "── Lifecycle ──"
+ONBOARD=$(curl -sf -X POST "$API/schelling/onboard" -H 'Content-Type: application/json'   -d '{"natural_language":"I need a photographer in Denver"}')
+check "onboard returns template" "$ONBOARD" '"registration_template"'
 
 echo ""
 echo "══════════════════════════"
