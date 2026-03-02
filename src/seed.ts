@@ -117,6 +117,87 @@ const FREELANCERS: SeedListing[] = [
   },
 ];
 
+const SERVICES_CLUSTER = "services.local";
+
+const SERVICES: SeedListing[] = [
+  {
+    name: "Dog Walker — Old Town FC",
+    traits: [
+      { key: "service", value: "dog walking", value_type: "string" },
+      { key: "location", value: "Fort Collins", value_type: "string" },
+      { key: "neighborhood", value: "Old Town", value_type: "string" },
+      { key: "rate", value: 25, value_type: "number" },
+      { key: "rate_unit", value: "walk", value_type: "string" },
+      { key: "availability", value: "weekdays", value_type: "string" },
+      { key: "max_dogs", value: 3, value_type: "number" },
+    ],
+  },
+  {
+    name: "House Cleaner — Fort Collins",
+    traits: [
+      { key: "service", value: "house cleaning", value_type: "string" },
+      { key: "location", value: "Fort Collins", value_type: "string" },
+      { key: "rate", value: 120, value_type: "number" },
+      { key: "rate_unit", value: "session", value_type: "string" },
+      { key: "frequency", value: "weekly or biweekly", value_type: "string" },
+      { key: "supplies", value: "provided", value_type: "string" },
+    ],
+  },
+  {
+    name: "Guitar Lessons — In-Home",
+    traits: [
+      { key: "service", value: "music lessons", value_type: "string" },
+      { key: "instrument", value: "guitar", value_type: "string" },
+      { key: "location", value: "Fort Collins", value_type: "string" },
+      { key: "rate", value: 50, value_type: "number" },
+      { key: "rate_unit", value: "hour", value_type: "string" },
+      { key: "experience_years", value: 12, value_type: "number" },
+      { key: "levels", value: "beginner to advanced", value_type: "string" },
+    ],
+  },
+];
+
+const CREATIVE_CLUSTER = "creative.freelance";
+
+const CREATIVES: SeedListing[] = [
+  {
+    name: "Portrait Photographer — Denver",
+    traits: [
+      { key: "skill", value: "photography", value_type: "string" },
+      { key: "specialty", value: "portraits", value_type: "string" },
+      { key: "location", value: "Denver", value_type: "string" },
+      { key: "rate", value: 300, value_type: "number" },
+      { key: "rate_unit", value: "session", value_type: "string" },
+      { key: "style", value: "natural light, editorial", value_type: "string" },
+      { key: "turnaround", value: "1 week", value_type: "string" },
+    ],
+  },
+  {
+    name: "Copywriter — Remote",
+    traits: [
+      { key: "skill", value: "copywriting", value_type: "string" },
+      { key: "specialty", value: "SaaS landing pages", value_type: "string" },
+      { key: "location", value: "Remote", value_type: "string" },
+      { key: "rate", value: 85, value_type: "number" },
+      { key: "rate_unit", value: "hour", value_type: "string" },
+      { key: "experience_years", value: 6, value_type: "number" },
+      { key: "portfolio", value: "stripe.com/blog, linear.app", value_type: "string" },
+    ],
+  },
+  {
+    name: "Logo & Brand Designer — Boulder",
+    traits: [
+      { key: "skill", value: "graphic design", value_type: "string" },
+      { key: "specialty", value: "branding, logos", value_type: "string" },
+      { key: "location", value: "Boulder", value_type: "string" },
+      { key: "rate", value: 2500, value_type: "number" },
+      { key: "rate_unit", value: "project", value_type: "string" },
+      { key: "experience_years", value: 8, value_type: "number" },
+      { key: "tools", value: "Illustrator, Figma", value_type: "string" },
+    ],
+  },
+];
+
 export function seedIfEmpty(db: DatabaseConnection): void {
   // Check if any users exist
   const result = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
@@ -137,7 +218,15 @@ export function seedIfEmpty(db: DatabaseConnection): void {
   seedCluster(db, FREELANCE_CLUSTER, "Freelance Services", FREELANCERS, "provider");
   seeded += FREELANCERS.length;
 
-  console.log(`🌱 Seeded ${seeded} demo listings across 2 clusters`);
+  // Seed local services
+  seedCluster(db, SERVICES_CLUSTER, "Local Services", SERVICES, "provider");
+  seeded += SERVICES.length;
+
+  // Seed creative freelancers
+  seedCluster(db, CREATIVE_CLUSTER, "Creative Freelancers", CREATIVES, "provider");
+  seeded += CREATIVES.length;
+
+  console.log(`🌱 Seeded ${seeded} demo listings across 4 clusters`);
 }
 
 function seedCluster(
