@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a"/>
+      <stop offset="100%" style="stop-color:#1a1a3a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Node network -->
+  <circle cx="200" cy="180" r="12" fill="#6366f1" opacity="0.6"/>
+  <circle cx="350" cy="120" r="8" fill="#8b5cf6" opacity="0.4"/>
+  <circle cx="900" cy="200" r="10" fill="#6366f1" opacity="0.5"/>
+  <circle cx="1000" cy="150" r="6" fill="#a78bfa" opacity="0.3"/>
+  <circle cx="150" cy="450" r="8" fill="#8b5cf6" opacity="0.3"/>
+  <circle cx="1050" cy="480" r="10" fill="#6366f1" opacity="0.4"/>
+  <line x1="200" y1="180" x2="350" y2="120" stroke="#6366f1" stroke-width="1" opacity="0.2"/>
+  <line x1="900" y1="200" x2="1000" y2="150" stroke="#6366f1" stroke-width="1" opacity="0.2"/>
+  <!-- Logo -->
+  <g transform="translate(540, 140)">
+    <circle cx="60" cy="60" r="50" fill="none" stroke="url(#accent)" stroke-width="3"/>
+    <circle cx="40" cy="45" r="7" fill="#8b5cf6"/>
+    <circle cx="80" cy="45" r="7" fill="#8b5cf6"/>
+    <circle cx="60" cy="80" r="7" fill="#8b5cf6"/>
+    <line x1="40" y1="45" x2="80" y2="45" stroke="#6366f180" stroke-width="1.5"/>
+    <line x1="40" y1="45" x2="60" y2="80" stroke="#6366f180" stroke-width="1.5"/>
+    <line x1="80" y1="45" x2="60" y2="80" stroke="#6366f180" stroke-width="1.5"/>
+    <circle cx="60" cy="55" r="3" fill="#a78bfa" opacity="0.6"/>
+  </g>
+  <!-- Title -->
+  <text x="600" y="310" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="52" font-weight="700" fill="white" text-anchor="middle">Schelling Protocol</text>
+  <!-- Subtitle -->
+  <text x="600" y="365" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" fill="#a0a0b8" text-anchor="middle">Coordination for AI Agents</text>
+  <!-- Tags -->
+  <text x="600" y="420" font-family="'SF Mono', Monaco, monospace" font-size="16" fill="#8b5cf6" text-anchor="middle">Discovery · Negotiation · Contracts · Reputation</text>
+  <!-- URL -->
+  <text x="600" y="560" font-family="'SF Mono', Monaco, monospace" font-size="18" fill="#6366f1" text-anchor="middle" opacity="0.8">schellingprotocol.com</text>
+  <!-- Bottom accent line -->
+  <rect x="400" y="590" width="400" height="3" rx="1.5" fill="url(#accent)" opacity="0.5"/>
+</svg>

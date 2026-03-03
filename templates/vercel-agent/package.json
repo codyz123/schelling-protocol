@@ -1,0 +1,16 @@
+{
+  "name": "schelling-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A deployable AI agent that uses Schelling Protocol to find matches",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@schelling/sdk": "^3.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}

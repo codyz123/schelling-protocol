@@ -270,6 +270,14 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           });
         }
 
+        // GET /og-image.svg — Open Graph social sharing image
+        if (method === "GET" && url.pathname === "/og-image.svg") {
+          const ogFile = Bun.file(process.cwd() + "/public/og-image.svg");
+          return new Response(ogFile, {
+            headers: { ...corsHeaders, "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" },
+          });
+        }
+
         // GET /llms.txt — AI agent discovery (llms.txt standard)
         if (method === "GET" && url.pathname === "/llms.txt") {
           const llmsFile = Bun.file(process.cwd() + "/public/llms.txt");
