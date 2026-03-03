@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publish Content — Schelling Protocol</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh}
+.nav{padding:1rem 2rem;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;gap:1rem}
+.nav svg{width:32px;height:32px}
+.nav h1{font-size:1rem;color:#14B8A6;font-weight:600;letter-spacing:1px}
+.container{max-width:900px;margin:2rem auto;padding:0 2rem}
+h2{color:#e0e0e0;font-size:1.3rem;margin-bottom:1.5rem}
+.video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.5rem;margin-bottom:2rem}
+.video-card{background:#12121a;border:1px solid #2a2a3a;border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s}
+.video-card:hover{border-color:#14B8A6;transform:translateY(-2px)}
+.video-card.selected{border-color:#14B8A6;box-shadow:0 0 20px rgba(20,184,166,.15)}
+.video-thumb{width:100%;aspect-ratio:9/16;background:#1a1a2e;display:flex;align-items:center;justify-content:center;position:relative}
+.video-thumb .play{font-size:2rem;opacity:.6}
+.video-thumb .duration{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);padding:2px 8px;border-radius:4px;font-size:.75rem}
+.video-info{padding:.75rem 1rem}
+.video-info h3{font-size:.85rem;color:#e0e0e0;margin-bottom:.25rem}
+.video-info p{font-size:.75rem;color:#888}
+.publish-panel{background:#12121a;border:1px solid #2a2a3a;border-radius:12px;padding:1.5rem;display:none}
+.publish-panel.visible{display:block}
+.publish-panel h3{color:#14B8A6;margin-bottom:1rem;font-size:1rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.8rem;color:#888;margin-bottom:.4rem}
+.field input,.field textarea,.field select{width:100%;background:#0a0a0f;border:1px solid #2a2a3a;border-radius:8px;padding:.6rem .8rem;color:#e0e0e0;font-size:.85rem;font-family:inherit}
+.field textarea{resize:vertical;min-height:80px}
+.platforms{display:flex;gap:1rem;margin-bottom:1.5rem}
+.platform{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border:1px solid #2a2a3a;border-radius:8px;cursor:pointer;transition:all .2s}
+.platform.active{border-color:#14B8A6;background:rgba(20,184,166,.1)}
+.platform input{display:none}
+.platform .icon{font-size:1.2rem}
+.platform .name{font-size:.85rem}
+.platform .check{color:#14B8A6;display:none}
+.platform.active .check{display:inline}
+.btn{padding:.7rem 1.5rem;border:none;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#14B8A6;color:#041A17}.btn-primary:hover{background:#0F766E}
+.btn-secondary{background:#2a2a3a;color:#e0e0e0}.btn-secondary:hover{background:#3a3a4a}
+.actions{display:flex;gap:1rem;justify-content:flex-end}
+.status-bar{margin-top:1rem;padding:1rem;border-radius:8px;display:none;font-size:.85rem}
+.status-bar.success{display:block;background:rgba(20,184,166,.1);border:1px solid #14B8A6;color:#14B8A6}
+.status-bar.publishing{display:block;background:rgba(59,130,246,.1);border:1px solid #3b82f6;color:#3b82f6}
+.preview-row{display:flex;gap:1.5rem;margin-bottom:1.5rem}
+.preview-thumb{width:120px;aspect-ratio:9/16;background:#1a1a2e;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+.preview-details{flex:1}
+.preview-details h4{color:#e0e0e0;margin-bottom:.25rem;font-size:.9rem}
+.preview-details p{color:#888;font-size:.8rem}
+.consent{display:flex;align-items:flex-start;gap:.5rem;margin:1rem 0;font-size:.8rem;color:#888}
+.consent input{margin-top:3px}
+</style>
+</head>
+<body>
+<div class="nav">
+  <svg viewBox="0 0 64 64"><line x1="8" y1="8" x2="28" y2="28" stroke="#0F766E" stroke-width="3" stroke-linecap="round"/><line x1="56" y1="8" x2="36" y2="28" stroke="#0F766E" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="56" x2="28" y2="36" stroke="#0F766E" stroke-width="3" stroke-linecap="round"/><line x1="56" y1="56" x2="36" y2="36" stroke="#0F766E" stroke-width="3" stroke-linecap="round"/><circle cx="8" cy="8" r="4.5" fill="#14B8A6"/><circle cx="56" cy="8" r="4.5" fill="#14B8A6"/><circle cx="8" cy="56" r="4.5" fill="#14B8A6"/><circle cx="56" cy="56" r="4.5" fill="#14B8A6"/><circle cx="32" cy="32" r="7" fill="#0F766E"/><circle cx="32" cy="32" r="3" fill="#14B8A6"/></svg>
+  <h1>SCHELLING PROTOCOL</h1>
+  <span style="color:#888;font-size:.8rem;margin-left:auto">Content Publisher</span>
+</div>
+<div class="container">
+  <h2>Select Video to Publish</h2>
+  <div class="video-grid" id="videoGrid">
+    <div class="video-card" onclick="selectVideo(this, 'The Delegation Model Explained')" data-video="delegation-model">
+      <div class="video-thumb"><span class="play">▶</span><span class="duration">1:04</span></div>
+      <div class="video-info"><h3>The Delegation Model Explained</h3><p>Ready to publish · 2.2 MB</p></div>
+    </div>
+    <div class="video-card" onclick="selectVideo(this, 'Freelancer Negotiation Flow')" data-video="freelancer-negotiation">
+      <div class="video-thumb"><span class="play">▶</span><span class="duration">1:02</span></div>
+      <div class="video-info"><h3>Freelancer Negotiation Flow</h3><p>Ready to publish · 1.8 MB</p></div>
+    </div>
+    <div class="video-card" onclick="selectVideo(this, 'MCP Setup in 60 Seconds')" data-video="mcp-setup">
+      <div class="video-thumb"><span class="play">▶</span><span class="duration">0:58</span></div>
+      <div class="video-info"><h3>MCP Setup in 60 Seconds</h3><p>Ready to publish · 1.5 MB</p></div>
+    </div>
+    <div class="video-card" onclick="selectVideo(this, 'Why Not Just an API?')" data-video="why-not-api">
+      <div class="video-thumb"><span class="play">▶</span><span class="duration">1:01</span></div>
+      <div class="video-info"><h3>Why Not Just an API?</h3><p>Ready to publish · 1.7 MB</p></div>
+    </div>
+  </div>
+
+  <div class="publish-panel" id="publishPanel">
+    <h3>Publish Settings</h3>
+    <div class="preview-row">
+      <div class="preview-thumb">▶</div>
+      <div class="preview-details">
+        <h4 id="previewTitle">—</h4>
+        <p>Schelling Protocol · Educational · Short-form</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Caption</label>
+      <textarea id="caption" placeholder="Video caption with #hashtags...">Schelling Protocol teaches AI agents when to decide and when to ask. #ai #agents #schelling #coordination #opensource</textarea>
+    </div>
+
+    <label style="font-size:.8rem;color:#888;margin-bottom:.5rem;display:block">Publish to:</label>
+    <div class="platforms">
+      <label class="platform active" onclick="togglePlatform(this)">
+        <input type="checkbox" checked>
+        <span class="icon">📺</span>
+        <span class="name">YouTube</span>
+        <span class="check">✓</span>
+      </label>
+      <label class="platform active" onclick="togglePlatform(this)">
+        <input type="checkbox" checked>
+        <span class="icon">🎵</span>
+        <span class="name">TikTok</span>
+        <span class="check">✓</span>
+      </label>
+    </div>
+
+    <div class="field">
+      <label>Privacy</label>
+      <select>
+        <option>Private (review before publishing)</option>
+        <option>Public</option>
+      </select>
+    </div>
+
+    <div class="consent">
+      <input type="checkbox" id="consent" checked>
+      <label for="consent">I confirm this content complies with platform guidelines and I consent to posting it to the selected platforms on behalf of Schelling Protocol.</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="cancelPublish()">Cancel</button>
+      <button class="btn btn-primary" id="publishBtn" onclick="doPublish()">Publish to 2 Platforms</button>
+    </div>
+
+    <div class="status-bar publishing" id="statusPublishing">
+      ⏳ Publishing to YouTube and TikTok...
+    </div>
+    <div class="status-bar success" id="statusSuccess">
+      ✅ Successfully published! Video is set to Private and ready for your review on both platforms.
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedCard = null;
+function selectVideo(card, title) {
+  document.querySelectorAll('.video-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedCard = card;
+  document.getElementById('previewTitle').textContent = title + ' | Schelling Protocol #Shorts';
+  document.getElementById('publishPanel').classList.add('visible');
+  document.getElementById('statusPublishing').style.display = 'none';
+  document.getElementById('statusSuccess').style.display = 'none';
+}
+function togglePlatform(el) {
+  el.classList.toggle('active');
+  const count = document.querySelectorAll('.platform.active').length;
+  document.getElementById('publishBtn').textContent = 'Publish to ' + count + ' Platform' + (count !== 1 ? 's' : '');
+}
+function cancelPublish() {
+  document.getElementById('publishPanel').classList.remove('visible');
+  if (selectedCard) selectedCard.classList.remove('selected');
+}
+function doPublish() {
+  document.getElementById('statusPublishing').style.display = 'block';
+  document.getElementById('statusSuccess').style.display = 'none';
+  document.getElementById('publishBtn').disabled = true;
+  setTimeout(() => {
+    document.getElementById('statusPublishing').style.display = 'none';
+    document.getElementById('statusSuccess').style.display = 'block';
+    document.getElementById('publishBtn').disabled = false;
+  }, 2500);
+}
+</script>
+</body>
+</html>

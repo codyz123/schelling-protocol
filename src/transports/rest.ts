@@ -327,6 +327,12 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/plain" } });
         }
 
+        // GET /publish — content publisher UI
+        if (method === "GET" && url.pathname === "/publish") {
+          const f = Bun.file(process.cwd() + "/public/publish.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
         // GET /terms — Terms of Service
         if (method === "GET" && url.pathname === "/terms") {
           const termsFile = Bun.file(process.cwd() + "/public/terms.html");
