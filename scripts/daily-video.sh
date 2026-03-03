@@ -56,7 +56,7 @@ bun run scripts/youtube-upload.ts "$VIDEO_PATH" \
   --title "$TITLE | Schelling Protocol" \
   --description "$DESCRIPTION" \
   --tags "ai,agents,opensource,mcp,schelling protocol,coordination" \
-  --public --short
+  --short
 
 # Log as uploaded
 echo "$NAME" >> "$UPLOADED_LOG"

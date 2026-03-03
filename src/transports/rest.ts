@@ -320,6 +320,13 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         }
 
 
+        // GET /tiktok verification file
+        if (method === "GET" && url.pathname.startsWith("/tiktok") && url.pathname.endsWith(".txt")) {
+          const fname = url.pathname.slice(1);
+          const f = Bun.file(process.cwd() + "/public/" + fname);
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/plain" } });
+        }
+
         // GET /terms — Terms of Service
         if (method === "GET" && url.pathname === "/terms") {
           const termsFile = Bun.file(process.cwd() + "/public/terms.html");
