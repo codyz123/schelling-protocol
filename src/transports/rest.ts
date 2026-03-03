@@ -327,6 +327,15 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/plain" } });
         }
 
+        // GET /auth/tiktok/callback — TikTok OAuth redirect
+        if (method === "GET" && url.pathname === "/auth/tiktok/callback") {
+          const code = url.searchParams.get("code") || "";
+          const state = url.searchParams.get("state") || "";
+          return new Response(`<!DOCTYPE html><html><body style="background:#0a0a0f;color:#14B8A6;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h2>Authorization Successful</h2><p>Code: <code>${code.slice(0,8)}...</code></p><p>You can close this tab.</p></div></body></html>`, {
+            headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+
         // GET /publish — content publisher UI
         if (method === "GET" && url.pathname === "/publish") {
           const f = Bun.file(process.cwd() + "/public/publish.html");
@@ -371,6 +380,11 @@ export function createRestServer(ctx: HandlerContext): RestServer {
             error: "Not found",
             hint: "Discovery endpoints: GET /, GET /docs, GET /demo, GET /openapi.yaml, GET /llms.txt, GET /health, GET /.well-known/agent.json, GET /.well-known/ai-plugin.json. All protocol operations use POST /schelling/{operation}."
           }, { status: 404, headers: corsHeaders });
+        }
+
+        // POST /webhooks/tiktok — TikTok webhook callback
+        if (method === "POST" && url.pathname === "/webhooks/tiktok") {
+          return Response.json({ success: true }, { headers: corsHeaders });
         }
 
         // All Schelling operations are POST
