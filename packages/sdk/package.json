@@ -1,18 +1,19 @@
 {
   "name": "@schelling/sdk",
-  "version": "3.0.0",
-  "description": "TypeScript SDK for the Schelling Protocol — AI agent coordination layer",
+  "version": "3.0.1",
+  "description": "TypeScript SDK for the Schelling Protocol \u2014 AI agent coordination layer",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun build src/index.ts --outdir dist --target node && bun build src/index.ts --outfile dist/index.cjs --target node --format cjs",
     "prepublishOnly": "bun run build"
   },
   "keywords": [

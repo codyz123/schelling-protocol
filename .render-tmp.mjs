@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
 
-const framesDir = '/tmp/schelling-video-why-not-api-60s-1772449818771/frames';
+const framesDir = '/tmp/schelling-video-delegation-model-60s-1772521205069/frames';
 const files = (await readdir(framesDir)).filter(f => f.endsWith('.html')).sort();
 console.log('Rendering ' + files.length + ' frames...');
 
