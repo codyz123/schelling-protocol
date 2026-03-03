@@ -1,0 +1,19 @@
+{
+  "name": "create-schelling-agent",
+  "version": "1.0.0",
+  "description": "Scaffold a Schelling Protocol agent in seconds",
+  "type": "module",
+  "bin": {
+    "create-schelling-agent": "./index.js"
+  },
+  "keywords": ["schelling", "ai-agents", "scaffold", "create", "coordination"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codyz123/schelling-protocol.git",
+    "directory": "packages/create-schelling-agent"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

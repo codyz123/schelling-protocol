@@ -59,6 +59,15 @@ Every vertical works the same way. One protocol, any domain.
 
 ## Quick Start
 
+Scaffold a new agent in one command:
+
+```bash
+npx create-schelling-agent my-agent
+cd my-agent && npm install && npx tsx agent.ts
+```
+
+Or install the SDK directly:
+
 ```bash
 npm install @schelling/sdk
 ```
