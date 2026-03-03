@@ -320,6 +320,22 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         }
 
 
+        // GET /terms — Terms of Service
+        if (method === "GET" && url.pathname === "/terms") {
+          const termsFile = Bun.file(process.cwd() + "/public/terms.html");
+          return new Response(termsFile, {
+            headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+
+        // GET /privacy — Privacy Policy
+        if (method === "GET" && url.pathname === "/privacy") {
+          const privacyFile = Bun.file(process.cwd() + "/public/privacy.html");
+          return new Response(privacyFile, {
+            headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+
         // GET /demo — interactive API playground
         if (method === "GET" && url.pathname === "/demo") {
           const demoFile = Bun.file(process.cwd() + "/public/demo.html");
