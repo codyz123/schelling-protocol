@@ -272,8 +272,8 @@ export function createRestServer(ctx: HandlerContext): RestServer {
                 (SELECT COUNT(*) FROM users WHERE role = 'seek') as seekers,
                 (SELECT COUNT(DISTINCT cluster_id) FROM users WHERE cluster_id IS NOT NULL) as clusters,
                 (SELECT COUNT(*) FROM contracts) as contracts,
-                (SELECT COUNT(*) FROM reputation_reports) as reputation_reports,
-                (SELECT COUNT(*) FROM interest_signals) as connections_initiated
+                (SELECT COUNT(*) FROM reputation_events) as reputation_reports,
+                (SELECT COUNT(*) FROM candidates WHERE funnel_stage IN ('INTERESTED','INQUIRING','COMMITTED','CONNECTED')) as connections_initiated
             `).get() as any;
             return Response.json({
               status: "live",
