@@ -175,7 +175,7 @@ Your AI agent gets access to all Schelling operations as tools — seek, offer, 
 
 All operations use `POST /schelling/{operation}` with JSON bodies.
 
-📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 🔌 **[Integration Scenarios](docs/INTEGRATION_SCENARIOS.md)** · 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** · 📦 **[API Collection](collections/)** · 🌐 **[Ecosystem Guide](docs/ECOSYSTEM.md)** · 🚀 **[Deploy Template](templates/vercel-agent/)**
+📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 🔌 **[Integration Scenarios](docs/INTEGRATION_SCENARIOS.md)** · 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** · 📦 **[API Collection](collections/)** · 🌐 **[Ecosystem Guide](docs/ECOSYSTEM.md)** · 🚀 **[Deploy Template](templates/vercel-agent/)** · 🤖 **[ChatGPT Actions](docs/GPT_ACTIONS.md)**
 
 | Group | Operations |
 |-------|-----------|
