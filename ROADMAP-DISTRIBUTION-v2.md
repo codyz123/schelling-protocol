@@ -2,15 +2,18 @@
 
 **Thesis:** Increasingly, people will use agents on their behalf to do almost everything. Developers and power users adopt first, but eventually it's everyone. Schelling is the coordination layer for this future.
 
-**Implication:** We're building infrastructure for a market that's forming right now. The strategy has two horizons:
-- **Horizon 1 (Now → 6 months):** Developers and agent builders. Prove the protocol works. Earn credibility.
-- **Horizon 2 (6-18 months):** Agent platforms and consumer products. Schelling becomes the invisible coordination layer inside products regular people use.
+**Implication:** This market is forming NOW, not in 2 years. The window to become the default coordination layer is months, not years. Every major agent framework is already shipping ad-hoc coordination primitives. If Schelling isn't the standard before they build their own, we lose.
 
-**Reality check:** Zero users. Solo founder. Limited time. Horizon 1 earns the right to play Horizon 2.
+**Strategy:** Run both tracks in parallel, not sequentially.
+
+- **Track 1 (Distribution):** Get embedded in every agent framework. Developers are the distribution channel.
+- **Track 2 (Product):** Build the protocol features consumer platforms will need — federation, universal identity, conflict resolution, session lifecycle. These take months to harden. Start NOW so when the wave hits, Schelling is the only thing robust enough.
+
+Power users first, but the product must already be consumer-grade when the mainstream arrives. We're not waiting for permission from Horizon 1 to build Horizon 2. We're building both at once.
 
 ---
 
-## Horizon 1: Developer Infrastructure (Months 1-6)
+## Track 1: Developer Distribution (Weeks 1-8)
 
 ### The Three Things (solo founder can do 3 things well)
 
@@ -88,9 +91,9 @@ Time-to-first-match under 2 minutes:
 
 ---
 
-## Horizon 2: Platform Layer (Months 6-18)
+## Track 2: Platform-Ready Product (Parallel, Weeks 1-12)
 
-Once developers prove the protocol works, the next phase is becoming invisible infrastructure inside consumer-facing products. This is where the thesis comes alive.
+Don't wait for developer adoption to validate. Build the platform-grade protocol NOW in parallel with distribution. When agent platforms come looking for coordination infrastructure — and they will, within months — Schelling needs to already be battle-tested.
 
 ### The Shift
 
@@ -108,7 +111,7 @@ Horizon 1 developers build agents for themselves. Horizon 2 is products that giv
 
 ### Enabling This Future
 
-These are Horizon 2 distribution actions (don't start until Horizon 1 metrics are hit):
+Start these immediately, in parallel with Track 1 distribution:
 
 **Platform Partnerships:**
 - [ ] Partner with 1-2 agent platform startups building consumer products (embed Schelling as their coordination backend)
@@ -129,7 +132,7 @@ These are Horizon 2 distribution actions (don't start until Horizon 1 metrics ar
 - Horizon 2: "The infrastructure layer that lets your agent negotiate on your behalf" (platform pitch)
 - Horizon 3 (years out): Regular people say "my agent handled it" and Schelling is the invisible rails, like TCP/IP is invisible when you browse the web.
 
-### Horizon 2 Metrics
+### Track 2 Metrics (Month 3+)
 
 | Metric | Month 6 | Month 12 | Month 18 |
 |--------|---------|----------|----------|
@@ -144,13 +147,13 @@ These are Horizon 2 distribution actions (don't start until Horizon 1 metrics ar
 
 The cold-start problem is different at each horizon:
 
-**Horizon 1 (developers):**
+**Track 1 (developers):**
 - Seed 20+ realistic agent profiles across 3-4 verticals
 - Ship 10 always-on demo agents that respond predictably (mock contracts, real coordination flows)
 - `create-schelling-agent` scaffolder generates a working pair (seeker + offerer) that coordinates locally
 - The network feels alive even when it's bootstrapped
 
-**Horizon 2 (platforms):**
+**Track 2 (platforms):**
 - First platform partner gets exclusive cluster access + co-marketing
 - Cross-network reputation portability (agents bring their Schelling reputation to new platforms)
 - Subsidize early coordination (free tier, generous rate limits) until network density hits critical mass
@@ -174,16 +177,18 @@ The cold-start problem is different at each horizon:
 
 ## Positioning
 
-**Horizon 1:** "Open coordination protocol for AI agents. Discovery, matching, negotiation, and reputation over plain HTTP."
+**Now:** "Open coordination protocol for AI agents. Discovery, matching, negotiation, and reputation over plain HTTP."
 
-**Horizon 2:** "The infrastructure that lets agents negotiate on behalf of people."
+**Soon (this year):** "The infrastructure that lets agents negotiate on behalf of people."
 
-**Horizon 3:** Invisible. Like how nobody says "I used TCP/IP today." They say "my agent found me a great plumber."
+**Inevitable:** Invisible. Like how nobody says "I used TCP/IP today." They say "my agent handled it." We're building for the inevitable, starting now.
 
 ---
 
-## The Uncomfortable Truth
+## The Bet
 
-If after 90 days of focused integration work, zero developers are using Schelling, the problem isn't distribution — it's timing. The protocol might be solving a problem that's 12-24 months away from mattering. That's fine. The thesis (agents doing everything for people) is directionally correct. The question is whether the infrastructure needs to exist *now* or whether it's premature.
+The bet is that agent-mediated coordination becomes mainstream faster than anyone expects. If we're right, being 6 months early with a robust protocol beats being on time with a half-built one. Every week of product development now is a week of compounding advantage.
 
-The distribution roadmap is designed to give you that signal as fast as possible.
+If after 90 days we have framework integrations but zero organic pull, we won't panic — we'll know the protocol is ready and the market is warming up. First-mover advantage means being ready before demand is obvious.
+
+The distribution roadmap gives us signal. The product roadmap gives us readiness. We run both.
