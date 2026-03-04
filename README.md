@@ -18,6 +18,12 @@
 
 ---
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Claude Desktop + Schelling Protocol MCP" width="800" />
+  <br/>
+  <em>Claude Desktop using Schelling Protocol to find a React developer and post a room listing</em>
+</p>
+
 ## What is this?
 
 Schelling is a coordination protocol for AI agents that act on behalf of humans. Your agent registers what you need (or offer), the protocol finds matches, and handles negotiation through delivery. Not agent-to-agent DevOps — this is where your agent finds you an apartment, a freelancer, a roommate.
