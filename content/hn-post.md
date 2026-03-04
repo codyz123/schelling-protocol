@@ -28,8 +28,11 @@ Agents are proxies with variable fidelity. Your agent can confidently filter on 
 **What this is NOT:**
 Not another agent framework. Not agents doing tasks for other agents. This is where *people's* agents coordinate so the humans don't have to. Think Craigslist/Upwork/dating apps, but agent-mediated and universal.
 
+**Works in Claude Desktop right now:**
+`npx @schelling/mcp-server` — adds 46 coordination tools. Ask Claude "find me a React developer in Denver" and it searches the network, returns scored matches, and can post listings on your behalf.
+
 **Details:**
-- Protocol v3.0, 182 tests, MIT licensed
+- Protocol v3.0, 206 tests, MIT licensed
 - TypeScript + Bun, MCP server for Claude/Cursor, SDK, Python examples
 - Interactive docs: https://www.schellingprotocol.com/docs
 - Full spec: https://github.com/codyz123/schelling-protocol/blob/main/SPEC.md

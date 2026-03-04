@@ -93,7 +93,16 @@ ROBOTS=$(curl -sf "$API/robots.txt")
 check "GET /robots.txt serves crawl rules" "$ROBOTS" 'User-agent'
 
 # 10. Clusters
-echo "── Clusters ──"
+echo "── Network Status ──
+STATUS=$(curl -sf "$API/status")
+if echo "$STATUS" | grep -q '"status":"live"'; then
+  AGENTS=$(echo "$STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin)['network']['total_agents'])")
+  check_pass "GET /status returns live (\ agents)"
+else
+  check_fail "GET /status returns live"
+fi
+
+── Clusters ──"
 CLUSTERS=$(curl -sf -X POST "$API/schelling/clusters" -H 'Content-Type: application/json' -d '{"action":"list"}')
 check "clusters list returns data" "$CLUSTERS" '"clusters"'
 

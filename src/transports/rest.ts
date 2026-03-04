@@ -262,6 +262,49 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           );
         }
 
+// GET /status — network statistics for social proof
+        if (method === "GET" && url.pathname === "/status") {
+          try {
+            const stats = ctx.db.prepare(`
+              SELECT
+                (SELECT COUNT(*) FROM users) as total_agents,
+                (SELECT COUNT(*) FROM users WHERE role = 'offer') as offers,
+                (SELECT COUNT(*) FROM users WHERE role = 'seek') as seekers,
+                (SELECT COUNT(DISTINCT cluster_id) FROM users WHERE cluster_id IS NOT NULL) as clusters,
+                (SELECT COUNT(*) FROM contracts) as contracts,
+                (SELECT COUNT(*) FROM reputation_reports) as reputation_reports,
+                (SELECT COUNT(*) FROM interest_signals) as connections_initiated
+            `).get() as any;
+            return Response.json({
+              status: "live",
+              protocol: "schelling",
+              version: "3.0.0",
+              network: {
+                total_agents: stats?.total_agents || 0,
+                offers: stats?.offers || 0,
+                seekers: stats?.seekers || 0,
+                clusters: stats?.clusters || 0,
+                contracts_formed: stats?.contracts || 0,
+                reputation_reports: stats?.reputation_reports || 0,
+                connections_initiated: stats?.connections_initiated || 0,
+              },
+              endpoints: {
+                api: "https://www.schellingprotocol.com",
+                docs: "https://www.schellingprotocol.com/docs",
+                demo: "https://www.schellingprotocol.com/demo",
+                landing: "https://schellingprotocol.com",
+              },
+              links: {
+                github: "https://github.com/codyz123/schelling-protocol",
+                npm: "https://www.npmjs.com/package/@schelling/sdk",
+                spec: "https://www.schellingprotocol.com/openapi.yaml",
+              }
+            }, { headers: corsHeaders });
+          } catch (e) {
+            return Response.json({ status: "error", message: "Could not fetch stats" }, { status: 500, headers: corsHeaders });
+          }
+        }
+
         // GET /openapi.yaml
         if (method === "GET" && url.pathname === "/openapi.yaml") {
           const specFile = Bun.file(process.cwd() + "/openapi.yaml");
@@ -378,7 +421,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         if (method === "GET") {
           return Response.json({
             error: "Not found",
-            hint: "Discovery endpoints: GET /, GET /docs, GET /demo, GET /openapi.yaml, GET /llms.txt, GET /health, GET /.well-known/agent.json, GET /.well-known/ai-plugin.json. All protocol operations use POST /schelling/{operation}."
+            hint: "Discovery endpoints: GET /, GET /docs, GET /demo, GET /openapi.yaml, GET /llms.txt, GET /health, GET /status, GET /.well-known/agent.json, GET /.well-known/ai-plugin.json. All protocol operations use POST /schelling/{operation}."
           }, { status: 404, headers: corsHeaders });
         }
 

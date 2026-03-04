@@ -1,0 +1,48 @@
+name: API Health
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        run: bash scripts/smoke-test.sh https://www.schellingprotocol.com
+        
+      - name: Test core lifecycle
+        run: |
+          set -e
+          API="https://www.schellingprotocol.com"
+          
+          # Onboard
+          TEMPLATE=$(curl -sf -X POST "$API/schelling/onboard" \
+            -H 'Content-Type: application/json' \
+            -d '{"natural_language": "Health check agent, testing lifecycle"}')
+          echo "✅ Onboard OK"
+          
+          # Quick seek
+          SEEK=$(curl -sf -X POST "$API/schelling/quick_seek" \
+            -H 'Content-Type: application/json' \
+            -d '{"intent": "developer in Denver"}')
+          TOKEN=$(echo "$SEEK" | python3 -c "import sys,json; print(json.load(sys.stdin)['user_token'])")
+          echo "✅ Quick seek OK (token: ${TOKEN:0:8}...)"
+          
+          # Search
+          RESULTS=$(curl -sf -X POST "$API/schelling/search" \
+            -H 'Content-Type: application/json' \
+            -d "{\"user_token\": \"$TOKEN\"}")
+          COUNT=$(echo "$RESULTS" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('candidates',[])))")
+          echo "✅ Search OK ($COUNT candidates)"
+          
+          # Clusters
+          CLUSTERS=$(curl -sf -X POST "$API/schelling/clusters")
+          CCOUNT=$(echo "$CLUSTERS" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('clusters',[])))")
+          echo "✅ Clusters OK ($CCOUNT clusters)"
+          
+          echo ""
+          echo "🟢 All lifecycle checks passed"
