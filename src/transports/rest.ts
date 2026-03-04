@@ -131,10 +131,52 @@ interface RestServer {
   stop(): void;
 }
 
+
+// ─── Rate Limiting ──────────────────────────────────────────────────
+class RateLimiter {
+  private requests: Map<string, number[]> = new Map();
+  private readonly windowMs: number;
+  private readonly maxRequests: number;
+
+  constructor(windowMs = 60_000, maxRequests = 60) {
+    this.windowMs = windowMs;
+    this.maxRequests = maxRequests;
+    // Clean up old entries every minute
+    setInterval(() => this.cleanup(), 60_000);
+  }
+
+  check(ip: string): { allowed: boolean; remaining: number; resetMs: number } {
+    const now = Date.now();
+    const timestamps = this.requests.get(ip) || [];
+    const windowStart = now - this.windowMs;
+    const recent = timestamps.filter(t => t > windowStart);
+
+    if (recent.length >= this.maxRequests) {
+      const resetMs = recent[0] + this.windowMs - now;
+      return { allowed: false, remaining: 0, resetMs };
+    }
+
+    recent.push(now);
+    this.requests.set(ip, recent);
+    return { allowed: true, remaining: this.maxRequests - recent.length, resetMs: this.windowMs };
+  }
+
+  private cleanup() {
+    const cutoff = Date.now() - this.windowMs;
+    for (const [ip, timestamps] of this.requests) {
+      const recent = timestamps.filter(t => t > cutoff);
+      if (recent.length === 0) this.requests.delete(ip);
+      else this.requests.set(ip, recent);
+    }
+  }
+}
+
 export function createRestServer(ctx: HandlerContext): RestServer {
   let server: any = null;
 
   async function start(port = 3000): Promise<void> {
+    const limiter = new RateLimiter(60_000, 120); // 120 requests per minute per IP
+
     server = serve({
       port,
       fetch: async (req: Request) => {
@@ -149,6 +191,30 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 
         if (method === "OPTIONS") {
           return new Response(null, { status: 204, headers: corsHeaders });
+        }
+
+        // Rate limiting (skip for health checks)
+        if (url.pathname !== "/health") {
+          const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+            || req.headers.get("x-real-ip")
+            || "unknown";
+          const rate = limiter.check(ip);
+          if (!rate.allowed) {
+            return Response.json({
+              error: "RATE_LIMITED",
+              message: "Too many requests. Please slow down.",
+              hint: "Limit: 120 requests per minute. Retry after a brief pause.",
+              retry_after_ms: rate.resetMs,
+            }, {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Retry-After": String(Math.ceil(rate.resetMs / 1000)),
+                "X-RateLimit-Limit": "120",
+                "X-RateLimit-Remaining": "0",
+              }
+            });
+          }
         }
 
         // GET / — always returns JSON. One clear directive: tell us what you do or need.
