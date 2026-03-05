@@ -220,10 +220,84 @@ export type FunnelMode = "bilateral" | "broadcast" | "group" | "auction";
 
 // ─── Capability ─────────────────────────────────────────────────────
 
+export interface StructuredCapability {
+  name: string;
+  version?: string;
+  input_types?: string[];
+  output_types?: string[];
+  sla?: {
+    max_latency_ms?: number;
+    availability?: number;
+  };
+  confidence?: number;
+}
+
 export interface Capability {
   capability: string;
   parameters?: Record<string, unknown>;
   confidence?: number;
+}
+
+// A capability entry can be a simple string, legacy Capability object, or structured
+export type CapabilityEntry = string | Capability | StructuredCapability;
+
+export interface CapabilityQuery {
+  name?: string;
+  input_types?: string[];
+  output_types?: string[];
+  min_confidence?: number;
+  min_availability?: number;
+}
+
+export function isStructuredCapability(c: unknown): c is StructuredCapability {
+  return typeof c === 'object' && c !== null && 'name' in c && typeof (c as any).name === 'string';
+}
+
+export function validateStructuredCapability(c: StructuredCapability): string | null {
+  if (!c.name || typeof c.name !== 'string') return 'Structured capability requires a name string';
+  if (c.sla) {
+    if (c.sla.max_latency_ms !== undefined && c.sla.max_latency_ms < 0)
+      return 'SLA max_latency_ms cannot be negative';
+    if (c.sla.availability !== undefined && (c.sla.availability < 0 || c.sla.availability > 1.0))
+      return 'SLA availability must be between 0 and 1.0';
+  }
+  if (c.confidence !== undefined && (c.confidence < 0 || c.confidence > 1.0))
+    return 'Confidence must be between 0 and 1.0';
+  return null;
+}
+
+export function matchesCapabilityQuery(caps: CapabilityEntry[], query: CapabilityQuery): boolean {
+  for (const cap of caps) {
+    if (matchesSingleCap(cap, query)) return true;
+  }
+  return false;
+}
+
+function matchesSingleCap(cap: CapabilityEntry, query: CapabilityQuery): boolean {
+  if (typeof cap === 'string') {
+    // String caps only match by name (keyword)
+    return query.name ? cap.toLowerCase().includes(query.name.toLowerCase()) : true;
+  }
+  if (isStructuredCapability(cap)) {
+    if (query.name && !cap.name.toLowerCase().includes(query.name.toLowerCase())) return false;
+    if (query.input_types && query.input_types.length > 0) {
+      if (!cap.input_types || !query.input_types.every(t => cap.input_types!.includes(t))) return false;
+    }
+    if (query.output_types && query.output_types.length > 0) {
+      if (!cap.output_types || !query.output_types.every(t => cap.output_types!.includes(t))) return false;
+    }
+    if (query.min_confidence !== undefined) {
+      if ((cap.confidence ?? 0) < query.min_confidence) return false;
+    }
+    if (query.min_availability !== undefined) {
+      if (!cap.sla?.availability || cap.sla.availability < query.min_availability) return false;
+    }
+    return true;
+  }
+  // Legacy Capability object — match by capability field
+  if (query.name && !cap.capability.toLowerCase().includes(query.name.toLowerCase())) return false;
+  if (query.min_confidence !== undefined && (cap.confidence ?? 0) < query.min_confidence) return false;
+  return true;
 }
 
 // ─── Agent Attestation ──────────────────────────────────────────────

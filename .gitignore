@@ -22,3 +22,4 @@ __pycache__/
 google client_secret_*.json
 schelling-protocol
 google*.json
+packages/mcp-server/.mcpregistry_*

@@ -15,6 +15,9 @@ import {
   orderTokens,
   evaluatePreference,
   VERIFICATION_TRUST,
+  matchesCapabilityQuery,
+  type CapabilityEntry,
+  type CapabilityQuery,
 } from "../types.js";
 
 // ─── Input / Output Types ────────────────────────────────────────────
@@ -24,6 +27,13 @@ export interface SearchInput {
   cluster_id?: string;
   top_k?: number;
   threshold?: number;
+  capability_query?: {
+    name?: string;
+    input_types?: string[];
+    output_types?: string[];
+    min_confidence?: number;
+    min_availability?: number;
+  };
 }
 
 export interface PreferenceSatisfactionDetail {
@@ -472,7 +482,7 @@ export async function handleSearch(
     allTraits: Trait[];
   }
 
-  const scored: ScoredCandidate[] = [];
+  let scored: ScoredCandidate[] = [];
 
   for (const candidate of candidateUsers) {
     // Load candidate traits
@@ -558,6 +568,18 @@ export async function handleSearch(
       satisfaction,
       publicTraits,
       allTraits: candidateTraits,
+    });
+  }
+
+  // ── 4b. Filter by capability_query if provided ────────────────────
+  if (input.capability_query) {
+    const query = input.capability_query as CapabilityQuery;
+    scored = scored.filter(c => {
+      const rawCaps = c.user.agent_capabilities;
+      if (!rawCaps) return false;
+      const caps: CapabilityEntry[] = JSON.parse(rawCaps);
+      if (caps.length === 0) return false;
+      return matchesCapabilityQuery(caps, query);
     });
   }
 

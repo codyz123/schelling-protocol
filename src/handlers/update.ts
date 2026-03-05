@@ -6,6 +6,7 @@ import type {
   Trait,
   Preference,
 } from "../types.js";
+import { isStructuredCapability, validateStructuredCapability } from "../types.js";
 import { validateIntentEmbedding } from "../types.js";
 
 // ─── Input / Output ────────────────────────────────────────────────
@@ -346,6 +347,13 @@ export async function handleUpdate(
       updateValues.push(input.agent_model);
     }
     if (input.agent_capabilities !== undefined) {
+      // Validate structured capabilities
+      for (const cap of input.agent_capabilities) {
+        if (isStructuredCapability(cap)) {
+          const err = validateStructuredCapability(cap);
+          if (err) return { ok: false, error: { code: "INVALID_INPUT", message: err } };
+        }
+      }
       updates.push("agent_capabilities = ?");
       updateValues.push(JSON.stringify(input.agent_capabilities));
     }

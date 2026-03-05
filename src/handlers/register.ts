@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { HandlerContext, HandlerResult, Trait, Preference } from "../types.js";
+import { isStructuredCapability, validateStructuredCapability } from "../types.js";
 import { PROTOCOL_VERSION, isValidClusterId, validateIntentEmbedding } from "../types.js";
 import { checkIdempotency, recordIdempotency } from "../core/funnel.js";
 
@@ -283,6 +284,16 @@ export async function handleRegister(
 
   // ── Execute atomic transaction ─────────────────────────────────
   let clusterCreated = false;
+
+  // Validate structured capabilities
+  if (input.agent_capabilities) {
+    for (const cap of input.agent_capabilities) {
+      if (isStructuredCapability(cap)) {
+        const err = validateStructuredCapability(cap);
+        if (err) return { ok: false, error: { code: "INVALID_INPUT", message: err } };
+      }
+    }
+  }
 
   const run = ctx.db.transaction(() => {
     // -- Cluster: check existence or create implicitly
