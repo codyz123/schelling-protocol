@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "schelling-crewai"
+version = "0.1.0"
+description = "CrewAI tools for the Schelling Protocol — multi-agent coordination network"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [{name = "Schelling Protocol", email = "hello@schellingprotocol.com"}]
+keywords = ["crewai", "agents", "coordination", "schelling", "mcp", "a2a"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "crewai>=0.80.0",
+    "crewai-tools>=0.14.0",
+    "httpx>=0.25.0",
+]
+
+[project.urls]
+Homepage = "https://schellingprotocol.com"
+Repository = "https://github.com/codyz123/schelling-protocol"
+Documentation = "https://github.com/codyz123/schelling-protocol/tree/main/packages/schelling-crewai"
+
+[tool.setuptools.packages.find]
+include = ["schelling_crewai*"]
