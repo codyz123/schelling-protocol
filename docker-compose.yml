@@ -1,14 +1,47 @@
+# Schelling Protocol — Docker Compose
+# Quick start: docker compose up
+# With Postgres: docker compose --profile postgres up
+
 services:
   server:
     build: .
     ports:
-      - "3000:3000"
+      - "${SCHELLING_PORT:-3000}:3000"
     environment:
       - SCHELLING_REST=true
       - SCHELLING_REST_PORT=3000
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - DATABASE_URL=${DATABASE_URL:-}
     volumes:
       - schelling-data:/app/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_DB: schelling
+      POSTGRES_USER: schelling
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-schelling}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schelling"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   schelling-data:
+  pgdata:
