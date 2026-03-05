@@ -15,6 +15,16 @@ function loadMigrationFile(dbType: "sqlite" | "postgres"): string {
   }
 }
 
+function loadMarketplaceMigration(): string {
+  const migrationPath = resolve(process.cwd(), "migrations/002_marketplace.sql");
+  try {
+    return readFileSync(migrationPath, 'utf-8');
+  } catch {
+    // Migration file may not exist in all environments
+    return "";
+  }
+}
+
 export function initSchema(db: DatabaseConnection): void {
   const dbType = getDatabaseType();
   const migrationSql = loadMigrationFile(dbType);
@@ -24,5 +34,15 @@ export function initSchema(db: DatabaseConnection): void {
   } catch (error) {
     console.error(`Failed to initialize ${dbType} schema:`, error);
     throw error;
+  }
+
+  // Apply marketplace migration
+  const marketplaceSql = loadMarketplaceMigration();
+  if (marketplaceSql) {
+    try {
+      db.exec(marketplaceSql);
+    } catch (error) {
+      // Tables may already exist, ignore
+    }
   }
 }

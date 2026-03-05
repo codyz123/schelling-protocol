@@ -695,6 +695,135 @@ server.tool(
   async (params) => mcpCall("delete_account", params),
 );
 
+// ── Marketplace ─────────────────────────────────────────────────────
+
+server.tool(
+  "schelling.marketplace_register",
+  "List your agent for hire on the marketplace. Set hourly/per-task rates, availability, and capabilities. Requires an existing registration.",
+  {
+    user_token: z.string().describe("Your bearer token"),
+    registration_id: z.string().optional().describe("Registration ID (defaults to user_token)"),
+    hourly_rate_cents: z.number().optional().describe("Hourly rate in cents (e.g. 5000 = $50/hr)"),
+    per_task_rate_cents: z.number().optional().describe("Per-task rate in cents"),
+    min_price_cents: z.number().optional().describe("Minimum price you'll accept (cents)"),
+    max_concurrent_jobs: z.number().optional().describe("Max simultaneous jobs (default 5)"),
+    auto_accept_below_cents: z.number().optional().describe("Auto-accept jobs below this price"),
+    capabilities: z.array(z.string()).optional().describe("Structured capabilities for search"),
+  },
+  async (params) => mcpCall("marketplace_register", params),
+);
+
+server.tool(
+  "schelling.marketplace_update",
+  "Update your marketplace listing — pricing, availability, capabilities.",
+  {
+    user_token: z.string().describe("Your bearer token"),
+    hourly_rate_cents: z.number().optional().describe("Updated hourly rate (cents)"),
+    per_task_rate_cents: z.number().optional().describe("Updated per-task rate (cents)"),
+    min_price_cents: z.number().optional().describe("Updated minimum price (cents)"),
+    max_concurrent_jobs: z.number().optional().describe("Updated max concurrent jobs"),
+    auto_accept_below_cents: z.number().optional().describe("Updated auto-accept threshold"),
+    availability: z.enum(["available", "busy", "offline"]).optional().describe("Update availability status"),
+    capabilities: z.array(z.string()).optional().describe("Updated capabilities"),
+  },
+  async (params) => mcpCall("marketplace_update", params),
+);
+
+server.tool(
+  "schelling.marketplace_search",
+  "Find agents for hire on the marketplace. Filter by price, capabilities, and availability.",
+  {
+    max_price_cents: z.number().optional().describe("Maximum price filter (cents)"),
+    capabilities: z.array(z.string()).optional().describe("Required capabilities"),
+    availability: z.enum(["available", "busy", "offline"]).optional().describe("Availability filter"),
+    max_results: z.number().optional().describe("Max results (default 20)"),
+  },
+  async (params) => mcpCall("marketplace_search", params),
+);
+
+server.tool(
+  "schelling.market_rates",
+  "Get market rate reference data — median, p25, p75 prices from completed negotiations.",
+  {
+    cluster_id: z.string().optional().describe("Filter by cluster"),
+  },
+  async (params) => mcpCall("market_rates", params),
+);
+
+server.tool(
+  "schelling.negotiate_start",
+  "Start a price negotiation with another agent. Deadline scales with bid amount.",
+  {
+    seeker_token: z.string().describe("Your bearer token (the buyer)"),
+    offerer_token: z.string().describe("The seller's token"),
+    initial_bid_cents: z.number().describe("Your opening bid in cents"),
+    job_description: z.string().optional().describe("Description of the work"),
+    cluster_id: z.string().optional().describe("Cluster context for market rate reference"),
+  },
+  async (params) => mcpCall("negotiate_start", params),
+);
+
+server.tool(
+  "schelling.negotiate_respond",
+  "Respond to a negotiation: counter-offer, accept, reject, or withdraw.",
+  {
+    session_id: z.string().describe("Negotiation session ID"),
+    agent_token: z.string().describe("Your bearer token"),
+    move_type: z.enum(["counter", "accept", "reject", "withdraw"]).describe("Your response type"),
+    price_cents: z.number().optional().describe("Counter-offer price (required for counter)"),
+    message: z.string().optional().describe("Optional message with your response"),
+  },
+  async (params) => mcpCall("negotiate_respond", params),
+);
+
+server.tool(
+  "schelling.negotiate_status",
+  "Check the current state of a negotiation — moves, time remaining, whose turn it is.",
+  {
+    session_id: z.string().describe("Negotiation session ID"),
+  },
+  async (params) => mcpCall("negotiate_status", params),
+);
+
+server.tool(
+  "schelling.stripe_onboard",
+  "Connect your Stripe account for payments. Returns an onboarding URL for Stripe Express setup.",
+  {
+    user_token: z.string().describe("Your bearer token"),
+  },
+  async (params) => mcpCall("stripe_onboard", params),
+);
+
+server.tool(
+  "schelling.wallet_topup",
+  "Add funds to your wallet. In dev mode, credits directly. In production, creates a Stripe PaymentIntent.",
+  {
+    user_token: z.string().describe("Your bearer token"),
+    amount_cents: z.number().describe("Amount to add in cents (e.g. 1000 = $10)"),
+    payment_method_id: z.string().optional().describe("Stripe payment method ID (production only)"),
+  },
+  async (params) => mcpCall("wallet_topup", params),
+);
+
+server.tool(
+  "schelling.wallet_balance",
+  "Check your wallet balances — client funds, worker earnings, and pending escrow.",
+  {
+    user_token: z.string().describe("Your bearer token"),
+  },
+  async (params) => mcpCall("wallet_balance", params),
+);
+
+server.tool(
+  "schelling.payout_request",
+  "Withdraw your earnings. Minimum payout: $1.00 (100 cents). Transfers to your connected Stripe account.",
+  {
+    user_token: z.string().describe("Your bearer token"),
+    amount_cents: z.number().optional().describe("Amount to withdraw (cents). Defaults to full balance."),
+  },
+  async (params) => mcpCall("payout_request", params),
+);
+
 // ─── Start Server ────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();

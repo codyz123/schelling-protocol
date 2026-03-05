@@ -52,6 +52,25 @@ import {
   handleToolInvoke,
   handleToolFeedback,
 } from "../handlers/tools.js";
+// ─── Marketplace imports ──────────────────────────────────────────────
+import {
+  handleMarketplaceRegister,
+  handleMarketplaceUpdate,
+  handleMarketplaceSearch,
+  handleMarketRates,
+} from "../services/marketplace.js";
+import { NegotiationService } from "../services/negotiation.js";
+import {
+  handleStripeOnboard,
+  handleWalletTopup,
+  handleWalletBalance,
+  handlePayoutRequest,
+  handleStripeWebhook,
+} from "../services/stripe.js";
+
+// ─── Feature Flags ──────────────────────────────────────────────────
+
+const MARKETPLACE_ENABLED = process.env.MARKETPLACE_ENABLED === "true";
 
 // ─── Operation router ───────────────────────────────────────────────
 
@@ -118,6 +137,66 @@ const OPERATIONS: Record<string, HandlerFn> = {
   delete_account: handleDeleteAccount,
 };
 
+// ─── Marketplace Operations (gated by MARKETPLACE_ENABLED) ──────────
+
+function marketplaceGate(handler: HandlerFn): HandlerFn {
+  return async (params, ctx) => {
+    if (!MARKETPLACE_ENABLED) {
+      return { ok: false, error: { code: "FEATURE_NOT_SUPPORTED", message: "Marketplace is not enabled. Set MARKETPLACE_ENABLED=true." } };
+    }
+    return handler(params, ctx);
+  };
+}
+
+function syncToAsync(fn: (params: any, ctx: HandlerContext) => HandlerResult<any>): HandlerFn {
+  return async (params, ctx) => fn(params, ctx);
+}
+
+// Negotiation handlers need to be created per-request since they use db from ctx
+function negotiateStart(params: any, ctx: HandlerContext): HandlerResult<any> {
+  try {
+    const svc = new NegotiationService(ctx.db);
+    const session = svc.start(params);
+    return { ok: true, data: session };
+  } catch (e: any) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: e.message } };
+  }
+}
+
+function negotiateRespond(params: any, ctx: HandlerContext): HandlerResult<any> {
+  try {
+    const svc = new NegotiationService(ctx.db);
+    const session = svc.respond(params);
+    return { ok: true, data: session };
+  } catch (e: any) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: e.message } };
+  }
+}
+
+function negotiateStatus(params: any, ctx: HandlerContext): HandlerResult<any> {
+  try {
+    const svc = new NegotiationService(ctx.db);
+    const result = svc.status(params.session_id);
+    return { ok: true, data: result };
+  } catch (e: any) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: e.message } };
+  }
+}
+
+const MARKETPLACE_OPERATIONS: Record<string, HandlerFn> = {
+  marketplace_register: marketplaceGate(syncToAsync(handleMarketplaceRegister)),
+  marketplace_update: marketplaceGate(syncToAsync(handleMarketplaceUpdate)),
+  marketplace_search: marketplaceGate(syncToAsync(handleMarketplaceSearch)),
+  market_rates: marketplaceGate(syncToAsync(handleMarketRates)),
+  negotiate_start: marketplaceGate(syncToAsync(negotiateStart)),
+  negotiate_respond: marketplaceGate(syncToAsync(negotiateRespond)),
+  negotiate_status: marketplaceGate(syncToAsync(negotiateStatus)),
+  stripe_onboard: marketplaceGate(handleStripeOnboard),
+  wallet_topup: marketplaceGate(handleWalletTopup),
+  wallet_balance: marketplaceGate(syncToAsync(handleWalletBalance)),
+  payout_request: marketplaceGate(handlePayoutRequest),
+};
+
 // Special routing for nested paths
 const NESTED_OPERATIONS: Record<string, HandlerFn> = {
   "tool/invoke": handleToolInvoke,
@@ -174,8 +253,32 @@ class RateLimiter {
 export function createRestServer(ctx: HandlerContext): RestServer {
   let server: any = null;
 
+  let deadlineInterval: ReturnType<typeof setInterval> | null = null;
+  let autoAcceptInterval: ReturnType<typeof setInterval> | null = null;
+
   async function start(port = 3000): Promise<void> {
     const limiter = new RateLimiter(60_000, 120); // 120 requests per minute per IP
+
+    // Marketplace: negotiation deadline checker (every 10s)
+    if (MARKETPLACE_ENABLED) {
+      deadlineInterval = setInterval(() => {
+        try {
+          const svc = new NegotiationService(ctx.db);
+          svc.expireDeadlines();
+        } catch {}
+      }, 10_000);
+
+      // Auto-accept deliverables after 7 days
+      autoAcceptInterval = setInterval(() => {
+        try {
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          ctx.db.prepare(
+            `UPDATE deliverables SET status = 'accepted', responded_at = datetime('now'), feedback = 'Auto-accepted after 7 days'
+             WHERE status = 'delivered' AND delivered_at < ?`,
+          ).run(sevenDaysAgo);
+        } catch {}
+      }, 60_000); // Check every minute
+    }
 
     server = serve({
       port,
@@ -496,6 +599,14 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return Response.json({ success: true }, { headers: corsHeaders });
         }
 
+        // POST /webhooks/stripe — Stripe webhook
+        if (method === "POST" && url.pathname === "/webhooks/stripe") {
+          if (!MARKETPLACE_ENABLED) {
+            return Response.json({ error: "Marketplace not enabled" }, { status: 404, headers: corsHeaders });
+          }
+          return handleStripeWebhook(req, ctx);
+        }
+
         // All Schelling operations are POST
         if (method !== "POST") {
           return Response.json(
@@ -538,7 +649,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         }
 
         // Check nested operations first (e.g., tool/invoke, tool/feedback)
-        const handler = NESTED_OPERATIONS[path] || OPERATIONS[path];
+        const handler = NESTED_OPERATIONS[path] || OPERATIONS[path] || MARKETPLACE_OPERATIONS[path];
         if (!handler) {
           return Response.json(
             {
@@ -575,6 +686,8 @@ export function createRestServer(ctx: HandlerContext): RestServer {
   }
 
   function stop(): void {
+    if (deadlineInterval) { clearInterval(deadlineInterval); deadlineInterval = null; }
+    if (autoAcceptInterval) { clearInterval(autoAcceptInterval); autoAcceptInterval = null; }
     if (server) {
       server.stop();
       server = null;
