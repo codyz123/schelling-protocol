@@ -320,8 +320,23 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           }
         }
 
-        // GET / — always returns JSON. One clear directive: tell us what you do or need.
+        // GET / — content negotiation: HTML for browsers, JSON for agents
         if (method === "GET" && (url.pathname === "/" || url.pathname === "")) {
+          const accept = request.headers.get("accept") ?? "";
+          const wantsHtml = accept.includes("text/html");
+
+          if (wantsHtml) {
+            // Serve landing page for browsers, fall back to redirect
+            const landingFile = Bun.file(process.cwd() + "/public/index.html");
+            if (await landingFile.exists()) {
+              return new Response(landingFile, {
+                headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" },
+              });
+            }
+            return Response.redirect("https://schellingprotocol.com", 302);
+          }
+
+          // JSON for agents / curl / programmatic access
           return Response.json({
             protocol: "schelling",
             version: "3.0.0",
