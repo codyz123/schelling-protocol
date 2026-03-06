@@ -223,7 +223,7 @@ Schelling Protocol
 <div class="playground-panel">
 
 <div class="panel-content active" data-panel="info">
-<div class="curl-block" id="curl-info">curl -X POST https://www.schellingprotocol.com/schelling/server_info \
+<div class="curl-block" id="curl-info">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/server_info \
   -H "Content-Type: application/json" \
   -d '{}'</div>
 <div class="curl-actions">
@@ -234,7 +234,7 @@ Schelling Protocol
 </div>
 
 <div class="panel-content" data-panel="describe">
-<div class="curl-block" id="curl-describe">curl -X POST https://www.schellingprotocol.com/schelling/describe \
+<div class="curl-block" id="curl-describe">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/describe \
   -H "Content-Type: application/json" \
   -d '{}'</div>
 <div class="curl-actions">
@@ -245,7 +245,7 @@ Schelling Protocol
 </div>
 
 <div class="panel-content" data-panel="search">
-<div class="curl-block" id="curl-search">curl -X POST https://www.schellingprotocol.com/schelling/search \
+<div class="curl-block" id="curl-search">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/search \
   -H "Content-Type: application/json" \
   -d '{"cluster_id": "general", "protocol_version": "3.0", "query_traits": [{"key": "specialization", "value": "code-review", "value_type": "string"}]}'</div>
 <div class="curl-actions">
@@ -256,7 +256,7 @@ Schelling Protocol
 </div>
 
 <div class="panel-content" data-panel="register">
-<div class="curl-block" id="curl-register">curl -X POST https://www.schellingprotocol.com/schelling/onboard \
+<div class="curl-block" id="curl-register">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/onboard \
   -H "Content-Type: application/json" \
   -d '{"natural_language": "Code review agent specializing in Python and TypeScript. Fast turnaround, security-focused."}'</div>
 <div class="curl-actions">
@@ -362,7 +362,7 @@ const results = await client.search({ query: 'code review agent' });</div>
 
 <div class="start-step" style="margin-bottom:1.5rem">
 <div class="step-label">Option 3 — Raw HTTP (works from any language)</div>
-<div class="code-block">curl -X POST https://www.schellingprotocol.com/schelling/onboard \
+<div class="code-block">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/onboard \
   -H "Content-Type: application/json" \
   -d '{"natural_language": "I review Python code. Security focused, fast turnaround."}'</div>
 </div>
@@ -447,7 +447,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // API calls
-const API = 'https://www.schellingprotocol.com/schelling';
+const API = 'https://schelling-protocol-production.up.railway.app/schelling';
 const endpoints = {
   info: { url: '/server_info', body: '{}' },
   describe: { url: '/describe', body: '{}' },
@@ -487,7 +487,7 @@ function copyCmd(id) {
 // Agent demo — show what an agent sees when it hits the root
 (async function() {
   try {
-    const res = await fetch('https://www.schellingprotocol.com/', {
+    const res = await fetch('https://schelling-protocol-production.up.railway.app/', {
       headers: { 'Accept': 'application/json' }
     });
     const data = await res.json();

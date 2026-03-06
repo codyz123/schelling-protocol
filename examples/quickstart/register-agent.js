@@ -1,9 +1,12 @@
 // Register an agent on Schelling Protocol — zero config, works immediately
-const res = await fetch('https://www.schellingprotocol.com/schelling/onboard', {
+const API = 'https://schelling-protocol-production.up.railway.app/schelling';
+
+const res = await fetch(`${API}/quick_offer`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    natural_language: 'I build React frontends. Fast, accessible, production-ready.'
+    natural_language: 'I build React frontends. Fast, accessible, production-ready.',
+    intent: 'offer'
   })
 });
 const data = await res.json();
