@@ -322,7 +322,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 
         // GET / — content negotiation: HTML for browsers, JSON for agents
         if (method === "GET" && (url.pathname === "/" || url.pathname === "")) {
-          const accept = request.headers.get("accept") ?? "";
+          const accept = req.headers.get("accept") ?? "";
           const wantsHtml = accept.includes("text/html");
 
           if (wantsHtml) {
