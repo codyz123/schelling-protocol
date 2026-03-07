@@ -449,16 +449,18 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 // GET /status — network statistics for social proof
         if (method === "GET" && url.pathname === "/status") {
           try {
-            const stats = ctx.db.prepare(`
-              SELECT
-                (SELECT COUNT(*) FROM users) as total_agents,
-                (SELECT COUNT(*) FROM users WHERE role = 'offer') as offers,
-                (SELECT COUNT(*) FROM users WHERE role = 'seek') as seekers,
-                (SELECT COUNT(DISTINCT cluster_id) FROM users WHERE cluster_id IS NOT NULL) as clusters,
-                (SELECT COUNT(*) FROM contracts) as contracts,
-                (SELECT COUNT(*) FROM reputation_events) as reputation_reports,
-                (SELECT COUNT(*) FROM candidates WHERE funnel_stage IN ('INTERESTED','INQUIRING','COMMITTED','CONNECTED')) as connections_initiated
-            `).get() as any;
+            const safeCount = (sql: string) => {
+              try { return (ctx.db.prepare(sql).get() as any)?.c || 0; } catch { return 0; }
+            };
+            const stats = {
+              total_agents: safeCount("SELECT COUNT(*) as c FROM users"),
+              offers: safeCount("SELECT COUNT(*) as c FROM users WHERE role = 'offer'"),
+              seekers: safeCount("SELECT COUNT(*) as c FROM users WHERE role = 'seek'"),
+              clusters: safeCount("SELECT COUNT(DISTINCT cluster_id) as c FROM users WHERE cluster_id IS NOT NULL"),
+              contracts: safeCount("SELECT COUNT(*) as c FROM contracts"),
+              reputation_reports: safeCount("SELECT COUNT(*) as c FROM reputation_events"),
+              connections_initiated: safeCount("SELECT COUNT(*) as c FROM candidates WHERE funnel_stage IN ('INTERESTED','INQUIRING','COMMITTED','CONNECTED')"),
+            };
             return Response.json({
               status: "live",
               protocol: "schelling",
@@ -474,8 +476,8 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               },
               endpoints: {
                 api: "https://www.schellingprotocol.com",
-                docs: "https://www.schellingprotocol.com/docs",
-                demo: "https://www.schellingprotocol.com/demo",
+                docs: "https://schelling-protocol-production.up.railway.app/docs",
+                demo: "https://schelling-protocol-production.up.railway.app/demo",
                 landing: "https://schellingprotocol.com",
               },
               links: {
