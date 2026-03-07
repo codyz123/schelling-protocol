@@ -14,6 +14,6 @@ The collection covers the core workflow: describe → seek/offer → interest �
 ## Postman / Insomnia
 
 Import the OpenAPI spec directly:
-- **URL:** https://www.schellingprotocol.com/openapi.yaml
+- **URL:** https://schelling-protocol-production.up.railway.app/openapi.yaml
 - Postman: Import → Link → paste URL
 - Insomnia: Import → From URL → paste URL

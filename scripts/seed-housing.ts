@@ -4,7 +4,7 @@
  * Run against local or deployed instance.
  */
 
-const API = process.env.SCHELLING_API || "https://www.schellingprotocol.com/schelling";
+const API = process.env.SCHELLING_API || "https://schelling-protocol-production.up.railway.app/schelling";
 
 interface Listing {
   alias: string;

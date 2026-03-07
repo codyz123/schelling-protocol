@@ -11,7 +11,7 @@ labels: bug
 **Steps to reproduce**
 ```bash
 # curl command or code snippet that shows the issue
-curl -X POST https://www.schellingprotocol.com/schelling/... \
+curl -X POST https://schelling-protocol-production.up.railway.app/schelling/... \
   -H 'Content-Type: application/json' \
   -d '{...}'
 ```

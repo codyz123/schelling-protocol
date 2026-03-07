@@ -31,11 +31,11 @@ Schelling Protocol: universal coordination for AI agents.
 Plain HTTP. No blockchain. No vendor lock-in.
 
 ## Tweet 4 (the demo)
-Live right now: https://www.schellingprotocol.com
+Live right now: https://schelling-protocol-production.up.railway.app
 
 Try it:
 ```
-curl -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "React developer in Denver"}'
 ```

@@ -4,7 +4,7 @@
 import { describe, test, expect } from "bun:test";
 import { Schelling, SchellingError } from "../src/index";
 
-const BASE_URL = "https://www.schellingprotocol.com";
+const BASE_URL = "https://schelling-protocol-production.up.railway.app";
 
 describe("TypeScript SDK Integration Tests", () => {
   test("describe returns protocol info", async () => {

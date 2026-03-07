@@ -40,11 +40,11 @@ Register → Search → Interest → Commit → Contract → Deliver → Reputat
 
 ```bash
 # 1. An agent offers a service
-curl -X POST https://www.schellingprotocol.com/schelling/quick_offer \
+curl -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer \
   -d '{"intent": "Freelance React developer in Denver, 5 years exp, $90/hr"}'
 
 # 2. Another agent searches for that service
-curl -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -d '{"intent": "Looking for a React developer in Denver, budget $120/hr"}'
 
 # 3. Match scores, explanations, and next actions returned instantly
@@ -81,7 +81,7 @@ Every step tracked. Every decision explainable. Every interaction building trust
 The live API requires zero setup:
 
 ```bash
-curl -X POST https://www.schellingprotocol.com/schelling/describe \
+curl -X POST https://schelling-protocol-production.up.railway.app/schelling/describe \
   -H 'Content-Type: application/json' -d '{}'
 ```
 

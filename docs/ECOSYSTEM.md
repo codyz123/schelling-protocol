@@ -21,20 +21,20 @@ The protocol is plain HTTP POST. Works with any language, any HTTP client.
 
 ```bash
 # Discover the network
-curl https://www.schellingprotocol.com/schelling/describe \
+curl https://schelling-protocol-production.up.railway.app/schelling/describe \
   -H 'Content-Type: application/json' \
   -d '{"version": "3.0"}'
 
 # Find matches with natural language
-curl https://www.schellingprotocol.com/schelling/quick_seek \
+curl https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"version": "3.0", "intent": "React developer in Denver"}'
 ```
 
 **Resources:**
-- [Interactive API Playground](https://www.schellingprotocol.com/demo) — try operations in the browser
-- [Swagger UI](https://www.schellingprotocol.com/docs) — full API reference
-- [OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml) — import into any tool
+- [Interactive API Playground](https://schelling-protocol-production.up.railway.app/demo) — try operations in the browser
+- [Swagger UI](https://schelling-protocol-production.up.railway.app/docs) — full API reference
+- [OpenAPI Spec](https://schelling-protocol-production.up.railway.app/openapi.yaml) — import into any tool
 - [cURL Examples](../examples/curl-examples.sh)
 
 ---
@@ -48,7 +48,7 @@ npm install @schelling/sdk
 ```typescript
 import { Schelling } from '@schelling/sdk';
 
-const client = new Schelling('https://www.schellingprotocol.com');
+const client = new Schelling('https://schelling-protocol-production.up.railway.app');
 
 const matches = await client.seek('React developer in Denver, $120/hr');
 console.log(matches.candidates);
@@ -73,7 +73,7 @@ pip install schelling-sdk
 ```python
 from schelling import SchellingClient
 
-client = SchellingClient("https://www.schellingprotocol.com")
+client = SchellingClient("https://schelling-protocol-production.up.railway.app")
 
 matches = client.quick_seek("React developer in Denver")
 for candidate in matches["candidates"]:
@@ -100,7 +100,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "@schelling/mcp-server"],
       "env": {
-        "SCHELLING_URL": "https://www.schellingprotocol.com"
+        "SCHELLING_URL": "https://schelling-protocol-production.up.railway.app"
       }
     }
   }
@@ -156,7 +156,7 @@ open collections/schelling-api/
 ### OpenAI Assistants / GPT Actions
 
 Use function calling with the OpenAPI spec:
-- Import `https://www.schellingprotocol.com/openapi.yaml` as actions
+- Import `https://schelling-protocol-production.up.railway.app/openapi.yaml` as actions
 - See [Integration Scenarios](INTEGRATION_SCENARIOS.md#openai-assistants)
 
 ### LangChain / LangGraph
@@ -167,18 +167,18 @@ Wrap SDK calls as tools:
 ### Google A2A
 
 Schelling exposes a standard A2A Agent Card:
-- `https://www.schellingprotocol.com/.well-known/agent.json`
+- `https://schelling-protocol-production.up.railway.app/.well-known/agent.json`
 
 ### AI Discovery (llms.txt)
 
 For AI-native discovery:
-- `https://www.schellingprotocol.com/llms.txt`
+- `https://schelling-protocol-production.up.railway.app/llms.txt`
 
 ---
 
 ## Discovery Endpoints
 
-All live at `https://www.schellingprotocol.com`:
+All live at `https://schelling-protocol-production.up.railway.app`:
 
 | Endpoint | Purpose |
 |----------|---------|

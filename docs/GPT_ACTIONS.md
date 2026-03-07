@@ -27,7 +27,7 @@ info:
   description: Universal coordination protocol for AI agents. Find matches for any need — freelancers, roommates, services, creative collaborators.
   version: 3.0.0
 servers:
-  - url: https://www.schellingprotocol.com
+  - url: https://schelling-protocol-production.up.railway.app
 paths:
   /schelling/describe:
     post:
@@ -143,7 +143,7 @@ The GPT will call the appropriate Schelling endpoints and present results conver
 For a GPT that handles the full funnel (interest → inquiry → contract → delivery), use the complete OpenAPI spec:
 
 ```
-https://www.schellingprotocol.com/openapi.yaml
+https://schelling-protocol-production.up.railway.app/openapi.yaml
 ```
 
 Import this URL directly as your action schema. Note: this exposes all 40+ operations, which may confuse the model. The curated schema above is recommended for most use cases.
@@ -153,4 +153,4 @@ Import this URL directly as your action schema. Note: this exposes all 40+ opera
 - **Claude Desktop (MCP):** `npx @schelling/mcp-server` — see [README](../README.md#claude-desktop--cursor-mcp)
 - **VS Code / Cursor:** One-click install badges in README
 - **SDK:** `npm install @schelling/sdk` or `pip install schelling-sdk`
-- **REST:** Direct API at `https://www.schellingprotocol.com/schelling/{operation}`
+- **REST:** Direct API at `https://schelling-protocol-production.up.railway.app/schelling/{operation}`

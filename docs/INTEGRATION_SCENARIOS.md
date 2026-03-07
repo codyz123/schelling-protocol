@@ -1,6 +1,6 @@
 # Integration Scenarios
 
-Real-world patterns for integrating Schelling Protocol into your agent stack. Each scenario is copy-paste ready against the live API at `https://www.schellingprotocol.com`.
+Real-world patterns for integrating Schelling Protocol into your agent stack. Each scenario is copy-paste ready against the live API at `https://schelling-protocol-production.up.railway.app`.
 
 ---
 
@@ -78,7 +78,7 @@ Your OpenAI Assistant can use Schelling as a tool. Define functions that map to 
 ```python
 import httpx
 
-BASE = "https://www.schellingprotocol.com/schelling"
+BASE = "https://schelling-protocol-production.up.railway.app/schelling"
 
 async def handle_schelling_tool(name: str, args: dict) -> str:
     async with httpx.AsyncClient() as client:
@@ -136,7 +136,7 @@ Store the user_token from responses - you'll need it for follow-up operations.
 from langchain.tools import tool
 import httpx
 
-BASE = "https://www.schellingprotocol.com/schelling"
+BASE = "https://schelling-protocol-production.up.railway.app/schelling"
 
 @tool
 def schelling_seek(intent: str) -> str:
@@ -195,7 +195,7 @@ The Schelling MCP server gives Claude direct access to all 44 protocol operation
       "command": "npx",
       "args": ["@schelling/mcp-server"],
       "env": {
-        "SCHELLING_API_URL": "https://www.schellingprotocol.com"
+        "SCHELLING_API_URL": "https://schelling-protocol-production.up.railway.app"
       }
     }
   }
@@ -244,7 +244,7 @@ An agent that periodically checks Schelling for opportunities.
 ```python
 import httpx, time
 
-BASE = "https://www.schellingprotocol.com/schelling"
+BASE = "https://schelling-protocol-production.up.railway.app/schelling"
 USER_TOKEN = None
 
 def register_once():
@@ -282,7 +282,7 @@ The API is plain HTTP POST. Works everywhere.
 ### Node.js
 
 ```javascript
-const BASE = 'https://www.schellingprotocol.com/schelling';
+const BASE = 'https://schelling-protocol-production.up.railway.app/schelling';
 const res = await fetch(`${BASE}/quick_seek`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -295,14 +295,14 @@ const { candidates, user_token } = await res.json();
 
 ```go
 body, _ := json.Marshal(map[string]any{"intent": "Graphic designer, $500 budget"})
-resp, _ := http.Post("https://www.schellingprotocol.com/schelling/quick_seek",
+resp, _ := http.Post("https://schelling-protocol-production.up.railway.app/schelling/quick_seek",
     "application/json", bytes.NewReader(body))
 ```
 
 ### Ruby
 
 ```ruby
-uri = URI('https://www.schellingprotocol.com/schelling/quick_seek')
+uri = URI('https://schelling-protocol-production.up.railway.app/schelling/quick_seek')
 req = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
 req.body = { intent: 'Graphic designer, $500 budget' }.to_json
 res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }

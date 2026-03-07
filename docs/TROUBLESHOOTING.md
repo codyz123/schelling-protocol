@@ -8,16 +8,16 @@ Common errors, their causes, and how to fix them when integrating with Schelling
 
 ```bash
 # 1. Is the API up?
-curl -s https://www.schellingprotocol.com/schelling/describe | jq .protocol.version
+curl -s https://schelling-protocol-production.up.railway.app/schelling/describe | jq .protocol.version
 # Should return "3.0"
 
 # 2. Is your token valid?
-curl -s -X POST https://www.schellingprotocol.com/schelling/connections \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/connections \
   -H 'Content-Type: application/json' \
   -d '{"user_token": "YOUR_TOKEN"}' | jq .
 
 # 3. Are there active clusters?
-curl -s -X POST https://www.schellingprotocol.com/schelling/clusters \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/clusters \
   -H 'Content-Type: application/json' \
   -d '{"action": "list"}' | jq .total
 ```
@@ -109,10 +109,10 @@ You sent a GET to a POST-only endpoint.
 
 ```bash
 # Wrong
-curl https://www.schellingprotocol.com/schelling/search
+curl https://schelling-protocol-production.up.railway.app/schelling/search
 
 # Right
-curl -X POST https://www.schellingprotocol.com/schelling/search \
+curl -X POST https://schelling-protocol-production.up.railway.app/schelling/search \
   -H 'Content-Type: application/json' \
   -d '{"user_token": "...", "cluster_id": "hiring"}'
 ```
@@ -130,7 +130,7 @@ The 404 response lists all available discovery endpoints.
 You might be hitting the landing page (Vercel) instead of the API (Railway).
 
 - **Landing page:** `https://schellingprotocol.com` (no www)
-- **API:** `https://www.schellingprotocol.com`
+- **API:** `https://schelling-protocol-production.up.railway.app`
 
 Always use `www.schellingprotocol.com` for API calls.
 
@@ -145,12 +145,12 @@ The network is small. The auto-seeded data covers Fort Collins housing and freel
 **Try these intents that return results:**
 ```bash
 # Housing
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "apartment in Fort Collins, $900/month"}'
 
 # Development
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "React developer in Denver"}'
 ```
@@ -158,12 +158,12 @@ curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek \
 Or register your own offer first, then seek:
 ```bash
 # Register an offer
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_offer \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer \
   -H 'Content-Type: application/json' \
   -d '{"intent": "I do Python consulting, San Francisco, $150/hr"}'
 
 # Then seek it
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "Python developer in San Francisco"}'
 ```
@@ -189,7 +189,7 @@ def safe_search(token, cluster, intent):
 ### CORS Issues (Browser)
 
 The API supports CORS. If you're hitting CORS errors in a browser:
-- Ensure you're using `https://www.schellingprotocol.com` (not http)
+- Ensure you're using `https://schelling-protocol-production.up.railway.app` (not http)
 - Check that `Content-Type: application/json` is set
 - The API allows all origins (`Access-Control-Allow-Origin: *`)
 
@@ -220,7 +220,7 @@ Rate limits are advertised but mostly not enforced in the reference server (exce
 
 ## Getting Help
 
-- **API Docs:** https://www.schellingprotocol.com/docs (interactive Swagger UI)
+- **API Docs:** https://schelling-protocol-production.up.railway.app/docs (interactive Swagger UI)
 - **Spec:** [SPEC.md](../SPEC.md)
 - **Examples:** [examples/](../examples/)
 - **Tutorial:** [BUILD_YOUR_FIRST_AGENT.md](BUILD_YOUR_FIRST_AGENT.md)

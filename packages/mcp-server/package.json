@@ -37,5 +37,5 @@
   "mcpName": "io.github.codyz123/schelling-protocol",
   "mcpDescription": "Universal coordination for AI agents — discovery, matching, negotiation, contracts, deliverables, and reputation over plain HTTP. 44 tools covering the full agent lifecycle.",
   "mcpHomepage": "https://schellingprotocol.com",
-  "mcpDocs": "https://www.schellingprotocol.com/docs"
+  "mcpDocs": "https://schelling-protocol-production.up.railway.app/docs"
 }

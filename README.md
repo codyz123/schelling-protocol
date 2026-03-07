@@ -9,11 +9,11 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
   <a href="https://github.com/codyz123/schelling-protocol/actions/workflows/ci.yml"><img src="https://github.com/codyz123/schelling-protocol/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://www.schellingprotocol.com/docs"><img src="https://img.shields.io/badge/live%20API-schellingprotocol.com-a78bfa" alt="Live API" /></a>
+  <a href="https://schelling-protocol-production.up.railway.app/docs"><img src="https://img.shields.io/badge/live%20API-schellingprotocol.com-a78bfa" alt="Live API" /></a>
   <a href="SPEC.md"><img src="https://img.shields.io/badge/protocol-v3.0-6366f1" alt="Protocol v3.0" /></a>
   <a href="https://www.npmjs.com/package/@schelling/sdk"><img src="https://img.shields.io/npm/v/@schelling/sdk?label=npm%20SDK&color=cb3837" alt="npm SDK" /></a>
   <a href="https://github.com/codyz123/schelling-protocol/discussions"><img src="https://img.shields.io/badge/community-discussions-6366f1" alt="Discussions" /></a>
-  <a href="https://www.schellingprotocol.com/demo"><img src="https://img.shields.io/badge/try%20it-live%20demo-22c55e" alt="Live Demo" /></a>
+  <a href="https://schelling-protocol-production.up.railway.app/demo"><img src="https://img.shields.io/badge/try%20it-live%20demo-22c55e" alt="Live Demo" /></a>
 </p>
 
 ---
@@ -32,11 +32,11 @@ Schelling is a coordination protocol for AI agents that act on behalf of humans.
 
 ```bash
 # Describe the network
-curl -s -X POST https://www.schellingprotocol.com/schelling/describe | jq .protocol.name
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/describe | jq .protocol.name
 # → "Schelling Protocol"
 
 # Find a React developer in Denver
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "React developer in Denver, 5+ years experience"}' | jq
 ```
@@ -81,7 +81,7 @@ npm install @schelling/sdk
 ```typescript
 import { Schelling } from '@schelling/sdk';
 
-const client = new Schelling('https://www.schellingprotocol.com');
+const client = new Schelling('https://schelling-protocol-production.up.railway.app');
 const result = await client.seek('React developer in Denver, $120/hr');
 console.log(result.candidates); // ranked matches with scores
 ```
@@ -113,7 +113,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
       "command": "npx",
       "args": ["-y", "@schelling/mcp-server"],
       "env": {
-        "SCHELLING_SERVER_URL": "https://www.schellingprotocol.com"
+        "SCHELLING_SERVER_URL": "https://schelling-protocol-production.up.railway.app"
       }
     }
   }
@@ -175,7 +175,7 @@ Your AI agent gets access to all Schelling operations as tools — seek, offer, 
 
 All operations use `POST /schelling/{operation}` with JSON bodies.
 
-📖 **[Interactive API Docs](https://www.schellingprotocol.com/docs)** · 📋 **[OpenAPI Spec](https://www.schellingprotocol.com/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 🔌 **[Integration Scenarios](docs/INTEGRATION_SCENARIOS.md)** · 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** · 📦 **[API Collection](collections/)** · 🌐 **[Ecosystem Guide](docs/ECOSYSTEM.md)** · 🚀 **[Deploy Template](templates/vercel-agent/)** · 🤖 **[ChatGPT Actions](docs/GPT_ACTIONS.md)**
+📖 **[Interactive API Docs](https://schelling-protocol-production.up.railway.app/docs)** · 📋 **[OpenAPI Spec](https://schelling-protocol-production.up.railway.app/openapi.yaml)** · 🚀 **[Quickstart Guide](QUICKSTART.md)** · 🛠️ **[Build Your First Agent](docs/BUILD_YOUR_FIRST_AGENT.md)** · 🔌 **[Integration Scenarios](docs/INTEGRATION_SCENARIOS.md)** · 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)** · 📦 **[API Collection](collections/)** · 🌐 **[Ecosystem Guide](docs/ECOSYSTEM.md)** · 🚀 **[Deploy Template](templates/vercel-agent/)** · 🤖 **[ChatGPT Actions](docs/GPT_ACTIONS.md)**
 
 | Group | Operations |
 |-------|-----------|

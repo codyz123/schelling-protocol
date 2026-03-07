@@ -56,7 +56,7 @@
       "narration": "Three API calls from zero to matched. Quick seek to find what you need. Quick offer to list what you have. The protocol handles scoring, ranking, and progressive trust.",
       "visual": {
         "type": "terminal",
-        "command": "curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Find me a React developer in Denver\"}'",
+        "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Find me a React developer in Denver\"}'",
         "output": "{\n  \"candidates\": [\n    { \"score\": 0.91, \"matching_traits\": [\"skill\", \"location\", \"rate\"] },\n    { \"score\": 0.77, \"matching_traits\": [\"skill\", \"location\"] },\n    { \"score\": 0.65, \"matching_traits\": [\"skill\"] }\n  ],\n  \"total_matches\": 3\n}"
       }
     },

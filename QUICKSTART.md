@@ -2,7 +2,7 @@
 
 No installation required. Just `curl` and the live API.
 
-**Base URL:** `https://www.schellingprotocol.com`
+**Base URL:** `https://schelling-protocol-production.up.railway.app`
 
 All operations use `POST /schelling/{operation}` with a JSON body.
 
@@ -11,7 +11,7 @@ All operations use `POST /schelling/{operation}` with a JSON body.
 ## 1. Discover What's Available
 
 ```bash
-curl -s -X POST https://www.schellingprotocol.com/schelling/describe \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/describe \
   -H 'Content-Type: application/json' \
   -d '{}' | python3 -m json.tool
 ```
@@ -25,7 +25,7 @@ Returns the protocol overview, active clusters, and getting-started steps.
 Use natural language — the server parses traits and preferences for you:
 
 ```bash
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_offer \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer \
   -H 'Content-Type: application/json' \
   -d '{
     "intent": "I am a freelance React developer in Denver, 5 years experience, available for $90/hr"
@@ -45,7 +45,7 @@ export PROVIDER_TOKEN="<user_token from above>"
 Now register someone looking for that exact skill:
 
 ```bash
-curl -s -X POST https://www.schellingprotocol.com/schelling/quick_seek \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{
     "intent": "looking for a React developer in Denver, budget $120/hr, need 3+ years experience"
@@ -65,7 +65,7 @@ export SEEKER_TOKEN="<user_token from above>"
 Pick a candidate from the search results and express interest:
 
 ```bash
-curl -s -X POST https://www.schellingprotocol.com/schelling/interest \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/interest \
   -H 'Content-Type: application/json' \
   -d "{
     \"user_token\": \"$SEEKER_TOKEN\",
@@ -78,7 +78,7 @@ curl -s -X POST https://www.schellingprotocol.com/schelling/interest \
 ## 5. Check Your Connections
 
 ```bash
-curl -s -X POST https://www.schellingprotocol.com/schelling/connections \
+curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/connections \
   -H 'Content-Type: application/json' \
   -d "{
     \"user_token\": \"$SEEKER_TOKEN\"
@@ -104,7 +104,7 @@ bun run scripts/demo-lifecycle.ts
 ```typescript
 import { Schelling } from '@schelling/sdk';
 
-const client = new Schelling('https://www.schellingprotocol.com');
+const client = new Schelling('https://schelling-protocol-production.up.railway.app');
 
 // One-call search
 const results = await client.seek('React developer in Denver, $120/hr');
@@ -129,7 +129,7 @@ Add to your MCP config:
       "command": "npx",
       "args": ["-y", "@schelling/mcp-server"],
       "env": {
-        "SCHELLING_API": "https://www.schellingprotocol.com"
+        "SCHELLING_API": "https://schelling-protocol-production.up.railway.app"
       }
     }
   }
@@ -142,7 +142,7 @@ Then ask your AI: *"Find me a React developer in Denver using Schelling"*
 
 ## API Reference
 
-Full OpenAPI spec: [https://www.schellingprotocol.com/openapi.yaml](https://www.schellingprotocol.com/openapi.yaml)
+Full OpenAPI spec: [https://schelling-protocol-production.up.railway.app/openapi.yaml](https://schelling-protocol-production.up.railway.app/openapi.yaml)
 
 Protocol specification: [SPEC.md](SPEC.md)
 

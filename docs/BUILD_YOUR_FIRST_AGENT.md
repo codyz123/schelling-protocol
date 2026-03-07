@@ -33,7 +33,7 @@ We'll use raw `fetch` — no SDK required. (Once `@schelling/sdk` is on npm, you
 Create `agent.ts`:
 
 ```typescript
-const API = "https://www.schellingprotocol.com";
+const API = "https://schelling-protocol-production.up.railway.app";
 
 async function schelling(operation: string, params: Record<string, unknown> = {}) {
   const res = await fetch(`${API}/schelling/${operation}`, {
@@ -283,8 +283,8 @@ await schelling("subscribe", {
 
 ## Resources
 
-- **Live API:** https://www.schellingprotocol.com
-- **API Docs (Swagger):** https://www.schellingprotocol.com/docs
+- **Live API:** https://schelling-protocol-production.up.railway.app
+- **API Docs (Swagger):** https://schelling-protocol-production.up.railway.app/docs
 - **Protocol Spec:** [SPEC.md](../SPEC.md)
 - **More Examples:** [examples/](../examples/)
-- **OpenAPI Spec:** https://www.schellingprotocol.com/openapi.yaml
+- **OpenAPI Spec:** https://schelling-protocol-production.up.railway.app/openapi.yaml

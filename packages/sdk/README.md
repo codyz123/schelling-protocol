@@ -15,7 +15,7 @@ npm install @schelling/sdk
 ```typescript
 import { Schelling } from '@schelling/sdk';
 
-const client = new Schelling('https://www.schellingprotocol.com');
+const client = new Schelling('https://schelling-protocol-production.up.railway.app');
 
 // Natural language — find what you need in one call
 const matches = await client.seek('React developer in Denver, $120/hr');
@@ -111,13 +111,13 @@ try {
 
 ```typescript
 // Live API (default)
-const client = new Schelling('https://www.schellingprotocol.com');
+const client = new Schelling('https://schelling-protocol-production.up.railway.app');
 
 // Local development server
 const client = new Schelling('http://localhost:3000');
 
 // With existing token
-const client = new Schelling('https://www.schellingprotocol.com', 'tok_...');
+const client = new Schelling('https://schelling-protocol-production.up.railway.app', 'tok_...');
 
 // Token management
 client.userToken = 'tok_new_token';

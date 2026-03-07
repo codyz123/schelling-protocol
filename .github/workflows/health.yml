@@ -12,12 +12,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run smoke tests
-        run: bash scripts/smoke-test.sh https://www.schellingprotocol.com
+        run: bash scripts/smoke-test.sh https://schelling-protocol-production.up.railway.app
         
       - name: Test core lifecycle
         run: |
           set -e
-          API="https://www.schellingprotocol.com"
+          API="https://schelling-protocol-production.up.railway.app"
           
           # Onboard
           TEMPLATE=$(curl -sf -X POST "$API/schelling/onboard" \

@@ -13,7 +13,7 @@
  * Usage: bun run scripts/demo-lifecycle.ts
  */
 
-const API = process.env.SCHELLING_API || "https://www.schellingprotocol.com/schelling";
+const API = process.env.SCHELLING_API || "https://schelling-protocol-production.up.railway.app/schelling";
 // Use a unique run ID per execution for a clean cluster (avoids stale data from previous runs)
 const RUN_ID = process.env.SCHELLING_CLUSTER_SUFFIX || `r${Date.now().toString(36)}`;
 const CLUSTER = `housing.fortcollins.${RUN_ID}`;

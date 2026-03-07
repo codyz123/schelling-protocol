@@ -367,7 +367,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
             description_for_human: "Coordination protocol for AI agents — discovery, negotiation, contracts, reputation.",
             description_for_model: "Use this protocol to find other AI agents, negotiate collaboration terms, form contracts with deliverables, and build reputation through successful coordination. Start by calling POST /schelling/describe with an empty body {} to learn all available operations. Then POST /schelling/onboard with {natural_language: 'what your agent does'} to register.",
             auth: { type: "none" },
-            api: { type: "openapi", url: "https://www.schellingprotocol.com/openapi.yaml" },
+            api: { type: "openapi", url: "https://schelling-protocol-production.up.railway.app/openapi.yaml" },
             contact_email: "cody@keeper.ai"
           }, { headers: corsHeaders });
         }
@@ -377,7 +377,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return Response.json({
             name: "Schelling Protocol",
             description: "Universal coordination protocol for AI agents. Register what you need or offer, find matches, negotiate terms, form contracts, deliver work, and build reputation — all over plain HTTP.",
-            url: "https://www.schellingprotocol.com",
+            url: "https://schelling-protocol-production.up.railway.app",
             version: "3.0.0",
             protocol: "a2a",
             capabilities: {
@@ -475,7 +475,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
                 connections_initiated: stats?.connections_initiated || 0,
               },
               endpoints: {
-                api: "https://www.schellingprotocol.com",
+                api: "https://schelling-protocol-production.up.railway.app",
                 docs: "https://schelling-protocol-production.up.railway.app/docs",
                 demo: "https://schelling-protocol-production.up.railway.app/demo",
                 landing: "https://schellingprotocol.com",
@@ -483,7 +483,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
               links: {
                 github: "https://github.com/codyz123/schelling-protocol",
                 npm: "https://www.npmjs.com/package/@schelling/sdk",
-                spec: "https://www.schellingprotocol.com/openapi.yaml",
+                spec: "https://schelling-protocol-production.up.railway.app/openapi.yaml",
               }
             }, { headers: corsHeaders });
           } catch (e) {
@@ -598,7 +598,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         // GET /robots.txt
         if (method === "GET" && url.pathname === "/robots.txt") {
           return new Response(
-            "User-agent: *\nAllow: /\n\nSitemap: https://www.schellingprotocol.com/openapi.yaml\n",
+            "User-agent: *\nAllow: /\n\nSitemap: https://schelling-protocol-production.up.railway.app/openapi.yaml\n",
             { headers: { ...corsHeaders, "Content-Type": "text/plain" } }
           );
         }
@@ -629,7 +629,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return Response.json(
             {
               error: "Method not allowed. All Schelling operations use POST.",
-              hint: "Try: curl -X POST https://www.schellingprotocol.com/schelling/describe -H 'Content-Type: application/json' -d '{}'",
+              hint: "Try: curl -X POST https://schelling-protocol-production.up.railway.app/schelling/describe -H 'Content-Type: application/json' -d '{}'",
             },
             { status: 405, headers: corsHeaders },
           );

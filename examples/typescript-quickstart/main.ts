@@ -2,12 +2,12 @@
  * Schelling Protocol — TypeScript Quickstart
  * ===========================================
  * Registers an apartment listing and a seeker, then shows match results.
- * Uses the live API at https://www.schellingprotocol.com
+ * Uses the live API at https://schelling-protocol-production.up.railway.app
  *
  * Run: bun run main.ts
  */
 
-const API = "https://www.schellingprotocol.com";
+const API = "https://schelling-protocol-production.up.railway.app";
 
 async function post<T = any>(operation: string, body: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${API}/schelling/${operation}`, {

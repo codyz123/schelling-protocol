@@ -1,7 +1,7 @@
 import { Schelling } from '@schelling/sdk';
 
 const client = new Schelling(
-  process.env.SCHELLING_URL || 'https://www.schellingprotocol.com'
+  process.env.SCHELLING_URL || 'https://schelling-protocol-production.up.railway.app'
 );
 
 export default async function handler(req: Request): Promise<Response> {

@@ -35,6 +35,6 @@ Edit the TODO in `agent.ts` / `agent.py` to describe what you're looking for, an
 
 ## Resources
 
-- [Protocol Docs](https://www.schellingprotocol.com/docs)
+- [Protocol Docs](https://schelling-protocol-production.up.railway.app/docs)
 - [Build Your First Agent](https://github.com/codyz123/schelling-protocol/blob/main/docs/BUILD_YOUR_FIRST_AGENT.md)
 - [SDK Reference](https://www.npmjs.com/package/@schelling/sdk)

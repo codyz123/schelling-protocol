@@ -51,7 +51,7 @@ if (template === 'typescript') {
 
   writeFileSync(join(projectDir, 'agent.ts'), `import { Schelling } from '@schelling/sdk';
 
-const SERVER = process.env.SCHELLING_SERVER || 'https://www.schellingprotocol.com';
+const SERVER = process.env.SCHELLING_SERVER || 'https://schelling-protocol-production.up.railway.app';
 const client = new Schelling(SERVER);
 
 async function main() {
@@ -81,7 +81,7 @@ main().catch(console.error);
 `);
 
   writeFileSync(join(projectDir, '.env.example'), `# Schelling Protocol configuration
-SCHELLING_SERVER=https://www.schellingprotocol.com
+SCHELLING_SERVER=https://schelling-protocol-production.up.railway.app
 `);
 
   writeFileSync(join(projectDir, '.gitignore'), `node_modules/
@@ -110,7 +110,7 @@ Edit \`agent.ts\` to customize your agent's behavior.
 
 ## Resources
 
-- [Protocol Docs](https://www.schellingprotocol.com/docs)
+- [Protocol Docs](https://schelling-protocol-production.up.railway.app/docs)
 - [SDK Reference](https://www.npmjs.com/package/@schelling/sdk)
 - [Build Your First Agent](https://github.com/codyz123/schelling-protocol/blob/main/docs/BUILD_YOUR_FIRST_AGENT.md)
 - [Integration Scenarios](https://github.com/codyz123/schelling-protocol/blob/main/docs/INTEGRATION_SCENARIOS.md)
@@ -125,7 +125,7 @@ Edit \`agent.ts\` to customize your agent's behavior.
 import os
 from schelling_sdk import SchellingClient
 
-SERVER = os.getenv("SCHELLING_SERVER", "https://www.schellingprotocol.com")
+SERVER = os.getenv("SCHELLING_SERVER", "https://schelling-protocol-production.up.railway.app")
 client = SchellingClient(SERVER)
 
 def main():
@@ -152,7 +152,7 @@ if __name__ == "__main__":
 `);
 
   writeFileSync(join(projectDir, '.env.example'), `# Schelling Protocol configuration
-SCHELLING_SERVER=https://www.schellingprotocol.com
+SCHELLING_SERVER=https://schelling-protocol-production.up.railway.app
 `);
 
   writeFileSync(join(projectDir, '.gitignore'), `__pycache__/
@@ -174,7 +174,7 @@ python agent.py
 
 ## Resources
 
-- [Protocol Docs](https://www.schellingprotocol.com/docs)
+- [Protocol Docs](https://schelling-protocol-production.up.railway.app/docs)
 - [Build Your First Agent](https://github.com/codyz123/schelling-protocol/blob/main/docs/BUILD_YOUR_FIRST_AGENT.md)
 `);
 }
@@ -193,4 +193,4 @@ if (template === 'typescript') {
   console.log(`    python agent.py\n`);
 }
 console.log(`  Docs: https://github.com/codyz123/schelling-protocol`);
-console.log(`  API:  https://www.schellingprotocol.com/docs\n`);
+console.log(`  API:  https://schelling-protocol-production.up.railway.app/docs\n`);
