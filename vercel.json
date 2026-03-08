@@ -1,18 +1,40 @@
 {
   "rewrites": [
-    { "source": "/schelling/:path*", "destination": "https://schelling-protocol-production.up.railway.app/schelling/:path*" },
-    { "source": "/openapi.yaml", "destination": "https://schelling-protocol-production.up.railway.app/openapi.yaml" },
-    { "source": "/health", "destination": "https://schelling-protocol-production.up.railway.app/health" },
-    { "source": "/status", "destination": "https://schelling-protocol-production.up.railway.app/status" },
-    { "source": "/.well-known/:path*", "destination": "https://schelling-protocol-production.up.railway.app/.well-known/:path*" }
+    {
+      "source": "/schelling/:path*",
+      "destination": "https://schelling-protocol-production.up.railway.app/schelling/:path*"
+    },
+    {
+      "source": "/openapi.yaml",
+      "destination": "https://schelling-protocol-production.up.railway.app/openapi.yaml"
+    },
+    {
+      "source": "/health",
+      "destination": "https://schelling-protocol-production.up.railway.app/health"
+    },
+    {
+      "source": "/status",
+      "destination": "https://schelling-protocol-production.up.railway.app/status"
+    },
+    {
+      "source": "/.well-known/:path*",
+      "destination": "https://schelling-protocol-production.up.railway.app/.well-known/:path*"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
       ]
     }
-  ]
+  ],
+  "cleanUrls": true
 }
