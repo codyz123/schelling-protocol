@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "schelling": {
+      "command": "npx",
+      "args": ["-y", "@schelling/mcp-server"],
+      "env": {
+        "SCHELLING_API_URL": "https://schelling-protocol-production.up.railway.app"
+      }
+    }
+  }
+}
