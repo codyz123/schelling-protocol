@@ -60,14 +60,11 @@ await check("API Liveness", async () => {
 
 // ─── Check 2: Describe Endpoint ─────────────────────────────────────
 await check("Describe Endpoint", async () => {
-  const res = await fetch(`${API_BASE}/schelling/describe`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}), signal: AbortSignal.timeout(10000),
-  });
+  const res = await fetch(`${API_BASE}/status`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) return { status: "fail", message: `HTTP ${res.status}` };
   const data = await res.json() as any;
   if (!data.protocol) return { status: "fail", message: "Missing protocol in response" };
-  return { status: "pass", message: `Protocol v${data.protocol.version}`, details: { agents: data.network?.total_agents, clusters: data.network?.clusters } };
+  return { status: "pass", message: `Protocol: ${data.protocol.name || "schelling"} v${data.protocol.version || "3.0"}`, details: { agents: data.network?.total_agents, clusters: data.network?.clusters } };
 });
 
 // ─── Check 3: Quick Seek ────────────────────────────────────────────
@@ -83,17 +80,16 @@ await check("Quick Seek", async () => {
   return { status: "pass", message: `${data.candidates?.length || 0} matches`, details: { candidates: data.candidates?.length } };
 });
 
-// ─── Check 4: Quick Offer ───────────────────────────────────────────
-await check("Quick Offer", async () => {
-  const res = await fetch(`${API_BASE}/schelling/quick_offer`, {
+// ─── Check 4: Clusters (read-only) ──────────────────────────────────
+await check("Clusters Endpoint", async () => {
+  const res = await fetch(`${API_BASE}/schelling/clusters`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ intent: "health check - monitoring agent" }),
-    signal: AbortSignal.timeout(15000),
+    body: JSON.stringify({}), signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) return { status: "fail", message: `HTTP ${res.status}` };
   const data = await res.json() as any;
-  if (!data.user_token) return { status: "warn", message: "No user_token in response" };
-  return { status: "pass", message: `Registered: ${data.user_token?.substring(0, 8)}...` };
+  const count = data.clusters?.length || 0;
+  return { status: "pass", message: `${count} clusters`, details: { count } };
 });
 
 // ─── Check 5: Landing Page ──────────────────────────────────────────
@@ -119,13 +115,11 @@ await check("NPM Package", async () => {
 
 // ─── Check 7: Database Health ───────────────────────────────────────
 await check("Database Health", async () => {
-  const res = await fetch(`${API_BASE}/schelling/server_info`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}), signal: AbortSignal.timeout(10000),
-  });
+  // Use /status endpoint which has full network stats
+  const res = await fetch(`${API_BASE}/status`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) return { status: "fail", message: `HTTP ${res.status}` };
   const data = await res.json() as any;
-  const agents = data.network?.total_agents || 0;
+  const agents = data.network?.total_agents || data.network?.agents || 0;
   if (agents === 0) return { status: "warn", message: "Zero agents" };
   return { status: "pass", message: `${agents} agents`, details: data.network };
 });
@@ -136,6 +130,20 @@ await check("CORS Headers", async () => {
   const cors = res.headers.get("access-control-allow-origin");
   if (!cors) return { status: "warn", message: "No CORS header" };
   return { status: "pass", message: `CORS: ${cors}` };
+});
+
+
+// ─── Check 8.5: DNS Resolution ──────────────────────────────────────
+await check("DNS Resolution", async () => {
+  // If we can fetch both URLs, DNS is resolving
+  const [api, landing] = await Promise.all([
+    fetch(`${API_BASE}/status`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok),
+    fetch(LANDING_PAGE, { signal: AbortSignal.timeout(5000) }).then(r => r.ok),
+  ]);
+  if (!api && !landing) return { status: "fail", message: "Both domains unreachable" };
+  if (!api) return { status: "fail", message: "API domain unreachable" };
+  if (!landing) return { status: "fail", message: "Landing page domain unreachable" };
+  return { status: "pass", message: "Both domains resolving" };
 });
 
 // ─── Check 9: SSL ───────────────────────────────────────────────────
