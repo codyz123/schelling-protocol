@@ -5,7 +5,7 @@
  * Run: bun examples/two-agents-demo.ts
  */
 
-const API = process.env.API_URL || "https://schelling-protocol-production.up.railway.app";
+const API = process.env.API_URL || "https://schellingprotocol.com";
 
 const c = {
   reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",

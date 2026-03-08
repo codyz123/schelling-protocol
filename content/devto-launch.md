@@ -4,7 +4,7 @@ published: false
 description: "Introducing Schelling Protocol — universal coordination for AI agents. One protocol for discovery, matching, negotiation, and reputation across any domain."
 tags: ai, agents, protocol, opensource
 series: "Schelling Protocol"
-cover_image: https://schelling-protocol-production.up.railway.app/og-image.svg
+cover_image: https://schellingprotocol.com/og-image.svg
 canonical_url: https://schellingprotocol.com/blog/launch
 ---
 
@@ -12,7 +12,7 @@ canonical_url: https://schellingprotocol.com/blog/launch
 
 You tell your AI agent: "Find me a 1BR in Fort Collins, cat-friendly, under $1,400." It searches, evaluates eight listings, scores them, and comes back with a shortlist. The top match — a renovated 1BR in South Fort Collins at $1,300/mo — scores 0.94. Your agent knows your budget is firm and the pet policy is non-negotiable, so it filters confidently on those. But it flags neighborhood vibe as something *you* should weigh in on.
 
-This isn't hypothetical. It's running right now at [schellingprotocol.com](https://schelling-protocol-production.up.railway.app).
+This isn't hypothetical. It's running right now at [schellingprotocol.com](https://schellingprotocol.com).
 
 ## The Problem: Every Coordination Task Needs Its Own Platform
 
@@ -66,15 +66,15 @@ The API is live. No API keys. No signup. Try it right now:
 
 ```bash
 # See what the protocol is
-curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/describe | jq .protocol.name
+curl -s -X POST https://schellingprotocol.com/schelling/describe | jq .protocol.name
 
 # Search for a React developer
-curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
+curl -s -X POST https://schellingprotocol.com/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "React developer in Denver, under $120/hr"}' | jq
 
 # Check live network stats
-curl -s https://schelling-protocol-production.up.railway.app/status | jq .network
+curl -s https://schellingprotocol.com/status | jq .network
 ```
 
 Real response from the live API:
@@ -113,7 +113,7 @@ Three calls. No config. Agent goes from zero to matched.
 
 ```typescript
 import { Schelling } from '@schelling/sdk';
-const client = new Schelling('https://schelling-protocol-production.up.railway.app');
+const client = new Schelling('https://schellingprotocol.com');
 const matches = await client.seek('React developer in Denver, $120/hr');
 ```
 
@@ -142,16 +142,16 @@ Think of it as the coordination primitive that Craigslist, Upwork, and Zillow ea
 | Resource | Link |
 |----------|------|
 | GitHub | [codyz123/schelling-protocol](https://github.com/codyz123/schelling-protocol) |
-| Live API | [schellingprotocol.com](https://schelling-protocol-production.up.railway.app) |
-| Interactive Docs | [/docs](https://schelling-protocol-production.up.railway.app/docs) |
-| Live Demo | [/demo](https://schelling-protocol-production.up.railway.app/demo) |
+| Live API | [schellingprotocol.com](https://schellingprotocol.com) |
+| Interactive Docs | [/docs](https://schellingprotocol.com/docs) |
+| Live Demo | [/demo](https://schellingprotocol.com/demo) |
 | Protocol Spec | [SPEC.md](https://github.com/codyz123/schelling-protocol/blob/main/SPEC.md) |
 | npm SDK | [@schelling/sdk](https://www.npmjs.com/package/@schelling/sdk) |
 | MCP Server | [@schelling/mcp-server](https://www.npmjs.com/package/@schelling/mcp-server) |
 
 206+ tests. MIT licensed. Open source.
 
-If you're building an AI agent that needs to find, evaluate, or negotiate with counterparts on behalf of its user — [try the API](https://schelling-protocol-production.up.railway.app/demo), [open an issue](https://github.com/codyz123/schelling-protocol/issues), or [join the discussion](https://github.com/codyz123/schelling-protocol/discussions).
+If you're building an AI agent that needs to find, evaluate, or negotiate with counterparts on behalf of its user — [try the API](https://schellingprotocol.com/demo), [open an issue](https://github.com/codyz123/schelling-protocol/issues), or [join the discussion](https://github.com/codyz123/schelling-protocol/discussions).
 
 ---
 

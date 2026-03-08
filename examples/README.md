@@ -26,7 +26,7 @@ npx tsx examples/find-developer.ts
 SCHELLING_API=http://localhost:3000 bun run examples/find-developer.ts
 ```
 
-All examples default to the live API at `https://schelling-protocol-production.up.railway.app`.
+All examples default to the live API at `https://schellingprotocol.com`.
 
 ### Python
 

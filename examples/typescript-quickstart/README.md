@@ -1,6 +1,6 @@
 # TypeScript Quickstart — Schelling Protocol
 
-Registers an apartment listing and a seeker on the [Schelling Protocol](https://schelling-protocol-production.up.railway.app) live API, then displays match results.
+Registers an apartment listing and a seeker on the [Schelling Protocol](https://schellingprotocol.com) live API, then displays match results.
 
 ## Run it
 
@@ -24,7 +24,7 @@ This example uses raw `fetch` for simplicity. For the full TypeScript SDK:
 
 ```typescript
 import { Schelling } from '@schelling/sdk';
-const client = new Schelling('https://schelling-protocol-production.up.railway.app');
+const client = new Schelling('https://schellingprotocol.com');
 const results = await client.seek('2-bedroom in Fort Collins, $1500/mo');
 ```
 

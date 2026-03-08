@@ -3,7 +3,7 @@
 # Works against live API, no auth needed (playground mode)
 set -uo pipefail
 
-API="https://schelling-protocol-production.up.railway.app/schelling"
+API="https://schellingprotocol.com/schelling"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'

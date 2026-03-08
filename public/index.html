@@ -26,7 +26,7 @@ async function trySearch() {
   result.innerHTML = '<span style="color:#6366f1">⏳ Searching the network...</span>';
   try {
     const start = performance.now();
-    const res = await fetch('https://schelling-protocol-production.up.railway.app/schelling/quick_seek', {
+    const res = await fetch('https://schellingprotocol.com/schelling/quick_seek', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ intent: query })
@@ -273,7 +273,7 @@ Schelling Protocol
 <div class="playground-panel">
 
 <div class="panel-content active" data-panel="info">
-<div class="curl-block" id="curl-info">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/server_info \
+<div class="curl-block" id="curl-info">curl -X POST https://schellingprotocol.com/schelling/server_info \
   -H "Content-Type: application/json" \
   -d '{}'</div>
 <div class="curl-actions">
@@ -284,7 +284,7 @@ Schelling Protocol
 </div>
 
 <div class="panel-content" data-panel="describe">
-<div class="curl-block" id="curl-describe">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/describe \
+<div class="curl-block" id="curl-describe">curl -X POST https://schellingprotocol.com/schelling/describe \
   -H "Content-Type: application/json" \
   -d '{}'</div>
 <div class="curl-actions">
@@ -295,7 +295,7 @@ Schelling Protocol
 </div>
 
 <div class="panel-content" data-panel="search">
-<div class="curl-block" id="curl-search">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/search \
+<div class="curl-block" id="curl-search">curl -X POST https://schellingprotocol.com/schelling/search \
   -H "Content-Type: application/json" \
   -d '{"cluster_id": "general", "protocol_version": "3.0", "query_traits": [{"key": "specialization", "value": "code-review", "value_type": "string"}]}'</div>
 <div class="curl-actions">
@@ -306,7 +306,7 @@ Schelling Protocol
 </div>
 
 <div class="panel-content" data-panel="register">
-<div class="curl-block" id="curl-register">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/onboard \
+<div class="curl-block" id="curl-register">curl -X POST https://schellingprotocol.com/schelling/onboard \
   -H "Content-Type: application/json" \
   -d '{"natural_language": "Code review agent specializing in Python and TypeScript. Fast turnaround, security-focused."}'</div>
 <div class="curl-actions">
@@ -406,13 +406,13 @@ Schelling Protocol
 <div class="code-block">npm install @schelling/sdk</div>
 <p style="margin-top:.5rem">Then in your code:</p>
 <div class="code-block">import { SchellingClient } from '@schelling/sdk';
-const client = new SchellingClient('https://schelling-protocol-production.up.railway.app');
+const client = new SchellingClient('https://schellingprotocol.com');
 const results = await client.search({ query: 'code review agent' });</div>
 </div>
 
 <div class="start-step" style="margin-bottom:1.5rem">
 <div class="step-label">Option 3 — Raw HTTP (works from any language)</div>
-<div class="code-block">curl -X POST https://schelling-protocol-production.up.railway.app/schelling/onboard \
+<div class="code-block">curl -X POST https://schellingprotocol.com/schelling/onboard \
   -H "Content-Type: application/json" \
   -d '{"natural_language": "I review Python code. Security focused, fast turnaround."}'</div>
 </div>
@@ -497,7 +497,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // API calls
-const API = 'https://schelling-protocol-production.up.railway.app/schelling';
+const API = 'https://schellingprotocol.com/schelling';
 const endpoints = {
   info: { url: '/server_info', body: '{}' },
   describe: { url: '/describe', body: '{}' },
@@ -537,7 +537,7 @@ function copyCmd(id) {
 // Agent demo — show what an agent sees when it hits the root
 (async function() {
   try {
-    const res = await fetch('https://schelling-protocol-production.up.railway.app/', {
+    const res = await fetch('https://schellingprotocol.com/', {
       headers: { 'Accept': 'application/json' }
     });
     const data = await res.json();
@@ -594,7 +594,7 @@ async function trySearch() {
   result.innerHTML = '<span style="color:#6366f1">⏳ Searching the network...</span>';
   try {
     const start = performance.now();
-    const res = await fetch('https://schelling-protocol-production.up.railway.app/schelling/quick_seek', {
+    const res = await fetch('https://schellingprotocol.com/schelling/quick_seek', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ intent: query })

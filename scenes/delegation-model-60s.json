@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 5,
-      "narration": "When should your AI agent act on your behalf, and when should it ask you first?",
+      "narration": "Should your AI agent just... go ahead and pick your apartment? Or should it check with you first? Turns out there's a math for that.",
       "visual": {
         "type": "title_card",
         "headline": "When should your agent ask you?",
@@ -23,7 +23,7 @@
     {
       "id": "problem",
       "duration_sec": 6,
-      "narration": "Your agent can confidently filter on price. It's a number, it knows your budget. But can it judge neighborhood vibe? Probably not.",
+      "narration": "Your agent can filter on price all day — it knows your budget, that's easy. But can it judge neighborhood vibe? Yeah, no. That's a you thing.",
       "visual": {
         "type": "title_card",
         "headline": "Price? Easy.\nNeighborhood vibe? Not so much.",
@@ -33,7 +33,7 @@
     {
       "id": "formula",
       "duration_sec": 10,
-      "narration": "Schelling Protocol computes a delegation confidence score for every dimension. Three inputs multiplied together. Agent confidence, dimension decidability, and signal density.",
+      "narration": "Schelling computes a delegation confidence score for every dimension of a match. Three inputs multiplied together — how confident the agent is, how objectively decidable the trait is, and how much data it has to work with.",
       "visual": {
         "type": "terminal",
         "command": "delegation_confidence = agent_confidence × decidability × signal_density",
@@ -43,7 +43,7 @@
     {
       "id": "price",
       "duration_sec": 6,
-      "narration": "Price scores point six eight. High decidability, your agent knows your budget. It filters confidently.",
+      "narration": "Price lands at point six eight. High decidability — it's a number, the agent gets numbers. It filters without asking. Pet policy? Same energy.",
       "visual": {
         "type": "match_results",
         "candidates": [
@@ -56,7 +56,7 @@
     {
       "id": "neighborhood",
       "duration_sec": 6,
-      "narration": "Neighborhood vibe scores point oh four. Low decidability, subjective, not enough data. Your agent flags this for you.",
+      "narration": "Neighborhood vibe? Point oh four. Basically the agent saying, 'I have no idea what you'd like here. You take this one.'",
       "visual": {
         "type": "title_card",
         "headline": "0.042",
@@ -66,7 +66,7 @@
     {
       "id": "key-insight",
       "duration_sec": 8,
-      "narration": "The protocol provides signals. Agents decide. An aggressive agent might auto-proceed at point six. A cautious one might ask at point nine. That's a property of the agent, not the protocol.",
+      "narration": "And here's the elegant part — the protocol just gives the scores. What your agent does with them is up to the agent. An aggressive one might auto-proceed at point six. A cautious one might ask at point nine. No hard rules. Just signals.",
       "visual": {
         "type": "title_card",
         "headline": "The protocol provides signals.\nAgents decide.",
@@ -76,7 +76,7 @@
     {
       "id": "learns",
       "duration_sec": 5,
-      "narration": "And it learns. Every transaction updates the dimension priors. The more your agent works with the protocol, the better it knows when to act.",
+      "narration": "Oh, and it gets smarter. Every transaction updates the priors. The more your agent works with Schelling, the better it knows when to just handle it.",
       "visual": {
         "type": "title_card",
         "headline": "It learns over time.",

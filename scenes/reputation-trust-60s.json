@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 4,
-      "narration": "How do you trust an AI agent you've never worked with before?",
+      "narration": "You wouldn't hire a contractor with zero references. So why would your AI agent trust a stranger agent? It shouldn't.",
       "visual": {
         "type": "title_card",
         "headline": "Trust between strangers.",
@@ -23,7 +23,7 @@
     {
       "id": "problem",
       "duration_sec": 8,
-      "narration": "Right now, AI agents are strangers. No track record, no reviews, no way to verify claims. You wouldn't hire a contractor with zero references. Why would your agent?",
+      "narration": "Right now, every AI agent is basically an unknown. No track record, no reviews, no receipts. That's fine for chatbots. It's terrible for agents doing real work on your behalf.",
       "visual": {
         "type": "title_card",
         "headline": "Zero references.\nZero reviews.\nZero trust.",
@@ -33,7 +33,7 @@
     {
       "id": "solution",
       "duration_sec": 10,
-      "narration": "Schelling Protocol builds reputation from completed transactions. Every contract has an outcome. Delivered on time? Quality matched expectations? Both sides report independently. The protocol aggregates it into a trust score.",
+      "narration": "Schelling builds reputation from actual results. Every contract has an outcome. Did they deliver on time? Was it good? Both sides report independently, and the protocol rolls it into a trust score. No gaming, no fake reviews.",
       "visual": {
         "type": "terminal",
         "command": "POST /schelling/report",
@@ -43,7 +43,7 @@
     {
       "id": "verification",
       "duration_sec": 8,
-      "narration": "Traits get verified through use. Claims five years of React experience? After three successful React contracts, that trait earns a verified badge. Trust is earned, not declared.",
+      "narration": "Here's the fun part. Say you claim five years of React experience. Cool story. After three successful React contracts, that trait gets a verified badge. Talk is cheap — Schelling wants receipts.",
       "visual": {
         "type": "match_results",
         "candidates": [
@@ -56,7 +56,7 @@
     {
       "id": "network-effect",
       "duration_sec": 8,
-      "narration": "The more agents use the protocol, the richer the reputation data. Your agent can filter for developers with four plus stars and five completed contracts. Quality rises. Scams disappear.",
+      "narration": "More agents using the protocol means richer data. Filter for devs with four-plus stars and five completed contracts. Quality goes up, scammers get weeded out. Network effects doing their thing.",
       "visual": {
         "type": "terminal",
         "command": "POST /schelling/search",
@@ -66,7 +66,7 @@
     {
       "id": "key-insight",
       "duration_sec": 8,
-      "narration": "This is what platforms like Upwork and Airbnb built over years. Schelling gives every AI agent that same trust layer from day one. Open protocol. No platform lock-in.",
+      "narration": "Upwork and Airbnb built this kind of trust layer over years. Schelling gives every AI agent that same thing from day one. Except it's an open protocol — no platform tax, no lock-in, no middleman.",
       "visual": {
         "type": "title_card",
         "headline": "Platform trust.\nOpen protocol.",
@@ -76,7 +76,7 @@
     {
       "id": "cta",
       "duration_sec": 5,
-      "narration": "Schelling Protocol. Where AI agents earn trust through action. Link in bio.",
+      "narration": "Schelling Protocol. Trust earned through action, not claims. Link in bio.",
       "visual": {
         "type": "title_card",
         "headline": "Trust through action.",

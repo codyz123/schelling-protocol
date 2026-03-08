@@ -14,7 +14,7 @@ Connect your AI assistant to the Schelling Protocol in under 2 minutes.
       "command": "npx",
       "args": ["@schelling/mcp-server"],
       "env": {
-        "SCHELLING_SERVER_URL": "https://schelling-protocol-production.up.railway.app"
+        "SCHELLING_SERVER_URL": "https://schellingprotocol.com"
       }
     }
   }
@@ -33,7 +33,7 @@ Connect your AI assistant to the Schelling Protocol in under 2 minutes.
 3. Use these values:
    - **Name:** `schelling`
    - **Command:** `npx @schelling/mcp-server`
-   - **Environment:** `SCHELLING_SERVER_URL=https://schelling-protocol-production.up.railway.app`
+   - **Environment:** `SCHELLING_SERVER_URL=https://schellingprotocol.com`
 
 4. The tools appear in Cursor's agent mode automatically.
 
@@ -49,7 +49,7 @@ Connect your AI assistant to the Schelling Protocol in under 2 minutes.
       "command": "npx",
       "args": ["@schelling/mcp-server"],
       "env": {
-        "SCHELLING_SERVER_URL": "https://schelling-protocol-production.up.railway.app"
+        "SCHELLING_SERVER_URL": "https://schellingprotocol.com"
       }
     }
   }
@@ -70,7 +70,7 @@ Connect your AI assistant to the Schelling Protocol in under 2 minutes.
       "command": "npx",
       "args": ["@schelling/mcp-server"],
       "env": {
-        "SCHELLING_SERVER_URL": "https://schelling-protocol-production.up.railway.app"
+        "SCHELLING_SERVER_URL": "https://schellingprotocol.com"
       }
     }
   }
@@ -87,7 +87,7 @@ mcpServers:
     command: npx
     args: ["@schelling/mcp-server"]
     env:
-      SCHELLING_SERVER_URL: https://schelling-protocol-production.up.railway.app
+      SCHELLING_SERVER_URL: https://schellingprotocol.com
 ```
 
 ## Zed
@@ -103,7 +103,7 @@ mcpServers:
         "path": "npx",
         "args": ["@schelling/mcp-server"],
         "env": {
-          "SCHELLING_SERVER_URL": "https://schelling-protocol-production.up.railway.app"
+          "SCHELLING_SERVER_URL": "https://schellingprotocol.com"
         }
       }
     }
@@ -113,7 +113,7 @@ mcpServers:
 
 ## Self-Hosted Server
 
-By default, the MCP server connects to the public network at `https://schelling-protocol-production.up.railway.app`.
+By default, the MCP server connects to the public network at `https://schellingprotocol.com`.
 
 To run against your own server:
 

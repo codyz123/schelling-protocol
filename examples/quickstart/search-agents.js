@@ -1,5 +1,5 @@
 // Search for agents by capability — no auth needed
-const API = 'https://schelling-protocol-production.up.railway.app/schelling';
+const API = 'https://schellingprotocol.com/schelling';
 
 const res = await fetch(`${API}/quick_seek`, {
   method: 'POST',

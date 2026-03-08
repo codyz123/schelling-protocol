@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 4,
-      "narration": "Why do AI agents need a coordination protocol? Can't they just call APIs?",
+      "narration": "Can't agents just call APIs? Why do they need a whole protocol? Fair question. Let me ruin APIs for you real quick.",
       "visual": {
         "type": "title_card",
         "headline": "Why not just use APIs?",
@@ -23,7 +23,7 @@
     {
       "id": "api-problem",
       "duration_sec": 10,
-      "narration": "APIs are great for known services. Call Stripe to charge a card. Call OpenAI for a completion. But what if your agent needs to find someone? A roommate, a contractor, a photographer? There's no API for that. There's no universal directory of agents and what they offer.",
+      "narration": "APIs are great when you know who you're talking to. Call Stripe, charge a card. Call OpenAI, get a completion. But what if your agent needs to find someone? A roommate, a contractor, a photographer? There's no API for 'find me a person.' That directory doesn't exist.",
       "visual": {
         "type": "terminal",
         "command": "# The problem:",
@@ -33,7 +33,7 @@
     {
       "id": "n-squared",
       "duration_sec": 8,
-      "narration": "Without a protocol, every agent integration is custom. Ten agents need forty five custom integrations. A hundred agents need nearly five thousand. It doesn't scale.",
+      "narration": "Without a protocol, every agent needs a custom integration with every other agent. Ten agents? Forty-five integrations. A hundred? Nearly five thousand. That's not scaling, that's suffering.",
       "visual": {
         "type": "match_results",
         "candidates": [
@@ -46,7 +46,7 @@
     {
       "id": "protocol-solution",
       "duration_sec": 10,
-      "narration": "A protocol solves this. Every agent speaks the same language. Register what you offer. Search for what you need. The protocol handles matching, negotiation, contracts, and trust. One integration, access to every agent on the network.",
+      "narration": "A protocol fixes this. Everyone speaks the same language. Register what you offer, search for what you need. Schelling handles matching, negotiation, contracts, trust — all of it. One integration, access to every agent on the network.",
       "visual": {
         "type": "terminal",
         "command": "# With Schelling Protocol:",
@@ -56,7 +56,7 @@
     {
       "id": "analogy",
       "duration_sec": 8,
-      "narration": "Think of it like email versus custom messaging. Before SMTP, every system had its own protocol. SMTP unified it. Schelling is SMTP for agent coordination. One protocol, universal reach.",
+      "narration": "Think email before SMTP. Every system had its own thing. Total chaos. SMTP unified it. Schelling is that for agent coordination. One protocol, everyone can talk to everyone.",
       "visual": {
         "type": "title_card",
         "headline": "SMTP for agent coordination.",
@@ -66,7 +66,7 @@
     {
       "id": "cta",
       "duration_sec": 5,
-      "narration": "Schelling Protocol. Stop building custom integrations. Start coordinating. Link in bio.",
+      "narration": "Schelling Protocol. Stop building custom integrations. Start actually coordinating. Link in bio.",
       "visual": {
         "type": "title_card",
         "headline": "Stop integrating.\nStart coordinating.",

@@ -7,7 +7,7 @@ import { z } from "zod";
 // ─── Configuration ───────────────────────────────────────────────────
 
 const SERVER_URL = (
-  process.env.SCHELLING_SERVER_URL || "http://localhost:3000"
+  process.env.SCHELLING_SERVER_URL || "https://schellingprotocol.com"
 ).replace(/\/$/, "");
 
 // ─── REST Client ─────────────────────────────────────────────────────

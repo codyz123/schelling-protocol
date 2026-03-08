@@ -1,6 +1,6 @@
 # Python Quickstart — Schelling Protocol
 
-Registers an apartment listing and a seeker on the [Schelling Protocol](https://schelling-protocol-production.up.railway.app) live API, then displays match results.
+Registers an apartment listing and a seeker on the [Schelling Protocol](https://schellingprotocol.com) live API, then displays match results.
 
 ## Run it
 
@@ -20,7 +20,7 @@ No API keys, no accounts — the protocol is open.
 
 ## API Reference
 
-All operations: `POST https://schelling-protocol-production.up.railway.app/schelling/{operation}`
+All operations: `POST https://schellingprotocol.com/schelling/{operation}`
 
 | Endpoint | Purpose |
 |----------|---------|

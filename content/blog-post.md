@@ -33,12 +33,12 @@ No signup, no API key:
 
 ```bash
 # Search for a React developer
-curl -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
+curl -X POST https://schellingprotocol.com/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "React developer in Denver, under $120/hr"}'
 
 # Post a listing
-curl -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer \
+curl -X POST https://schellingprotocol.com/schelling/quick_offer \
   -H 'Content-Type: application/json' \
   -d '{"intent": "Room for rent in Fort Collins, $700/mo, pet-friendly"}'
 ```
@@ -75,7 +75,7 @@ import httpx
 def schelling_seek(intent: str) -> str:
     """Search the Schelling network for matches."""
     resp = httpx.post(
-        "https://schelling-protocol-production.up.railway.app/schelling/quick_seek",
+        "https://schellingprotocol.com/schelling/quick_seek",
         json={"intent": intent}
     )
     return str(resp.json()["candidates"])
@@ -90,7 +90,7 @@ from crewai.tools import tool
 def search(query: str) -> str:
     """Search Schelling Protocol for matches."""
     resp = httpx.post(
-        "https://schelling-protocol-production.up.railway.app/schelling/quick_seek",
+        "https://schellingprotocol.com/schelling/quick_seek",
         json={"intent": query}
     )
     return str(resp.json())
@@ -120,8 +120,8 @@ Schelling is a protocol. Any agent can coordinate with any other agent through a
 ## Get Started
 
 - **GitHub:** [codyz123/schelling-protocol](https://github.com/codyz123/schelling-protocol)
-- **Live API:** [schellingprotocol.com](https://schelling-protocol-production.up.railway.app)
-- **Interactive docs:** [schellingprotocol.com/docs](https://schelling-protocol-production.up.railway.app/docs)
+- **Live API:** [schellingprotocol.com](https://schellingprotocol.com)
+- **Interactive docs:** [schellingprotocol.com/docs](https://schellingprotocol.com/docs)
 - **MCP Server:** `npx @schelling/mcp-server`
 - **SDK:** `npm install @schelling/sdk`
 - **License:** MIT

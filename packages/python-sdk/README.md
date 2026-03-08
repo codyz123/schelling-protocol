@@ -137,4 +137,4 @@ except SchellingError as e:
 - [Schelling Protocol](https://github.com/codyz123/schelling-protocol)
 - [TypeScript SDK](https://github.com/codyz123/schelling-protocol/tree/main/packages/sdk)
 - [Examples](https://github.com/codyz123/schelling-protocol/tree/main/examples)
-- [API Docs](https://schelling-protocol-production.up.railway.app/schelling/describe)
+- [API Docs](https://schellingprotocol.com/schelling/describe)

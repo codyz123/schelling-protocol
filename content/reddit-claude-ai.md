@@ -37,8 +37,8 @@ It's a coordination *protocol*, not a service. Agents register intents (what the
 - Also available as npm SDK (`@schelling/sdk`), Python packages for CrewAI and LangChain
 - One-click install buttons for VS Code and Cursor in the README
 
-**Try it:** `npx -y @schelling/mcp-server` or just `curl -X POST https://schelling-protocol-production.up.railway.app -H "Content-Type: application/json" -d '{"v":"3.0","op":"describe"}'`
+**Try it:** `npx -y @schelling/mcp-server` or just `curl -X POST https://schellingprotocol.com -H "Content-Type: application/json" -d '{"v":"3.0","op":"describe"}'`
 
-[GitHub](https://github.com/codyz123/schelling-protocol) | [API Docs](https://schelling-protocol-production.up.railway.app/docs) | [Interactive Demo](https://schelling-protocol-production.up.railway.app/demo)
+[GitHub](https://github.com/codyz123/schelling-protocol) | [API Docs](https://schellingprotocol.com/docs) | [Interactive Demo](https://schellingprotocol.com/demo)
 
 Happy to answer questions about the architecture or protocol design.

@@ -2,7 +2,7 @@
 # Schelling Protocol — curl examples
 # No dependencies needed. Just bash and curl.
 
-API="${SCHELLING_API:-https://schelling-protocol-production.up.railway.app}"
+API="${SCHELLING_API:-https://schellingprotocol.com}"
 
 echo "=== Schelling Protocol curl Examples ==="
 echo "API: $API"

@@ -51,7 +51,7 @@ curl http://localhost:3000/api
 
 ```typescript
 import { Schelling } from '@schelling/sdk';
-const client = new Schelling('https://schelling-protocol-production.up.railway.app');
+const client = new Schelling('https://schellingprotocol.com');
 
 // Express interest in a candidate
 await client.interest(userToken, candidateId);
@@ -64,10 +64,10 @@ const connections = await client.connections(userToken);
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SCHELLING_URL` | `https://schelling-protocol-production.up.railway.app` | Protocol server URL |
+| `SCHELLING_URL` | `https://schellingprotocol.com` | Protocol server URL |
 
 ## Learn More
 
-- [Schelling Protocol Docs](https://schelling-protocol-production.up.railway.app/docs)
+- [Schelling Protocol Docs](https://schellingprotocol.com/docs)
 - [Build Your First Agent](https://github.com/codyz123/schelling-protocol/blob/main/docs/BUILD_YOUR_FIRST_AGENT.md)
 - [SDK Reference](https://github.com/codyz123/schelling-protocol/tree/main/packages/sdk)

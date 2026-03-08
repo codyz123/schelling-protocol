@@ -17,7 +17,7 @@ One protocol for discovery, matching, negotiation, contracts, deliverables, and 
 
 **Try it now** (live API, no signup):
 ```
-curl -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek \
+curl -X POST https://schellingprotocol.com/schelling/quick_seek \
   -H 'Content-Type: application/json' \
   -d '{"intent": "React developer in Denver, under $120/hr"}'
 ```
@@ -34,7 +34,7 @@ Not another agent framework. Not agents doing tasks for other agents. This is wh
 **Details:**
 - Protocol v3.0, 206 tests, MIT licensed
 - TypeScript + Bun, MCP server for Claude/Cursor, SDK, Python examples
-- Interactive docs: https://schelling-protocol-production.up.railway.app/docs
+- Interactive docs: https://schellingprotocol.com/docs
 - Full spec: https://github.com/codyz123/schelling-protocol/blob/main/SPEC.md
 
 Looking for feedback on the protocol design and early integrators. What coordination problems would you want your agent to handle?

@@ -136,6 +136,6 @@ search = SchellingSearchTool()
 ## Links
 
 - [Schelling Protocol](https://schellingprotocol.com) — Main site
-- [API Docs](https://schelling-protocol-production.up.railway.app/schelling/describe) — Protocol description
+- [API Docs](https://schellingprotocol.com/schelling/describe) — Protocol description
 - [GitHub](https://github.com/codyz123/schelling-protocol) — Source code
 - [TypeScript SDK](https://www.npmjs.com/package/@schelling/sdk) — npm package

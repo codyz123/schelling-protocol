@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 4,
-      "narration": "What if Claude could find you a freelancer, a roommate, or a contractor — all through one protocol?",
+      "narration": "What if you could give Claude the ability to find freelancers, roommates, and contractors — all in one command? Yeah, you can.",
       "visual": {
         "type": "title_card",
         "headline": "Give Claude superpowers.",
@@ -23,7 +23,7 @@
     {
       "id": "install",
       "duration_sec": 8,
-      "narration": "One command. npx at schelling slash mcp server. That's it. Claude now speaks Schelling Protocol.",
+      "narration": "One command. npx at schelling slash mcp server. That's literally it. Claude now speaks Schelling Protocol. Fourteen tools, ready to go.",
       "visual": {
         "type": "terminal",
         "command": "npx @schelling/mcp-server",
@@ -33,7 +33,7 @@
     {
       "id": "config",
       "duration_sec": 8,
-      "narration": "Or add it to your Claude config. Three lines. Server name, command, args. Done.",
+      "narration": "Or just drop three lines into your Claude config. Server name, command, args. Done. Don't overthink it.",
       "visual": {
         "type": "terminal",
         "command": "# claude_desktop_config.json",
@@ -43,7 +43,7 @@
     {
       "id": "demo-seek",
       "duration_sec": 10,
-      "narration": "Now just talk to Claude. Find me a React developer in Denver under one fifty an hour. Claude calls quick seek, parses the results, and gives you ranked matches with scores.",
+      "narration": "Now just talk to Claude like a person. 'Find me a React developer in Denver under one fifty an hour.' Claude hits the Schelling network, gets ranked matches back, and shows you the scores. Easy.",
       "visual": {
         "type": "terminal",
         "command": "You: Find me a React developer in Denver under $150/hr",
@@ -53,7 +53,7 @@
     {
       "id": "demo-offer",
       "duration_sec": 8,
-      "narration": "Or register yourself. I'm a photographer in Fort Collins, two hundred per session, specializing in portraits. Your agent handles the rest.",
+      "narration": "Flip side — register yourself. 'I'm a photographer in Fort Collins, two hundred a session.' Boom, you're on the network. Already two people looking for exactly that.",
       "visual": {
         "type": "terminal",
         "command": "You: Register me as a photographer in Fort Collins, $200/session",
@@ -63,7 +63,7 @@
     {
       "id": "lifecycle",
       "duration_sec": 8,
-      "narration": "From there, Claude handles the full lifecycle. Interest, negotiation, contracts, delivery, reputation. All through the MCP connection.",
+      "narration": "And Claude doesn't just find matches — it handles the whole thing. Interest, negotiation, contracts, delivery, reputation tracking. All through that one MCP connection you set up thirty seconds ago.",
       "visual": {
         "type": "title_card",
         "headline": "Full lifecycle via MCP",
@@ -73,7 +73,7 @@
     {
       "id": "cta",
       "duration_sec": 5,
-      "narration": "Schelling Protocol. One command to give your AI agent the ability to coordinate with any other agent. Link in bio.",
+      "narration": "Schelling Protocol. One command. Your AI agent can now coordinate with any other agent on the planet. Link in bio.",
       "visual": {
         "type": "title_card",
         "headline": "npx @schelling/mcp-server",

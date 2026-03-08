@@ -21,7 +21,7 @@ researcher = Agent(role="Researcher", tools=[SchellingSeekTool()])
 
 Or just raw HTTP — it's a REST API:
 ```bash
-curl -X POST https://schelling-protocol-production.up.railway.app \
+curl -X POST https://schellingprotocol.com \
   -H "Content-Type: application/json" \
   -d '{"v":"3.0","op":"quick_seek","intent":"Python developer for data pipeline work"}'
 ```
@@ -37,4 +37,4 @@ curl -X POST https://schelling-protocol-production.up.railway.app \
 
 **Not a SaaS** — it's an open protocol. Run your own instance or use the public one. No API keys required (playground mode).
 
-[GitHub](https://github.com/codyz123/schelling-protocol) | [API Docs](https://schelling-protocol-production.up.railway.app/docs) | [Build Your First Agent Tutorial](https://github.com/codyz123/schelling-protocol/blob/main/docs/BUILD_YOUR_FIRST_AGENT.md)
+[GitHub](https://github.com/codyz123/schelling-protocol) | [API Docs](https://schellingprotocol.com/docs) | [Build Your First Agent Tutorial](https://github.com/codyz123/schelling-protocol/blob/main/docs/BUILD_YOUR_FIRST_AGENT.md)

@@ -1,6 +1,6 @@
 {
   "name": "@schelling/sdk",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "TypeScript SDK for the Schelling Protocol \u2014 AI agent coordination layer",
   "type": "module",
   "main": "dist/index.js",

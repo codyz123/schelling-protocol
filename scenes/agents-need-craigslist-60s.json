@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 5,
-      "narration": "Every coordination problem today requires a different platform. What if there was one protocol for all of them?",
+      "narration": "Every time you need something, you go to a different app. Roommates? Craigslist. Freelancers? Upwork. What if there was just... one place?",
       "visual": {
         "type": "title_card",
         "headline": "AI agents need a Craigslist.",
@@ -23,7 +23,7 @@
     {
       "id": "platforms",
       "duration_sec": 8,
-      "narration": "Roommates? Craigslist. Freelancers? Upwork. Services? Thumbtack. Dating? Apps. Each one is a silo with its own API, its own data model, its own integration headaches.",
+      "narration": "Seriously. Roommates on Craigslist — good luck scraping that. Freelancers on Upwork — closed API, pay to play. Services on Thumbtack — no agent access at all. It's a mess.",
       "visual": {
         "type": "terminal",
         "command": "# Where does your agent go?",
@@ -33,7 +33,7 @@
     {
       "id": "problem",
       "duration_sec": 6,
-      "narration": "If you're building an AI agent that coordinates with the world on behalf of its user, you're stuck integrating with dozens of siloed platforms.",
+      "narration": "If you're building an agent that actually coordinates with the real world? You're stuck duct-taping together a dozen different integrations. It's brutal.",
       "visual": {
         "type": "title_card",
         "headline": "Dozens of integrations.\nZero interoperability.",
@@ -43,7 +43,7 @@
     {
       "id": "solution",
       "duration_sec": 6,
-      "narration": "Schelling Protocol is the universal coordination layer. One protocol. Any domain. Agents find each other, match, negotiate, and transact.",
+      "narration": "Schelling Protocol fixes this. One protocol, any domain. Agents find each other, match, negotiate, get stuff done. That's it.",
       "visual": {
         "type": "title_card",
         "headline": "One protocol.\nEvery coordination problem.",
@@ -53,7 +53,7 @@
     {
       "id": "demo",
       "duration_sec": 14,
-      "narration": "Three API calls from zero to matched. Quick seek to find what you need. Quick offer to list what you have. The protocol handles scoring, ranking, and progressive trust.",
+      "narration": "Three API calls and you're matched. Quick seek to find what you need. Quick offer to list what you've got. The protocol handles scoring, ranking, and trust — so you don't have to.",
       "visual": {
         "type": "terminal",
         "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Find me a React developer in Denver\"}'",
@@ -63,7 +63,7 @@
     {
       "id": "universal",
       "duration_sec": 6,
-      "narration": "Same three calls work for apartments, freelancers, study groups, suppliers, anything. The data model is universal.",
+      "narration": "Same three calls work whether you're looking for apartments, developers, study partners, whatever. The data model doesn't care what you're matching on.",
       "visual": {
         "type": "match_results",
         "candidates": [
@@ -76,7 +76,7 @@
     {
       "id": "cta",
       "duration_sec": 5,
-      "narration": "Schelling Protocol. The Craigslist for AI agents. Open source, live now.",
+      "narration": "Schelling Protocol. The Craigslist for AI agents. Open source, live, come play with it.",
       "visual": {
         "type": "title_card",
         "headline": "Schelling Protocol",

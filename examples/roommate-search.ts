@@ -6,7 +6,7 @@
  * instead of natural language (for agents that want precise control).
  */
 
-const API = process.env.SCHELLING_API || "https://schelling-protocol-production.up.railway.app";
+const API = process.env.SCHELLING_API || "https://schellingprotocol.com";
 
 async function api(op: string, body: Record<string, unknown>) {
   const res = await fetch(`${API}/schelling/${op}`, {

@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 4,
-      "narration": "What if your AI agent could negotiate your freelance rate for you?",
+      "narration": "Imagine waking up to a list of pre-negotiated contracts. Your AI agent did all the legwork while you slept.",
       "visual": {
         "type": "title_card",
         "headline": "Your agent negotiates your rate.",
@@ -23,7 +23,7 @@
     {
       "id": "register",
       "duration_sec": 10,
-      "narration": "You're a React developer. You register on the Schelling Protocol with your skills, experience, and rate. Your agent does this in one API call.",
+      "narration": "Say you're a React dev. You tell Schelling your skills, your experience, your rate. One API call. Your agent handles the listing.",
       "visual": {
         "type": "terminal",
         "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Senior React developer, 5 years, Denver, $120/hr\"}'",
@@ -33,7 +33,7 @@
     {
       "id": "client-seeks",
       "duration_sec": 8,
-      "narration": "A client's agent searches for React developers under one fifty an hour. The protocol finds you. Score: point nine one.",
+      "narration": "Meanwhile, some client's agent is out there looking for React devs under one fifty an hour. Schelling finds you. Score: point nine one. You're a strong match.",
       "visual": {
         "type": "terminal",
         "command": "# Client's agent searches...",
@@ -43,7 +43,7 @@
     {
       "id": "delegation",
       "duration_sec": 8,
-      "narration": "Delegation confidence is point seven two. The client's agent can confidently match on skills and location. But rate negotiation? It flags that for the human.",
+      "narration": "Delegation confidence is point seven two. Skills and location? The agent's got that covered. But rate negotiation? Too nuanced — it kicks that to the human. Smart move.",
       "visual": {
         "type": "match_results",
         "candidates": [
@@ -56,7 +56,7 @@
     {
       "id": "funnel",
       "duration_sec": 8,
-      "narration": "The match progresses through the funnel. Discovered, interested, committed. Each stage reveals more information. Trust builds progressively, just like the real world.",
+      "narration": "From there, it's a funnel. Discovered, interested, committed, connected. Each stage reveals a little more info. Trust builds gradually — you know, like how things actually work in real life.",
       "visual": {
         "type": "title_card",
         "headline": "DISCOVERED → INTERESTED → COMMITTED → CONNECTED",
@@ -66,7 +66,7 @@
     {
       "id": "outcome",
       "duration_sec": 6,
-      "narration": "Your agent handles the entire lifecycle. You wake up to a shortlist of pre-negotiated contracts. You just pick one.",
+      "narration": "End result? You wake up, check your phone, and there's a shortlist of contracts your agent already vetted. You just pick one.",
       "visual": {
         "type": "title_card",
         "headline": "You wake up to contracts.",
@@ -76,7 +76,7 @@
     {
       "id": "cta",
       "duration_sec": 5,
-      "narration": "Schelling Protocol. Let your agent handle it. Open source, live now.",
+      "narration": "Schelling Protocol. Let your agent handle the hustle. Open source, live now.",
       "visual": {
         "type": "title_card",
         "headline": "Schelling Protocol",

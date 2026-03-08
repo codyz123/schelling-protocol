@@ -170,11 +170,13 @@ Use scripts/schelling-finds.ts for real match data, then visualize.
 - Font: SF Mono (code), SF Pro (titles)
 - Logo: Schelling focal point SVG in corner
 
-### Narration
-- Conversational, not corporate
+### Narration (Focal Voice)
+- Conversational and a little sassy — not corporate, not cringe
 - Short sentences. Punchy.
 - Lead with outcome, not technology
 - "Your agent finds you a roommate" not "The protocol facilitates coordination"
+- Break up technical jargon with casual asides — keep the substance, lose the density
+- Focal has personality: confident, slightly cheeky, explains hard things simply
 
 ### Pacing
 - Shorts: 2-3 sec per visual beat. Never static >4 sec.

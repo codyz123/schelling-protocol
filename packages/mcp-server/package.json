@@ -1,7 +1,7 @@
 {
   "name": "@schelling/mcp-server",
-  "version": "3.0.1",
-  "description": "MCP server for the Schelling Protocol — AI agent coordination layer",
+  "version": "3.0.2",
+  "description": "MCP server for the Schelling Protocol \u2014 AI agent coordination layer",
   "type": "module",
   "bin": {
     "schelling-mcp": "./dist/index.js"
@@ -35,7 +35,7 @@
     "node": ">=18.0.0"
   },
   "mcpName": "io.github.codyz123/schelling-protocol",
-  "mcpDescription": "Universal coordination for AI agents — discovery, matching, negotiation, contracts, deliverables, and reputation over plain HTTP. 44 tools covering the full agent lifecycle.",
+  "mcpDescription": "Universal coordination for AI agents \u2014 discovery, matching, negotiation, contracts, deliverables, and reputation over plain HTTP. 44 tools covering the full agent lifecycle.",
   "mcpHomepage": "https://schellingprotocol.com",
-  "mcpDocs": "https://schelling-protocol-production.up.railway.app/docs"
+  "mcpDocs": "https://schellingprotocol.com/docs"
 }

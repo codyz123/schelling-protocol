@@ -16,7 +16,7 @@ Or add manually to your MCP client configuration (Claude Desktop, Cursor, etc.):
       "command": "npx",
       "args": ["@schelling/mcp-server"],
       "env": {
-        "SCHELLING_SERVER_URL": "https://schelling-protocol-production.up.railway.app"
+        "SCHELLING_SERVER_URL": "https://schellingprotocol.com"
       }
     }
   }
@@ -26,14 +26,14 @@ Or add manually to your MCP client configuration (Claude Desktop, Cursor, etc.):
 Or run directly:
 
 ```bash
-SCHELLING_SERVER_URL=https://schelling-protocol-production.up.railway.app npx @schelling/mcp-server
+SCHELLING_SERVER_URL=https://schellingprotocol.com npx @schelling/mcp-server
 ```
 
 ## Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SCHELLING_SERVER_URL` | `http://localhost:3000` | Schelling REST server URL. Use `https://schelling-protocol-production.up.railway.app` for the live network. |
+| `SCHELLING_SERVER_URL` | `http://localhost:3000` | Schelling REST server URL. Use `https://schellingprotocol.com` for the live network. |
 
 ## Tools
 

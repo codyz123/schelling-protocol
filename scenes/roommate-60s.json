@@ -13,7 +13,7 @@
     {
       "id": "hook",
       "duration_sec": 4,
-      "narration": "What if your AI agent could find you a roommate?",
+      "narration": "Your AI agent can find you a roommate. Like, actually do it. Not just Google stuff.",
       "visual": {
         "type": "title_card",
         "headline": "Your AI agent finds you a roommate.",
@@ -23,7 +23,7 @@
     {
       "id": "step1-intro",
       "duration_sec": 3,
-      "narration": "First, your agent describes what you're looking for.",
+      "narration": "Step one. Tell it what you want. Plain English.",
       "visual": {
         "type": "title_card",
         "headline": "Step 1",
@@ -33,7 +33,7 @@
     {
       "id": "step1-terminal",
       "duration_sec": 14,
-      "narration": "One POST request with natural language. The protocol parses your intent, registers you, and returns ranked candidates with match scores.",
+      "narration": "One POST request. Just say what you need in normal words. The protocol figures out your intent, signs you up, and boom — ranked matches with scores.",
       "visual": {
         "type": "terminal",
         "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Roommate in Fort Collins, clean, quiet, $800/mo\"}'",
@@ -43,7 +43,7 @@
     {
       "id": "step2-intro",
       "duration_sec": 3,
-      "narration": "Now register your own listing.",
+      "narration": "Step two. Got a room to offer? List it.",
       "visual": {
         "type": "title_card",
         "headline": "Step 2",
@@ -53,7 +53,7 @@
     {
       "id": "step2-terminal",
       "duration_sec": 12,
-      "narration": "Same simplicity. Tell the network what you offer, and it starts matching you with seekers immediately.",
+      "narration": "Same deal. Describe your place, and the network starts matching you with people looking right away. No forms, no profile photos, no waiting.",
       "visual": {
         "type": "terminal",
         "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Room available in Fort Collins, $750/mo, quiet neighborhood, no smoking\"}'",
@@ -63,7 +63,7 @@
     {
       "id": "results",
       "duration_sec": 8,
-      "narration": "Three candidates. Scored and ranked, with the traits that matched. Point nine four on the top result.",
+      "narration": "Three candidates already. Scored, ranked, traits broken down. Top match? Ninety-four percent. Not bad for zero effort.",
       "visual": {
         "type": "match_results",
         "candidates": [
@@ -76,7 +76,7 @@
     {
       "id": "delegation",
       "duration_sec": 7,
-      "narration": "Your agent knows to filter on price and cleanliness confidently. But it flags neighborhood vibe for you to decide. That's the delegation model.",
+      "narration": "Here's the cool part. Your agent knows it can handle price and cleanliness on its own. But neighborhood vibe? That's subjective — so it asks you. Smart delegation.",
       "visual": {
         "type": "title_card",
         "headline": "The Delegation Model",
@@ -86,7 +86,7 @@
     {
       "id": "universal",
       "duration_sec": 5,
-      "narration": "One protocol for apartments, freelancers, study groups — any coordination problem.",
+      "narration": "And this isn't just for roommates. Same protocol works for freelancers, study groups, anything where two sides need to find each other.",
       "visual": {
         "type": "title_card",
         "headline": "One protocol.\nEvery coordination problem.",
@@ -96,7 +96,7 @@
     {
       "id": "cta",
       "duration_sec": 5,
-      "narration": "Schelling Protocol. Open source. Live right now.",
+      "narration": "Schelling Protocol. Open source. Live right now. Go break it.",
       "visual": {
         "type": "title_card",
         "headline": "Schelling Protocol",

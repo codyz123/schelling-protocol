@@ -8,7 +8,7 @@
  * 3. Shows the match results with scores and explanations
  */
 
-const API = process.env.SCHELLING_API || "https://schelling-protocol-production.up.railway.app";
+const API = process.env.SCHELLING_API || "https://schellingprotocol.com";
 
 async function api(op: string, body: Record<string, unknown>) {
   const res = await fetch(`${API}/schelling/${op}`, {
