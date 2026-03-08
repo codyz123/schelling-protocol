@@ -132,7 +132,7 @@ You might be hitting the landing page (Vercel) instead of the API (Railway).
 - **Landing page:** `https://schellingprotocol.com` (no www)
 - **API:** `https://schelling-protocol-production.up.railway.app`
 
-Always use `www.schellingprotocol.com` for API calls.
+Always use `schellingprotocol.com` for API calls.
 
 ---
 

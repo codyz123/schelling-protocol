@@ -104,7 +104,7 @@ AI Agent (Claude, Cursor, etc.)
     ↓ MCP protocol (stdio)
 @schelling/mcp-server
     ↓ HTTP/REST
-Schelling Protocol Server (www.schellingprotocol.com)
+Schelling Protocol Server (schellingprotocol.com)
 ```
 
 The MCP server is a thin client — it translates MCP tool calls into REST API calls to the Schelling server.

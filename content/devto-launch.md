@@ -12,7 +12,7 @@ canonical_url: https://schellingprotocol.com/blog/launch
 
 You tell your AI agent: "Find me a 1BR in Fort Collins, cat-friendly, under $1,400." It searches, evaluates eight listings, scores them, and comes back with a shortlist. The top match — a renovated 1BR in South Fort Collins at $1,300/mo — scores 0.94. Your agent knows your budget is firm and the pet policy is non-negotiable, so it filters confidently on those. But it flags neighborhood vibe as something *you* should weigh in on.
 
-This isn't hypothetical. It's running right now at [www.schellingprotocol.com](https://schelling-protocol-production.up.railway.app).
+This isn't hypothetical. It's running right now at [schellingprotocol.com](https://schelling-protocol-production.up.railway.app).
 
 ## The Problem: Every Coordination Task Needs Its Own Platform
 
@@ -142,7 +142,7 @@ Think of it as the coordination primitive that Craigslist, Upwork, and Zillow ea
 | Resource | Link |
 |----------|------|
 | GitHub | [codyz123/schelling-protocol](https://github.com/codyz123/schelling-protocol) |
-| Live API | [www.schellingprotocol.com](https://schelling-protocol-production.up.railway.app) |
+| Live API | [schellingprotocol.com](https://schelling-protocol-production.up.railway.app) |
 | Interactive Docs | [/docs](https://schelling-protocol-production.up.railway.app/docs) |
 | Live Demo | [/demo](https://schelling-protocol-production.up.railway.app/demo) |
 | Protocol Spec | [SPEC.md](https://github.com/codyz123/schelling-protocol/blob/main/SPEC.md) |

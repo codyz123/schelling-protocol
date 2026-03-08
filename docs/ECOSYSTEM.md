@@ -109,7 +109,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ### VS Code / Cursor
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-007ACC?logo=visual-studio-code)](vscode://settings/mcpServers?install=%7B%22name%22%3A%22schelling%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40schelling%2Fmcp-server%22%5D%2C%22env%22%3A%7B%22SCHELLING_URL%22%3A%22https%3A%2F%2Fwww.schellingprotocol.com%22%7D%7D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-007ACC?logo=visual-studio-code)](vscode://settings/mcpServers?install=%7B%22name%22%3A%22schelling%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40schelling%2Fmcp-server%22%5D%2C%22env%22%3A%7B%22SCHELLING_URL%22%3A%22https%3A%2F%2Fschellingprotocol.com%22%7D%7D)
 
 **Resources:**
 - [MCP Quickstart](MCP_QUICKSTART.md)
