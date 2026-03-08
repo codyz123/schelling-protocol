@@ -3,6 +3,7 @@ import type { DatabaseConnection } from "../db/interface.js";
 import { LedgerService } from "./ledger.js";
 
 const PLATFORM_FEE_RATE = 0.05;
+function isPlaygroundMode(): boolean { return process.env.PLAYGROUND_MODE !== 'false'; } // Default: true (free usage)
 
 export interface EscrowRecord {
   id: string;
@@ -41,9 +42,17 @@ export class EscrowService {
 
     const clientBalance = this.ledger.balance(clientAccountId, "client_wallet");
     if (clientBalance < totalRequired) {
-      throw new Error(
-        `Insufficient funds. Balance: ${clientBalance}, Required: ${totalRequired}. Top up with schelling.wallet_topup`,
-      );
+      if (isPlaygroundMode()) {
+        // Auto-credit in playground mode — log what would be charged
+        console.log(`[PLAYGROUND] Auto-crediting ${totalRequired} cents for ${clientAccountId} (would require wallet_topup in production)`);
+        this.ledger.credit(clientAccountId, "client_wallet", totalRequired,
+          { type: "playground_topup", id: contractId },
+          `Playground mode auto-topup for contract ${contractId}`);
+      } else {
+        throw new Error(
+          `Insufficient funds. Balance: ${clientBalance}, Required: ${totalRequired}. Top up with schelling.wallet_topup`,
+        );
+      }
     }
 
     const txn = this.db.transaction(() => {

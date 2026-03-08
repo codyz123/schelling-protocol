@@ -172,11 +172,18 @@ describe("Escrow Service", () => {
   });
 
   test("hold fails with insufficient funds", () => {
-    const escrow = new EscrowService(db);
-    const ledger = escrow.getLedger();
+    const origPlayground = process.env.PLAYGROUND_MODE;
+    process.env.PLAYGROUND_MODE = "false";
+    try {
+      const escrow = new EscrowService(db);
+      const ledger = escrow.getLedger();
 
-    ledger.credit("client1", "client_wallet", 100);
-    expect(() => escrow.hold("contract3", "client1", "worker1", 1000)).toThrow("Insufficient funds");
+      ledger.credit("client1", "client_wallet", 100);
+      expect(() => escrow.hold("contract3", "client1", "worker1", 1000)).toThrow("Insufficient funds");
+    } finally {
+      if (origPlayground !== undefined) process.env.PLAYGROUND_MODE = origPlayground;
+      else delete process.env.PLAYGROUND_MODE;
+    }
   });
 
   test("$0 contract requires no escrow funds", () => {

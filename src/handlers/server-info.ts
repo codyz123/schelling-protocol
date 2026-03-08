@@ -27,6 +27,7 @@ interface ServerInfoOutput {
     verification: boolean;
     data_export: boolean;
   };
+  playground_mode: boolean;
   rate_limits: {
     register_per_day: number;
     search_per_hour: number;
@@ -91,6 +92,7 @@ export async function handleServerInfo(
           verification: true,
           data_export: true,
         },
+        playground_mode: process.env.PLAYGROUND_MODE !== "false",
         rate_limits: {
           register_per_day: 10,
           search_per_hour: 60,
