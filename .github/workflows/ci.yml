@@ -9,16 +9,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
       - run: bun install
-
       - run: bun test
-        env:
-          CI: true
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Post-deploy smoke test
+        run: |
+          # Give Railway a moment to deploy
+          sleep 30
+          bash scripts/smoke-test.sh https://schelling-protocol-production.up.railway.app

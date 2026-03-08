@@ -1,48 +1,85 @@
-name: API Health
+name: Scheduled Health Check
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:
+    - cron: '0 */4 * * *'  # Every 4 hours
+  workflow_dispatch:        # Manual trigger
 
 jobs:
-  health-check:
+  health:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run smoke tests
-        run: bash scripts/smoke-test.sh https://schelling-protocol-production.up.railway.app
-        
-      - name: Test core lifecycle
+      - name: API Health
         run: |
           set -e
           API="https://schelling-protocol-production.up.railway.app"
-          
-          # Onboard
-          TEMPLATE=$(curl -sf -X POST "$API/schelling/onboard" \
+
+          # 1. Status endpoint
+          STATUS=$(curl -sf --max-time 10 "$API/status")
+          echo "$STATUS" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='live', f'Status: {d[\"status\"]}'; print(f'✅ API live — v{d[\"version\"]}, {d[\"network\"][\"total_agents\"]} agents')"
+
+          # 2. Health endpoint
+          curl -sf --max-time 10 "$API/health" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='healthy'; print('✅ /health OK')"
+
+          # 3. Quick seek (core matching)
+          SEEK=$(curl -sf --max-time 15 -X POST "$API/schelling/quick_seek" \
             -H 'Content-Type: application/json' \
-            -d '{"natural_language": "Health check agent, testing lifecycle"}')
-          echo "✅ Onboard OK"
-          
-          # Quick seek
-          SEEK=$(curl -sf -X POST "$API/schelling/quick_seek" \
-            -H 'Content-Type: application/json' \
-            -d '{"intent": "developer in Denver"}')
-          TOKEN=$(echo "$SEEK" | python3 -c "import sys,json; print(json.load(sys.stdin)['user_token'])")
-          echo "✅ Quick seek OK (token: ${TOKEN:0:8}...)"
-          
-          # Search
-          RESULTS=$(curl -sf -X POST "$API/schelling/search" \
-            -H 'Content-Type: application/json' \
-            -d "{\"user_token\": \"$TOKEN\"}")
-          COUNT=$(echo "$RESULTS" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('candidates',[])))")
-          echo "✅ Search OK ($COUNT candidates)"
-          
-          # Clusters
-          CLUSTERS=$(curl -sf -X POST "$API/schelling/clusters")
-          CCOUNT=$(echo "$CLUSTERS" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('clusters',[])))")
-          echo "✅ Clusters OK ($CCOUNT clusters)"
-          
+            -d '{"intent": "health check - React developer"}')
+          echo "$SEEK" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'✅ Quick seek OK — {len(d.get(\"candidates\",[]))} matches')"
+
+          # 4. Clusters (read-only)
+          CLUSTERS=$(curl -sf --max-time 10 -X POST "$API/schelling/clusters")
+          echo "$CLUSTERS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'✅ Clusters OK — {len(d.get(\"clusters\",[]))} clusters')"
+
+          # 5. Describe (protocol metadata)
+          curl -sf --max-time 10 -X POST "$API/schelling/describe" \
+            -H 'Content-Type: application/json' -d '{}' | python3 -c "import sys,json; d=json.load(sys.stdin); assert d.get('protocol'); print('✅ Describe OK')"
+
           echo ""
-          echo "🟢 All lifecycle checks passed"
+          echo "🟢 All health checks passed"
+
+      - name: Landing Page
+        run: |
+          set -e
+          # Check landing page serves correct content
+          HTML=$(curl -sf --max-time 10 "https://schellingprotocol.com")
+          echo "$HTML" | grep -q "Schelling" || (echo "❌ Landing page missing Schelling content" && exit 1)
+          echo "$HTML" | grep -q "try-it-box" || (echo "⚠️ Landing page missing try-it widget" && exit 1)
+          echo "✅ Landing page OK"
+
+      - name: NPM Package
+        run: |
+          curl -sf --max-time 10 "https://registry.npmjs.org/@schelling/mcp-server" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); print(f'✅ npm @schelling/mcp-server v{d[\"dist-tags\"][\"latest\"]}')"
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Check if there's already an open health issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'health',
+              state: 'open'
+            });
+            if (issues.data.length > 0) {
+              // Comment on existing issue instead of creating duplicate
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `Still failing at ${new Date().toISOString()}.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Health Check Failed',
+                body: `Health check failed at ${new Date().toISOString()}.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                labels: ['health']
+              });
+            }
