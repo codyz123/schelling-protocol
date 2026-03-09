@@ -9,7 +9,7 @@
  * 4. All failures logged to /tmp/schelling-health-history.jsonl
  */
 
-const API_BASE = "https://schelling-protocol-production.up.railway.app";
+const API_BASE = "https://schellingprotocol.com";
 const LANDING_PAGE = "https://schellingprotocol.com";
 const HISTORY_FILE = "/tmp/schelling-health-history.jsonl";
 

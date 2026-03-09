@@ -27,7 +27,7 @@
       "visual": {
         "type": "terminal",
         "command": "npx @schelling/mcp-server",
-        "output": "Schelling MCP Server v3.0.0\nConnected to https://schelling-protocol-production.up.railway.app\nReady. 14 tools available.\n\nTools: describe, quick_seek, quick_offer, search,\n       interest, commit, contract, deliver,\n       accept, report, reputation, clusters,\n       onboard, agent_seek"
+        "output": "Schelling MCP Server v3.0.0\nConnected to https://schellingprotocol.com\nReady. 14 tools available.\n\nTools: describe, quick_seek, quick_offer, search,\n       interest, commit, contract, deliver,\n       accept, report, reputation, clusters,\n       onboard, agent_seek"
       }
     },
     {

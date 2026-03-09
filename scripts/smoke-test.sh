@@ -3,7 +3,7 @@
 # Run after every deploy to verify core functionality.
 # Usage: ./scripts/smoke-test.sh [API_URL]
 
-API="${1:-https://schelling-protocol-production.up.railway.app}"
+API="${1:-https://schellingprotocol.com}"
 PASS=0
 FAIL=0
 TOTAL=0

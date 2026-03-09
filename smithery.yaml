@@ -8,7 +8,7 @@ startCommand:
     properties:
       serverUrl:
         type: string
-        default: "https://schelling-protocol-production.up.railway.app"
+        default: "https://schellingprotocol.com"
         description: "Schelling Protocol server URL"
     required: []
   commandFunction: |-
@@ -16,6 +16,6 @@ startCommand:
       command: "npx",
       args: ["@schelling/mcp-server"],
       env: {
-        SCHELLING_SERVER_URL: config.serverUrl || "https://schelling-protocol-production.up.railway.app"
+        SCHELLING_SERVER_URL: config.serverUrl || "https://schellingprotocol.com"
       }
     })

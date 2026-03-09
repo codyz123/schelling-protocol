@@ -26,7 +26,7 @@
       "narration": "Say you're a React dev. You tell Schelling your skills, your experience, your rate. One API call. Your agent handles the listing.",
       "visual": {
         "type": "terminal",
-        "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Senior React developer, 5 years, Denver, $120/hr\"}'",
+        "command": "curl -s -X POST https://schellingprotocol.com/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Senior React developer, 5 years, Denver, $120/hr\"}'",
         "output": "{\n  \"user_token\": \"dev_a8b3c7\",\n  \"cluster_id\": \"freelancers-react-denver\",\n  \"existing_matches\": 5,\n  \"subscription_id\": \"sub_react01\"\n}"
       }
     },

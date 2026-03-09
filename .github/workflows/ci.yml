@@ -27,4 +27,4 @@ jobs:
         run: |
           # Give Railway a moment to deploy
           sleep 30
-          bash scripts/smoke-test.sh https://schelling-protocol-production.up.railway.app
+          bash scripts/smoke-test.sh https://schellingprotocol.com

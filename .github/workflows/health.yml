@@ -14,7 +14,7 @@ jobs:
       - name: API Health
         run: |
           set -e
-          API="https://schelling-protocol-production.up.railway.app"
+          API="https://schellingprotocol.com"
 
           # 1. Status endpoint
           STATUS=$(curl -sf --max-time 10 "$API/status")

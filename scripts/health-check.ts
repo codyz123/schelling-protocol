@@ -16,7 +16,7 @@
  *   2 = degraded (slow responses, partial failures)
  */
 
-const API_BASE = "https://schelling-protocol-production.up.railway.app";
+const API_BASE = "https://schellingprotocol.com";
 const LANDING_PAGE = "https://schellingprotocol.com";
 const NPM_PACKAGE = "https://registry.npmjs.org/@schelling/mcp-server";
 const SLOW_THRESHOLD_MS = 3000;

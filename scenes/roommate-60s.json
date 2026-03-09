@@ -36,7 +36,7 @@
       "narration": "One POST request. Just say what you need in normal words. The protocol figures out your intent, signs you up, and boom — ranked matches with scores.",
       "visual": {
         "type": "terminal",
-        "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Roommate in Fort Collins, clean, quiet, $800/mo\"}'",
+        "command": "curl -s -X POST https://schellingprotocol.com/schelling/quick_seek -H 'Content-Type: application/json' -d '{\"intent\": \"Roommate in Fort Collins, clean, quiet, $800/mo\"}'",
         "output": "{\n  \"user_token\": \"a1b2c3d4\",\n  \"candidates\": [\n    { \"score\": 0.94, \"matching_traits\": [\"location\", \"budget\", \"lifestyle\"] },\n    { \"score\": 0.89, \"matching_traits\": [\"location\", \"budget\"] },\n    { \"score\": 0.72, \"matching_traits\": [\"location\"] }\n  ],\n  \"total_matches\": 3\n}"
       }
     },
@@ -56,7 +56,7 @@
       "narration": "Same deal. Describe your place, and the network starts matching you with people looking right away. No forms, no profile photos, no waiting.",
       "visual": {
         "type": "terminal",
-        "command": "curl -s -X POST https://schelling-protocol-production.up.railway.app/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Room available in Fort Collins, $750/mo, quiet neighborhood, no smoking\"}'",
+        "command": "curl -s -X POST https://schellingprotocol.com/schelling/quick_offer -H 'Content-Type: application/json' -d '{\"intent\": \"Room available in Fort Collins, $750/mo, quiet neighborhood, no smoking\"}'",
         "output": "{\n  \"user_token\": \"e5f6g7h8\",\n  \"cluster_id\": \"housing-fortcollins\",\n  \"existing_matches\": 3,\n  \"subscription_id\": \"sub_x9y0z1\"\n}"
       }
     },

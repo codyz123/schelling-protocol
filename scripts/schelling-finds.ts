@@ -6,7 +6,7 @@
  * runs matching against a synthetic seeker, and generates compelling content.
  */
 
-const API = process.env.SCHELLING_API || "https://schelling-protocol-production.up.railway.app/schelling";
+const API = process.env.SCHELLING_API || "https://schellingprotocol.com/schelling";
 const CLUSTER = "housing.finds";
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -366,7 +366,7 @@ generated: true
 ---
 
 # 🏠 Schelling Finds: Fort Collins Rentals
-**${TODAY}** — *Automated matching powered by [Schelling Protocol](https://schelling-protocol-production.up.railway.app)*
+**${TODAY}** — *Automated matching powered by [Schelling Protocol](https://schellingprotocol.com)*
 
 ---
 
