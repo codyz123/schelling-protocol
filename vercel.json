@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/auth/:path*",
+      "destination": "https://schelling-protocol-production.up.railway.app/auth/:path*"
+    },
+    {
+      "source": "/webhooks/:path*",
+      "destination": "https://schelling-protocol-production.up.railway.app/webhooks/:path*"
+    },
+    {
       "source": "/schelling/:path*",
       "destination": "https://schelling-protocol-production.up.railway.app/schelling/:path*"
     },
