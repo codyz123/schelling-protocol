@@ -35,6 +35,13 @@ code{font-family:'SF Mono',Monaco,'Cascadia Code',monospace;font-size:.85em}
 .nav-links a{color:#ccc;font-size:.85rem;font-weight:500;transition:color .2s}.nav-links a:hover{color:#fff}
 .nav-links .btn{font-size:.8rem;padding:.45rem 1rem}
 
+/* Hamburger */
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:101}
+.nav-hamburger span{display:block;width:22px;height:2px;background:#ccc;margin:5px 0;transition:all .3s;border-radius:1px}
+.nav-hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
 /* Layout */
 .container{max-width:1100px;margin:0 auto;padding:0 1.5rem}
 section{padding:5rem 0}
@@ -138,6 +145,11 @@ footer{border-top:1px solid #1e1e2e;padding:2rem 0}
 
 /* Responsive */
 @media(max-width:768px){
+  .nav-hamburger{display:block}
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:rgba(10,10,15,.97);backdrop-filter:blur(12px);padding:1rem 1.5rem;gap:.75rem;border-bottom:1px solid #1e1e2e}
+  .nav-links.open{display:flex}
+  .nav-links a{font-size:1rem;padding:.5rem 0}
+  .nav-links .btn{width:fit-content;margin-top:.25rem}
   section{padding:3rem 0}
   .hero{min-height:auto;padding:4rem 0}
   .arch-row{flex-direction:column}
@@ -168,7 +180,10 @@ footer{border-top:1px solid #1e1e2e;padding:2rem 0}
 </svg>
 Schelling Protocol
 </a>
-<div class="nav-links">
+<button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+<span></span><span></span><span></span>
+</button>
+<div class="nav-links" id="navLinks">
 <a href="#playground">Playground</a>
 <a href="#lifecycle">How It Works</a>
 <a href="/cards">Cards</a>
@@ -451,6 +466,8 @@ Schelling Protocol v3.0.0 · Built by <a href="https://github.com/codyz123" targ
 <script>
 // Nav scroll
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20)});
+// Hamburger menu toggle
+(function(){const h=document.getElementById('navHamburger'),l=document.getElementById('navLinks');if(!h||!l)return;h.addEventListener('click',()=>{h.classList.toggle('open');l.classList.toggle('open')});l.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{h.classList.remove('open');l.classList.remove('open')}))})();
 
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
