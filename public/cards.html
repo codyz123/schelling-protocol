@@ -74,15 +74,10 @@ footer{border-top:1px solid #1e1e2e;padding:2rem 0}
 .cta-sub{font-size:.85rem;color:#666}
 .cta-sub strong{color:#888}
 
-/* Conversation toggle */
+/* Conversation example */
 .convo-section{padding:0 0 5rem}
-.convo-toggle-btn{display:flex;align-items:center;gap:.5rem;background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:.75rem 1.25rem;font-size:.9rem;font-weight:500;color:#ccc;cursor:pointer;transition:all .2s;margin:0 auto;font-family:inherit}
-.convo-toggle-btn:hover{border-color:#6366f1;color:#fff}
-.convo-toggle-btn .arrow{transition:transform .25s;display:inline-block}
-.convo-toggle-btn.open .arrow{transform:rotate(180deg)}
-.convo-wrap{max-height:0;overflow:hidden;transition:max-height .35s ease}
-.convo-wrap.open{max-height:1200px}
-.convo-inner{max-width:600px;margin:1.5rem auto 0;display:flex;flex-direction:column;gap:.75rem}
+.convo-heading{text-align:center;font-size:1.25rem;font-weight:600;color:#e0e0e0;margin-bottom:1.5rem}
+.convo-inner{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:.75rem}
 .msg{display:flex;flex-direction:column;max-width:80%}
 .msg.you{align-self:flex-end;align-items:flex-end}
 .msg.agent{align-self:flex-start;align-items:flex-start}
@@ -256,10 +251,7 @@ Schelling Protocol
 <!-- Example Conversation -->
 <section class="convo-section">
 <div class="container">
-<button class="convo-toggle-btn" id="convo-toggle" onclick="toggleConvo()">
-  See what happens when you paste it <span class="arrow">&#9660;</span>
-</button>
-<div class="convo-wrap" id="convo-wrap">
+<h2 class="convo-heading">Here's what happens when you paste it</h2>
 <div class="convo-inner">
   <div class="msg you">
     <div class="msg-label">You</div>
@@ -301,7 +293,6 @@ Schelling Protocol
     <div class="msg-label">Agent</div>
     <div class="msg-bubble">Done! Your card is live at schellingprotocol.com/cards/cody-z. I've saved your API key and set up monitoring — I'll check for requests every 30 minutes.</div>
   </div>
-</div>
 </div>
 </div>
 </section>
@@ -415,15 +406,6 @@ function copySetupUrl() {
       btn.classList.remove('copied');
     }, 1800);
   }
-}
-
-// Conversation toggle
-function toggleConvo() {
-  var btn = document.getElementById('convo-toggle');
-  var wrap = document.getElementById('convo-wrap');
-  var isOpen = btn.classList.contains('open');
-  btn.classList.toggle('open', !isOpen);
-  wrap.classList.toggle('open', !isOpen);
 }
 
 // Directory
