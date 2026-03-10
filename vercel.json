@@ -37,8 +37,20 @@
       "destination": "https://schelling-protocol-production.up.railway.app/robots.txt"
     },
     {
+      "source": "/cards/setup",
+      "destination": "/cards-setup.html"
+    },
+    {
+      "source": "/cards/:slug/contact-setup",
+      "destination": "/contact-setup.html"
+    },
+    {
       "source": "/cards/:slug",
       "destination": "/card.html"
+    },
+    {
+      "source": "/cards",
+      "destination": "/cards.html"
     },
     {
       "source": "/api/:path*",
