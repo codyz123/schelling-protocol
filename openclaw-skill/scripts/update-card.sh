@@ -44,29 +44,23 @@ shift 2
 JSON_ARRAY_FIELDS="skills offers needs social_links preferences"
 
 # Build JSON body from key=value pairs
-BODY="{"
-FIRST=true
+BODY=$(jq -n '{}')
 
 for pair in "$@"; do
   KEY="${pair%%=*}"
   VAL="${pair#*=}"
 
-  $FIRST || BODY="$BODY,"
-  FIRST=false
-
   # Check if it's a JSON array/object field
   if echo "$JSON_ARRAY_FIELDS" | grep -qw "$KEY"; then
-    BODY="$BODY \"$KEY\": $VAL"
+    BODY=$(jq -n --argjson b "$BODY" --arg k "$KEY" --argjson v "$VAL" '$b + {($k): $v}')
   elif [[ "$VAL" == "true" || "$VAL" == "false" ]]; then
-    BODY="$BODY \"$KEY\": $VAL"
+    BODY=$(jq -n --argjson b "$BODY" --arg k "$KEY" --argjson v "$VAL" '$b + {($k): $v}')
   elif [[ "$VAL" =~ ^[0-9]+$ ]]; then
-    BODY="$BODY \"$KEY\": $VAL"
+    BODY=$(jq -n --argjson b "$BODY" --arg k "$KEY" --argjson v "$VAL" '$b + {($k): $v}')
   else
-    BODY="$BODY \"$KEY\": $(echo "$VAL" | jq -Rs .)"
+    BODY=$(jq -n --argjson b "$BODY" --arg k "$KEY" --arg v "$VAL" '$b + {($k): $v}')
   fi
 done
-
-BODY="$BODY }"
 
 RESPONSE=$(curl -sf \
   -X PUT \
@@ -78,8 +72,4 @@ RESPONSE=$(curl -sf \
     exit 1
   }
 
-if command -v jq &>/dev/null; then
-  echo "$RESPONSE" | jq .
-else
-  echo "$RESPONSE"
-fi
+echo "$RESPONSE" | jq .

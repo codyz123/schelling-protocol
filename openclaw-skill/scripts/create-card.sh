@@ -41,22 +41,22 @@ SKILLS="${6:-}"
 OFFERS="${7:-}"
 NEEDS="${8:-}"
 
-# Build JSON body
-BODY=$(cat <<EOF
-{
-  "slug": "$SLUG",
-  "display_name": "$DISPLAY_NAME",
-  "tagline": "$TAGLINE"
-EOF
-)
+# Build JSON using jq for correctness
+BODY=$(jq -n \
+  --arg slug "$SLUG" \
+  --arg display_name "$DISPLAY_NAME" \
+  --arg tagline "$TAGLINE" \
+  '{slug: $slug, display_name: $display_name, tagline: $tagline}')
 
-[ -n "$BIO" ]           && BODY="$BODY, \"bio\": $(echo "$BIO" | jq -Rs .)"
-[ "$IS_FREELANCER" = "true" ] && BODY="$BODY, \"is_freelancer\": true"
-[ -n "$SKILLS" ]        && BODY="$BODY, \"skills\": $SKILLS"
-[ -n "$OFFERS" ]        && BODY="$BODY, \"offers\": $OFFERS"
-[ -n "$NEEDS" ]         && BODY="$BODY, \"needs\": $NEEDS"
+[ -n "$BIO" ] && BODY=$(echo "$BODY" | jq --arg v "$BIO" '. + {bio: $v}')
 
-BODY="$BODY }"
+if [ "$IS_FREELANCER" = "true" ]; then
+  BODY=$(echo "$BODY" | jq '. + {is_freelancer: true}')
+fi
+
+[ -n "$SKILLS" ] && BODY=$(echo "$BODY" | jq --argjson v "$SKILLS" '. + {skills: $v}')
+[ -n "$OFFERS" ] && BODY=$(echo "$BODY" | jq --argjson v "$OFFERS" '. + {offers: $v}')
+[ -n "$NEEDS" ]  && BODY=$(echo "$BODY" | jq --argjson v "$NEEDS"  '. + {needs: $v}')
 
 RESPONSE=$(curl -sf \
   -X POST \
@@ -67,12 +67,7 @@ RESPONSE=$(curl -sf \
     exit 1
   }
 
-if command -v jq &>/dev/null; then
-  echo "$RESPONSE" | jq .
-else
-  echo "$RESPONSE"
-fi
+echo "$RESPONSE" | jq .
 
-# Remind to save the key
 echo >&2
 echo "⚠️  Save your api_key! It will not be shown again." >&2

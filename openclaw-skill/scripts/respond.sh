@@ -39,9 +39,8 @@ if [[ "$STATUS" != "accepted" && "$STATUS" != "declined" ]]; then
   exit 1
 fi
 
-BODY="{\"status\": \"$STATUS\""
-[ -n "$RESPONSE_MESSAGE" ] && BODY="$BODY, \"response_message\": $(echo "$RESPONSE_MESSAGE" | jq -Rs .)"
-BODY="$BODY }"
+BODY=$(jq -n --arg status "$STATUS" '{status: $status}')
+[ -n "$RESPONSE_MESSAGE" ] && BODY=$(jq -n --argjson b "$BODY" --arg v "$RESPONSE_MESSAGE" '$b + {response_message: $v}')
 
 RESPONSE=$(curl -sf \
   -X PUT \
@@ -53,8 +52,4 @@ RESPONSE=$(curl -sf \
     exit 1
   }
 
-if command -v jq &>/dev/null; then
-  echo "$RESPONSE" | jq .
-else
-  echo "$RESPONSE"
-fi
+echo "$RESPONSE" | jq .

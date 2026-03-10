@@ -39,15 +39,15 @@ FROM_EMAIL="${5:-}"
 FROM_CARD_SLUG="${6:-}"
 BUDGET_CENTS="${7:-}"
 
-# Build JSON body
-BODY="{\"intent\": $(echo "$INTENT" | jq -Rs .), \"message\": $(echo "$MESSAGE" | jq -Rs .)"
+BODY=$(jq -n \
+  --arg intent "$INTENT" \
+  --arg message "$MESSAGE" \
+  '{intent: $intent, message: $message}')
 
-[ -n "$FROM_NAME" ]      && BODY="$BODY, \"from_name\": $(echo "$FROM_NAME" | jq -Rs .)"
-[ -n "$FROM_EMAIL" ]     && BODY="$BODY, \"from_email\": $(echo "$FROM_EMAIL" | jq -Rs .)"
-[ -n "$FROM_CARD_SLUG" ] && BODY="$BODY, \"from_card_slug\": $(echo "$FROM_CARD_SLUG" | jq -Rs .)"
-[ -n "$BUDGET_CENTS" ]   && BODY="$BODY, \"budget_cents\": $BUDGET_CENTS"
-
-BODY="$BODY }"
+[ -n "$FROM_NAME" ]      && BODY=$(jq -n --argjson b "$BODY" --arg v "$FROM_NAME"       '$b + {from_name: $v}')
+[ -n "$FROM_EMAIL" ]     && BODY=$(jq -n --argjson b "$BODY" --arg v "$FROM_EMAIL"      '$b + {from_email: $v}')
+[ -n "$FROM_CARD_SLUG" ] && BODY=$(jq -n --argjson b "$BODY" --arg v "$FROM_CARD_SLUG"  '$b + {from_card_slug: $v}')
+[ -n "$BUDGET_CENTS" ]   && BODY=$(jq -n --argjson b "$BODY" --argjson v "$BUDGET_CENTS" '$b + {budget_cents: $v}')
 
 RESPONSE=$(curl -sf \
   -X POST \
@@ -58,8 +58,4 @@ RESPONSE=$(curl -sf \
     exit 1
   }
 
-if command -v jq &>/dev/null; then
-  echo "$RESPONSE" | jq .
-else
-  echo "$RESPONSE"
-fi
+echo "$RESPONSE" | jq .
