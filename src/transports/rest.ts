@@ -52,6 +52,9 @@ import {
   handleToolInvoke,
   handleToolFeedback,
 } from "../handlers/tools.js";
+// ─── Agent Cards imports ──────────────────────────────────────────────
+import { handleCardsRoute, initAgentCardsTables } from "../handlers/cards.js";
+
 // ─── Marketplace imports ──────────────────────────────────────────────
 import {
   handleMarketplaceRegister,
@@ -280,6 +283,9 @@ export function createRestServer(ctx: HandlerContext): RestServer {
       }, 60_000); // Check every minute
     }
 
+    // Initialize Agent Cards tables
+    try { initAgentCardsTables(ctx.db); } catch { /* tables may already exist */ }
+
     server = serve({
       port,
       fetch: async (req: Request) => {
@@ -288,7 +294,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 
         const corsHeaders = {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
         };
 
@@ -601,6 +607,12 @@ export function createRestServer(ctx: HandlerContext): RestServer {
             "User-agent: *\nAllow: /\n\nSitemap: https://schellingprotocol.com/openapi.yaml\n",
             { headers: { ...corsHeaders, "Content-Type": "text/plain" } }
           );
+        }
+
+        // /api/cards/* — Agent Cards REST API
+        if (url.pathname.startsWith("/api/cards")) {
+          const cardResponse = await handleCardsRoute(req, url, ctx, corsHeaders);
+          if (cardResponse) return cardResponse;
         }
 
         // Any other GET — helpful 404 instead of confusing 405
