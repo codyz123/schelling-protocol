@@ -35,6 +35,10 @@
     {
       "source": "/robots.txt",
       "destination": "https://schelling-protocol-production.up.railway.app/robots.txt"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://schelling-protocol-production.up.railway.app/api/:path*"
     }
   ],
   "headers": [
