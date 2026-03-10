@@ -610,7 +610,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         }
 
         // /api/cards/* — Agent Cards REST API
-        if (url.pathname.startsWith("/api/cards")) {
+        if (url.pathname === "/api/cards" || url.pathname.startsWith("/api/cards/")) {
           const cardResponse = await handleCardsRoute(req, url, ctx, corsHeaders);
           if (cardResponse) return cardResponse;
         }

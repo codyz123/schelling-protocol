@@ -67,6 +67,9 @@ export function initAgentCardsTables(db: DatabaseConnection): void {
 
 // ─── Auth Helper ─────────────────────────────────────────────────────
 
+// Dummy hash for constant-time comparison when card doesn't exist (prevents timing-based slug enumeration)
+const DUMMY_HASH = "$argon2id$v=19$m=65536,t=2,p=1$0000000000000000$0000000000000000000000000000000000000000000";
+
 async function authenticateCard(
   db: DatabaseConnection,
   slug: string,
@@ -77,9 +80,10 @@ async function authenticateCard(
   const card = db.prepare(
     "SELECT * FROM agent_cards WHERE slug = ? AND deleted_at IS NULL",
   ).get(slug) as Record<string, any> | undefined;
-  if (!card) return null;
-  const valid = await Bun.password.verify(token, card.api_key_hash as string);
-  return valid ? card : null;
+  // Always run verify to prevent timing-based slug enumeration
+  const hashToCheck = card?.api_key_hash ?? DUMMY_HASH;
+  const valid = await Bun.password.verify(token, hashToCheck).catch(() => false);
+  return valid && card ? card : null;
 }
 
 // ─── Response Helpers ────────────────────────────────────────────────
@@ -120,7 +124,9 @@ export async function handleCardsRoute(
   );
   if (!match) return null;
 
-  const [, slug, subpath, reqId] = match;
+  // Normalize slug to lowercase (DB stores lowercase, URLs should be case-insensitive)
+  const [, rawSlugFromUrl, subpath, reqId] = match;
+  const slug = rawSlugFromUrl?.toLowerCase();
 
   // ── POST /api/cards — Create card ────────────────────────────────
   if (method === "POST" && !slug) {
@@ -143,10 +149,16 @@ export async function handleCardsRoute(
       return err(`slug "${normalizedSlug}" is reserved`);
     }
 
+    // Check both live and soft-deleted cards — slug is globally unique (column constraint)
     const existing = ctx.db
-      .prepare("SELECT id FROM agent_cards WHERE slug = ?")
-      .get(normalizedSlug);
-    if (existing) return err(`slug "${normalizedSlug}" is already taken`, 409, "CONFLICT");
+      .prepare("SELECT id, deleted_at FROM agent_cards WHERE slug = ?")
+      .get(normalizedSlug) as { id: string; deleted_at: string | null } | undefined;
+    if (existing) {
+      const msg = existing.deleted_at
+        ? `slug "${normalizedSlug}" was previously used and is not available for reuse`
+        : `slug "${normalizedSlug}" is already taken`;
+      return err(msg, 409, "CONFLICT");
+    }
 
     // Generate API key: 32 random bytes as hex
     const apiKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("hex");
@@ -234,8 +246,10 @@ export async function handleCardsRoute(
     const skillsParam = url.searchParams.get("skills");
     if (skillsParam) {
       for (const skill of skillsParam.split(",").map(s => s.trim()).filter(Boolean)) {
-        conditions.push("skills LIKE ?");
-        params.push(`%${skill}%`);
+        // Escape LIKE wildcards to prevent unintended matches
+        const escaped = skill.replace(/[%_]/g, "\\$&");
+        conditions.push("skills LIKE ? ESCAPE '\\'");
+        params.push(`%${escaped}%`);
       }
     }
 

@@ -362,6 +362,78 @@ describe("PUT /api/cards/:slug/requests/:id", () => {
   });
 });
 
+// ─── Slug Case Insensitivity ──────────────────────────────────────────
+
+describe("slug case insensitivity", () => {
+  test("GET with different case finds the card", async () => {
+    await createCard({ slug: "my-agent" });
+    const res = await route("GET", "/api/cards/MY-AGENT");
+    expect(res!.status).toBe(200);
+    const data = await res!.json();
+    expect(data.slug).toBe("my-agent");
+  });
+
+  test("PUT with different case authenticates correctly", async () => {
+    const { api_key } = await createCard({ slug: "case-test" });
+    const res = await route("PUT", "/api/cards/CASE-TEST", { tagline: "updated" }, api_key);
+    expect(res!.status).toBe(200);
+  });
+
+  test("DELETE with different case works", async () => {
+    const { api_key } = await createCard({ slug: "del-case" });
+    const res = await route("DELETE", "/api/cards/DEL-CASE", undefined, api_key);
+    expect(res!.status).toBe(200);
+  });
+});
+
+// ─── Edge Cases ──────────────────────────────────────────────────────
+
+describe("edge cases", () => {
+  test("coordination request to soft-deleted card returns 404", async () => {
+    const { api_key } = await createCard({ slug: "deleted-card" });
+    await route("DELETE", "/api/cards/deleted-card", undefined, api_key);
+    const res = await route("POST", "/api/cards/deleted-card/request", { intent: "help" });
+    expect(res!.status).toBe(404);
+  });
+
+  test("deleted slug gives clear conflict message on reuse attempt", async () => {
+    const { api_key } = await createCard({ slug: "used-slug" });
+    await route("DELETE", "/api/cards/used-slug", undefined, api_key);
+    const res = await route("POST", "/api/cards", { slug: "used-slug", display_name: "New Card" });
+    expect(res!.status).toBe(409);
+    const data = await res!.json();
+    expect(data.message).toContain("previously used");
+  });
+
+  test("skills filter with SQL LIKE wildcards doesn't over-match", async () => {
+    await createCard({ slug: "go-dev", skills: ["go", "docker"] });
+    await createCard({ slug: "golang-dev", skills: ["golang", "k8s"] });
+    // Searching for exact "go" should match both (substring), but "%" shouldn't match everything
+    const res = await route("GET", "/api/cards?skills=%25"); // URL-encoded %
+    const data = await res!.json();
+    expect(data.cards).toHaveLength(0); // % should be escaped, not treated as wildcard
+  });
+
+  test("auth returns 401 for deleted card (not confusing 500)", async () => {
+    const { api_key } = await createCard({ slug: "ghost-card" });
+    await route("DELETE", "/api/cards/ghost-card", undefined, api_key);
+    const res = await route("PUT", "/api/cards/ghost-card", { tagline: "hack" }, api_key);
+    expect(res!.status).toBe(401);
+  });
+
+  test("empty intent is rejected", async () => {
+    await createCard({ slug: "intent-test" });
+    const res = await route("POST", "/api/cards/intent-test/request", { intent: "   " });
+    expect(res!.status).toBe(400);
+  });
+
+  test("very long display_name is accepted", async () => {
+    const longName = "A".repeat(500);
+    const res = await route("POST", "/api/cards", { slug: "long-name", display_name: longName });
+    expect(res!.status).toBe(201);
+  });
+});
+
 // ─── Route non-match ─────────────────────────────────────────────────
 
 describe("route non-match", () => {
