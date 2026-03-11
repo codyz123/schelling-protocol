@@ -607,6 +607,36 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           });
         }
 
+        // GET /cards — Agent Cards marketing page
+        if (method === "GET" && url.pathname === "/cards") {
+          const f = Bun.file(process.cwd() + "/public/cards.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /cards/setup — Agent Cards setup guide
+        if (method === "GET" && url.pathname === "/cards/setup") {
+          const f = Bun.file(process.cwd() + "/public/cards-setup.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /cards/:slug — Public agent card profile
+        if (method === "GET" && url.pathname.startsWith("/cards/") && url.pathname !== "/cards/setup") {
+          const f = Bun.file(process.cwd() + "/public/card.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /serendipity — Serendipity marketing/info page
+        if (method === "GET" && url.pathname === "/serendipity") {
+          const f = Bun.file(process.cwd() + "/public/serendipity.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /serendipity/setup — Serendipity setup guide
+        if (method === "GET" && url.pathname === "/serendipity/setup") {
+          const f = Bun.file(process.cwd() + "/public/serendipity-setup.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
         // GET /robots.txt
         if (method === "GET" && url.pathname === "/robots.txt") {
           return new Response(

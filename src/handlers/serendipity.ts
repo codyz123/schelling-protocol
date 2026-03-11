@@ -418,18 +418,32 @@ export async function handleSerendipityRoute(
       const card = await requireAuth();
       if (!card) return err("Unauthorized", 401, "UNAUTHORIZED");
 
+      // Guard against oversized payloads (256-dim embeddings × 3 + metadata ≈ 50KB max)
+      const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+      if (contentLength > 100_000) {
+        return err("Request body too large (max 100KB)", 413, "PAYLOAD_TOO_LARGE");
+      }
+
       let body: any;
       try { body = await req.json(); } catch { return err("Invalid JSON body"); }
 
-      // Validate embeddings (must be arrays of exactly 256 floats)
-      if (!Array.isArray(body.needs_embedding) || body.needs_embedding.length !== 256) {
-        return err("needs_embedding must be an array of exactly 256 floats");
-      }
-      if (!Array.isArray(body.offers_embedding) || body.offers_embedding.length !== 256) {
-        return err("offers_embedding must be an array of exactly 256 floats");
-      }
-      if (!Array.isArray(body.profile_embedding) || body.profile_embedding.length !== 256) {
-        return err("profile_embedding must be an array of exactly 256 floats");
+      // Validate embeddings (must be arrays of exactly 256 finite numbers)
+      const validateEmbedding = (emb: any, name: string): string | null => {
+        if (!Array.isArray(emb) || emb.length !== 256) return `${name} must be an array of exactly 256 floats`;
+        for (let i = 0; i < emb.length; i++) {
+          if (typeof emb[i] !== "number" || !Number.isFinite(emb[i])) {
+            return `${name}[${i}] must be a finite number`;
+          }
+        }
+        return null;
+      };
+      for (const [emb, name] of [
+        [body.needs_embedding, "needs_embedding"],
+        [body.offers_embedding, "offers_embedding"],
+        [body.profile_embedding, "profile_embedding"],
+      ] as const) {
+        const embErr = validateEmbedding(emb, name);
+        if (embErr) return err(embErr);
       }
 
       // Validate field lengths
@@ -466,8 +480,26 @@ export async function handleSerendipityRoute(
       expiresAt.setDate(expiresAt.getDate() + Math.round(ttlDays));
       const expiresAtStr = expiresAt.toISOString().replace("T", " ").slice(0, 19);
 
-      // One signal per card: delete any prior signal
+      // One signal per card: expire pending matches referencing old signal, then delete it
+      const oldSignal = ctx.db.prepare(
+        "SELECT id FROM serendipity_signals WHERE card_id = ?",
+      ).get(card.id) as { id: string } | undefined;
+      if (oldSignal) {
+        ctx.db.prepare(`
+          UPDATE serendipity_matches
+          SET status = 'expired'
+          WHERE (signal_a_id = ? OR signal_b_id = ?) AND status = 'pending'
+        `).run(oldSignal.id, oldSignal.id);
+      }
       ctx.db.prepare("DELETE FROM serendipity_signals WHERE card_id = ?").run(card.id);
+
+      // Check if this signal ID is already taken by another card
+      const existingSignal = ctx.db.prepare(
+        "SELECT card_id FROM serendipity_signals WHERE id = ?",
+      ).get(signalId) as { card_id: string } | undefined;
+      if (existingSignal) {
+        return err("Signal ID already exists. Use a different UUID.", 409, "CONFLICT");
+      }
 
       ctx.db.prepare(`
         INSERT INTO serendipity_signals
@@ -537,6 +569,8 @@ export async function handleSerendipityRoute(
       if (!card) return err("Unauthorized", 401, "UNAUTHORIZED");
 
       const statusFilter = url.searchParams.get("status");
+      const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "50", 10) || 50));
+      const offset = Math.max(0, parseInt(url.searchParams.get("offset") ?? "0", 10) || 0);
       const conditions = ["(card_a_id = ? OR card_b_id = ?)"];
       const params: any[] = [card.id, card.id];
 
@@ -545,13 +579,24 @@ export async function handleSerendipityRoute(
         params.push(statusFilter);
       }
 
+      const where = conditions.join(" AND ");
+      const total = (ctx.db.prepare(
+        `SELECT COUNT(*) as c FROM serendipity_matches WHERE ${where}`,
+      ).get(...params) as { c: number }).c;
+
       const matches = ctx.db.prepare(`
         SELECT * FROM serendipity_matches
-        WHERE ${conditions.join(" AND ")}
+        WHERE ${where}
         ORDER BY created_at DESC
-      `).all(...params) as Record<string, any>[];
+        LIMIT ? OFFSET ?
+      `).all(...params, limit, offset) as Record<string, any>[];
 
-      return json({ matches: matches.map(m => formatMatchForCard(m, card.id, ctx.db)) });
+      return json({
+        matches: matches.map(m => formatMatchForCard(m, card.id, ctx.db)),
+        total,
+        limit,
+        offset,
+      });
     }
 
     // GET /api/serendipity/matches/:id — single match detail

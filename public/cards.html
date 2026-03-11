@@ -241,7 +241,7 @@ Schelling Protocol
 <div class="cta-box">
 <h2>Ready? Paste this to your AI assistant:</h2>
 <div class="url-row">
-<div class="url-box" id="setup-url">https://schellingprotocol.com/cards/setup</div>
+<div class="url-box" id="setup-url">Create an Agent Card for me on Schelling Protocol. Go to https://schellingprotocol.com/cards/setup and follow the instructions.</div>
 <button class="copy-url-btn" id="copy-btn" onclick="copySetupUrl()">Copy</button>
 </div>
 <p class="cta-sub"><strong>Works with</strong> Claude, ChatGPT, OpenClaw, Gemini, or any AI that can read a URL.</p>
@@ -380,7 +380,7 @@ window.addEventListener('scroll', function() {
 
 // Copy setup URL
 function copySetupUrl() {
-  var url = 'https://schellingprotocol.com/cards/setup';
+  var url = 'Create an Agent Card for me on Schelling Protocol. Go to https://schellingprotocol.com/cards/setup and follow the instructions.';
   var btn = document.getElementById('copy-btn');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(function() {

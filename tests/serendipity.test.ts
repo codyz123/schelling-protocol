@@ -1046,3 +1046,110 @@ describe("GET /matches/:id", () => {
     expect(res!.status).toBe(404);
   });
 });
+
+// ─── Bug fix tests ─────────────────────────────────────────────────
+
+describe("Signal ID collision", () => {
+  test("returns 409 if signal ID is taken by another card", async () => {
+    const { api_key: keyA } = await createCard("collide-a");
+    const { api_key: keyB } = await createCard("collide-b");
+
+    // A publishes with a specific signal ID
+    const sharedId = randomUUID();
+    const resA = await serRoute(
+      "PUT",
+      `/api/serendipity/signals/${sharedId}?card=collide-a`,
+      defaultSignalBody(),
+      keyA,
+    );
+    expect(resA!.status).toBe(201);
+
+    // B tries to use the same signal ID
+    const resB = await serRoute(
+      "PUT",
+      `/api/serendipity/signals/${sharedId}?card=collide-b`,
+      defaultSignalBody(),
+      keyB,
+    );
+    expect(resB!.status).toBe(409);
+  });
+});
+
+describe("Stale match cleanup on re-publish", () => {
+  test("re-publishing signal expires old pending matches", async () => {
+    const { api_key: keyA } = await createCard("stale-a");
+    const { api_key: keyB } = await createCard("stale-b");
+
+    await publishSignal("stale-a", keyA, {
+      needs_embedding: makeEmb(0), offers_embedding: makeEmb(1), profile_embedding: makeEmb(2),
+    });
+    await publishSignal("stale-b", keyB, {
+      needs_embedding: makeEmb(1), offers_embedding: makeEmb(0), profile_embedding: makeEmb(2),
+    });
+
+    // Verify match exists
+    const matchRes1 = await serRoute("GET", `/api/serendipity/matches?card=stale-a`, undefined, keyA);
+    const { matches: before } = await matchRes1!.json();
+    expect(before.length).toBeGreaterThan(0);
+    const oldMatchId = before[0].id;
+
+    // A re-publishes — old match should be expired
+    await publishSignal("stale-a", keyA, {
+      needs_embedding: makeEmb(0), offers_embedding: makeEmb(1), profile_embedding: makeEmb(2),
+      summary: "Updated signal",
+    });
+
+    const oldMatch = db.prepare("SELECT status FROM serendipity_matches WHERE id = ?").get(oldMatchId) as any;
+    expect(oldMatch.status).toBe("expired");
+  });
+});
+
+describe("Embedding type validation", () => {
+  test("rejects NaN in embedding", async () => {
+    const { api_key } = await createCard("nan-emb");
+    const badEmb = new Array(256).fill(0);
+    badEmb[42] = NaN;
+    const { res } = await publishSignal("nan-emb", api_key, { needs_embedding: badEmb });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("needs_embedding[42]");
+  });
+
+  test("rejects string in embedding", async () => {
+    const { api_key } = await createCard("str-emb");
+    const badEmb: any[] = new Array(256).fill(0);
+    badEmb[0] = "hello";
+    const { res } = await publishSignal("str-emb", api_key, { offers_embedding: badEmb });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("offers_embedding[0]");
+  });
+
+  test("rejects Infinity in embedding", async () => {
+    const { api_key } = await createCard("inf-emb");
+    const badEmb = new Array(256).fill(0);
+    badEmb[100] = Infinity;
+    const { res } = await publishSignal("inf-emb", api_key, { profile_embedding: badEmb });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("profile_embedding[100]");
+  });
+});
+
+describe("Matches pagination", () => {
+  test("returns total count and respects limit/offset", async () => {
+    const { api_key: keyA } = await createCard("page-a");
+    const { api_key: keyB } = await createCard("page-b");
+
+    await publishSignal("page-a", keyA, {
+      needs_embedding: makeEmb(0), offers_embedding: makeEmb(1), profile_embedding: makeEmb(2),
+    });
+    await publishSignal("page-b", keyB, {
+      needs_embedding: makeEmb(1), offers_embedding: makeEmb(0), profile_embedding: makeEmb(2),
+    });
+
+    const res = await serRoute("GET", `/api/serendipity/matches?card=page-a&limit=1&offset=0`, undefined, keyA);
+    const data = await res!.json();
+    expect(data.total).toBeGreaterThanOrEqual(1);
+    expect(data.matches.length).toBeLessThanOrEqual(1);
+    expect(data.limit).toBe(1);
+    expect(data.offset).toBe(0);
+  });
+});

@@ -1,2 +1,3 @@
 agents-need-craigslist-60s
 delegation-model-60s
+freelancer-negotiation-60s
