@@ -54,6 +54,8 @@ import {
 } from "../handlers/tools.js";
 // ─── Agent Cards imports ──────────────────────────────────────────────
 import { handleCardsRoute, initAgentCardsTables } from "../handlers/cards.js";
+// ─── Serendipity imports ──────────────────────────────────────────────
+import { handleSerendipityRoute, initSerendipityTables, cleanupExpiredSerendipity } from "../handlers/serendipity.js";
 
 // ─── Marketplace imports ──────────────────────────────────────────────
 import {
@@ -285,6 +287,10 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 
     // Initialize Agent Cards tables
     try { initAgentCardsTables(ctx.db); } catch { /* tables may already exist */ }
+    // Initialize Serendipity tables
+    try { initSerendipityTables(ctx.db); } catch { /* tables may already exist */ }
+    // Run serendipity cleanup on startup
+    try { cleanupExpiredSerendipity(ctx.db); } catch { /* ignore cleanup errors */ }
 
     server = serve({
       port,
@@ -607,6 +613,12 @@ export function createRestServer(ctx: HandlerContext): RestServer {
             "User-agent: *\nAllow: /\n\nSitemap: https://schellingprotocol.com/openapi.yaml\n",
             { headers: { ...corsHeaders, "Content-Type": "text/plain" } }
           );
+        }
+
+        // /api/serendipity/* — Serendipity passive discovery engine
+        if (url.pathname.startsWith("/api/serendipity")) {
+          const serendipityResponse = await handleSerendipityRoute(req, url, ctx, corsHeaders);
+          if (serendipityResponse) return serendipityResponse;
         }
 
         // /api/cards/* — Agent Cards REST API
