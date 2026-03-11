@@ -1153,3 +1153,76 @@ describe("Matches pagination", () => {
     expect(data.offset).toBe(0);
   });
 });
+
+describe("Defer (not_now) flow", () => {
+  test("not_now extends match expiry without rejecting", async () => {
+    const { api_key: keyA } = await createCard("defer-a");
+    const { api_key: keyB } = await createCard("defer-b");
+
+    await publishSignal("defer-a", keyA, {
+      needs_embedding: makeEmb(0), offers_embedding: makeEmb(1), profile_embedding: makeEmb(2),
+    });
+    await publishSignal("defer-b", keyB, {
+      needs_embedding: makeEmb(1), offers_embedding: makeEmb(0), profile_embedding: makeEmb(2),
+    });
+
+    // Get the match
+    const matchRes = await serRoute("GET", `/api/serendipity/matches?card=defer-a`, undefined, keyA);
+    const { matches } = await matchRes!.json();
+    expect(matches.length).toBeGreaterThan(0);
+    const matchId = matches[0].id;
+    const originalExpiry = db.prepare("SELECT expires_at FROM serendipity_matches WHERE id = ?").get(matchId) as any;
+
+    // Defer the match
+    const deferRes = await serRoute(
+      "PUT",
+      `/api/serendipity/matches/${matchId}?card=defer-a`,
+      { decision: "not_now" },
+      keyA,
+    );
+    expect(deferRes!.status).toBe(200);
+    const deferData = await deferRes!.json();
+    expect(deferData.deferred).toBe(true);
+
+    // Match should still be pending with a valid future expiry
+    const afterDefer = db.prepare("SELECT status, expires_at FROM serendipity_matches WHERE id = ?").get(matchId) as any;
+    expect(afterDefer.status).toBe("pending");
+    // Expiry should be at least 13 days from now (14 days minus test execution time)
+    const thirteenDaysFromNow = Date.now() + 13 * 24 * 60 * 60 * 1000;
+    expect(new Date(afterDefer.expires_at).getTime()).toBeGreaterThan(thirteenDaysFromNow);
+  });
+
+  test("deferred match can still be accepted later", async () => {
+    const { api_key: keyA } = await createCard("deferacc-a");
+    const { api_key: keyB } = await createCard("deferacc-b");
+
+    await publishSignal("deferacc-a", keyA, {
+      needs_embedding: makeEmb(0), offers_embedding: makeEmb(1), profile_embedding: makeEmb(2),
+    });
+    await publishSignal("deferacc-b", keyB, {
+      needs_embedding: makeEmb(1), offers_embedding: makeEmb(0), profile_embedding: makeEmb(2),
+    });
+
+    const matchRes = await serRoute("GET", `/api/serendipity/matches?card=deferacc-a`, undefined, keyA);
+    const { matches } = await matchRes!.json();
+    const matchId = matches[0].id;
+
+    // Defer first
+    await serRoute("PUT", `/api/serendipity/matches/${matchId}?card=deferacc-a`, { decision: "not_now" }, keyA);
+
+    // Then accept
+    const yesRes = await serRoute("PUT", `/api/serendipity/matches/${matchId}?card=deferacc-a`, { decision: "yes" }, keyA);
+    expect(yesRes!.status).toBe(200);
+    const yesData = await yesRes!.json();
+    expect(yesData.revealed).toBe(false); // Other side hasn't opted in yet
+
+    // Other side accepts
+    const matchResB = await serRoute("GET", `/api/serendipity/matches?card=deferacc-b`, undefined, keyB);
+    const matchesB = (await matchResB!.json()).matches;
+    const bMatchId = matchesB[0].id;
+    const revealRes = await serRoute("PUT", `/api/serendipity/matches/${bMatchId}?card=deferacc-b`, { decision: "yes" }, keyB);
+    const revealData = await revealRes!.json();
+    expect(revealData.revealed).toBe(true);
+    expect(revealData.card_slug).toBe("deferacc-a");
+  });
+});

@@ -1099,11 +1099,11 @@ server.tool(
 
 server.tool(
   "serendipity.respond",
-  `Respond to a Serendipity match with yes or no.
+  `Respond to a Serendipity match with yes, no, or not_now.
 
-If yes: Your opt-in is recorded. If the other side has also said yes, both identities are revealed — you receive their card slug and profile URL. If not, you wait.
-
-If no: The match is permanently rejected — this pair will never re-match.
+- yes: Opt in. If the other side also said yes, identities are revealed — you get their card slug and profile URL.
+- not_now: Defer. Match stays pending with expiry extended by 14 days. Use when your human is interested but not ready, or needs time to think. You can respond again later.
+- no: Permanent rejection. This pair will never re-match. Only use when confident.
 
 Before responding, evaluate the match using other_signal:
 - Do their offers address your human's needs?
@@ -1111,12 +1111,12 @@ Before responding, evaluate the match using other_signal:
 - Do they share context (location/timezone) or interests?
 - Would your human genuinely want to meet this person?
 
-Be conservative. A bad yes wastes both parties' time. A no is final but keeps the signal clean.`,
+Be conservative. A bad yes wastes both parties' time. A no is final. When in doubt, use not_now.`,
   {
     card_slug: z.string().describe("Your Agent Card slug"),
     api_key: z.string().describe("Your Agent Card API key"),
     match_id: z.string().describe("The match ID to respond to"),
-    decision: z.enum(["yes", "no"]).describe("yes to opt in, no to reject permanently"),
+    decision: z.enum(["yes", "no", "not_now"]).describe("yes to opt in, not_now to defer (14 day extension), no to reject permanently"),
   },
   async ({ card_slug, api_key, match_id, decision }) =>
     mcpApi(`/api/serendipity/matches/${match_id}`, {

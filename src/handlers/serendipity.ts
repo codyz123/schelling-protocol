@@ -629,12 +629,22 @@ export async function handleSerendipityRoute(
       try { body = await req.json(); } catch { return err("Invalid JSON body"); }
 
       const { decision } = body;
-      if (!["yes", "no"].includes(decision)) {
-        return err("decision must be 'yes' or 'no'");
+      if (!["yes", "no", "not_now"].includes(decision)) {
+        return err("decision must be 'yes', 'no', or 'not_now'");
       }
 
       const yourSide = match.card_a_id === card.id ? "a" : "b";
       const otherCardId = yourSide === "a" ? match.card_b_id : match.card_a_id;
+
+      // "not_now" — defer without rejecting. Match stays pending, extends expiry by 14 days.
+      if (decision === "not_now") {
+        ctx.db.prepare(`
+          UPDATE serendipity_matches
+          SET expires_at = datetime('now', '+14 days')
+          WHERE id = ?
+        `).run(matchId);
+        return json({ deferred: true, message: "Match saved for later. It will stay available for 14 more days." });
+      }
 
       if (decision === "no") {
         ctx.db.prepare(`
