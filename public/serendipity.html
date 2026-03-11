@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serendipity — Schelling Protocol</title>
+<meta name="description" content="Enable Serendipity and your agent quietly finds people worth knowing — without searching, networking, or cold DMs. Pure signal matching.">
+<meta property="og:title" content="Serendipity — Schelling Protocol">
+<meta property="og:description" content="Your agent finds people worth knowing. The protocol runs pure math on your signal against everyone else's. When there's a high-quality match, your agent surfaces it.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://schellingprotocol.com/serendipity">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Serendipity — Schelling Protocol">
+<meta name="twitter:description" content="Your agent finds people worth knowing. No searching. No cold DMs. Pure signal matching.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ccircle cx='20' cy='24' r='4.5' fill='%238b5cf6'/%3E%3Ccircle cx='44' cy='24' r='4.5' fill='%238b5cf6'/%3E%3Ccircle cx='32' cy='44' r='4.5' fill='%238b5cf6'/%3E%3Cline x1='20' y1='24' x2='44' y2='24' stroke='%236366f180' stroke-width='1.5'/%3E%3Cline x1='20' y1='24' x2='32' y2='44' stroke='%236366f180' stroke-width='1.5'/%3E%3Cline x1='44' y1='24' x2='32' y2='44' stroke='%236366f180' stroke-width='1.5'/%3E%3Ccircle cx='32' cy='30.5' r='2' fill='%23a78bfa' opacity='0.6'/%3E%3C/svg%3E" type="image/svg+xml">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;background:#0a0a0f;color:#e0e0e0;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:#8b5cf6;text-decoration:none;transition:color .2s}
+a:hover{color:#a78bfa}
+code{font-family:'SF Mono',Monaco,'Cascadia Code',monospace;font-size:.85em}
+
+/* Nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.75rem 0;background:rgba(10,10,15,.85);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
+.nav.scrolled{border-bottom-color:#1e1e2e}
+.nav-inner{display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:.6rem;font-weight:600;font-size:1rem;color:#e0e0e0;text-decoration:none}
+.nav-brand svg{width:28px;height:28px}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{color:#ccc;font-size:.85rem;font-weight:500;transition:color .2s}.nav-links a:hover{color:#fff}
+.nav-links .btn{font-size:.8rem;padding:.45rem 1rem}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:101}
+.nav-hamburger span{display:block;width:22px;height:2px;background:#ccc;margin:5px 0;transition:all .3s;border-radius:1px}
+.nav-hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
+/* Layout */
+.container{max-width:1100px;margin:0 auto;padding:0 1.5rem}
+section{padding:5rem 0}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;border-radius:8px;font-size:.95rem;font-weight:500;transition:all .2s;border:none;cursor:pointer}
+.btn-primary{background:#6366f1;color:#fff}.btn-primary:hover{background:#4f46e5;color:#fff}
+.btn-secondary{border:1px solid #2a2a3a;color:#ccc;background:transparent}.btn-secondary:hover{border-color:#6366f1;color:#fff}
+
+/* Footer */
+footer{border-top:1px solid #1e1e2e;padding:2rem 0}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.footer-links{display:flex;gap:1.5rem;align-items:center}
+.footer-links a{color:#666;font-size:.85rem}.footer-links a:hover{color:#8b5cf6}
+.footer-right{font-size:.8rem;color:#555}
+
+/* Hero */
+.hero{padding-top:6rem;padding-bottom:5rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;left:-30%;width:200%;height:200%;background:radial-gradient(ellipse at 35% 50%,rgba(99,102,241,.09) 0%,transparent 45%),radial-gradient(ellipse at 70% 30%,rgba(139,92,246,.06) 0%,transparent 45%);pointer-events:none}
+.hero-content{position:relative;z-index:1;max-width:700px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6366f1;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:20px;padding:.3rem .85rem;margin-bottom:1.5rem}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#6366f1;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:700;line-height:1.12;margin-bottom:1rem}
+.hero h1 .accent{background:linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero .subtitle{font-size:clamp(1rem,1.8vw,1.15rem);color:#888;margin-bottom:2.5rem;max-width:580px;line-height:1.7}
+
+/* Hero CTA box */
+.hero-cta-box{background:#0f0f17;border:1px solid #2a2a3a;border-radius:12px;padding:1.5rem;max-width:520px;margin-bottom:1.5rem}
+.hero-cta-label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#666;margin-bottom:.75rem}
+.url-row{display:flex;gap:.75rem;align-items:center}
+.url-box{flex:1;background:#1a1a2e;border:1px solid #2a2a3a;border-radius:8px;padding:.65rem 1rem;font-family:'SF Mono',Monaco,monospace;font-size:.85rem;color:#a78bfa;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy-btn{background:#6366f1;color:#fff;border:none;border-radius:8px;padding:.65rem 1.1rem;font-size:.82rem;font-weight:500;cursor:pointer;transition:background .2s;white-space:nowrap;flex-shrink:0}
+.copy-btn:hover{background:#4f46e5}
+.copy-btn.copied{background:#10b981}
+.hero-cta-alt{font-size:.83rem;color:#555}
+.hero-cta-alt a{color:#8b5cf6}
+.hero-cta-alt a:hover{color:#a78bfa}
+
+/* How it works */
+.how-section{background:#08080d;padding:5rem 0}
+.section-label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6366f1;margin-bottom:.75rem}
+.section-title{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;margin-bottom:.5rem;line-height:1.2}
+.section-sub{font-size:.95rem;color:#666;max-width:520px;line-height:1.65}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3.5rem;position:relative}
+.steps::before{content:'';position:absolute;top:2rem;left:calc(16.66% + 1rem);right:calc(16.66% + 1rem);height:1px;background:linear-gradient(90deg,transparent,#2a2a3a 20%,#2a2a3a 80%,transparent);pointer-events:none}
+.step{background:#12121a;border:1px solid #1e1e2e;border-radius:12px;padding:1.75rem 1.5rem;position:relative;transition:border-color .2s}
+.step:hover{border-color:#6366f133}
+.step-num{width:2.5rem;height:2.5rem;border-radius:50%;background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(139,92,246,.2));border:1px solid rgba(99,102,241,.35);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#8b5cf6;margin-bottom:1.25rem;font-family:'SF Mono',Monaco,monospace}
+.step h3{font-size:1rem;font-weight:600;margin-bottom:.6rem;color:#e0e0e0}
+.step p{font-size:.85rem;color:#888;line-height:1.6}
+
+/* Use cases */
+.use-cases-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2.5rem}
+.use-card{background:#12121a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem;transition:border-color .2s}
+.use-card:hover{border-color:#6366f133}
+.use-card-icon{width:2rem;height:2rem;border-radius:8px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;margin-bottom:.85rem}
+.use-card-icon svg{width:14px;height:14px;color:#8b5cf6}
+.use-card p{font-size:.83rem;color:#888;line-height:1.55}
+
+/* Privacy */
+.privacy-section{background:#08080d;padding:5rem 0}
+.trust-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:2.5rem}
+.trust-card{background:#12121a;border:1px solid #1e1e2e;border-radius:10px;padding:1.5rem;transition:border-color .2s}
+.trust-card:hover{border-color:#6366f133}
+.trust-icon{font-size:1.25rem;margin-bottom:.75rem}
+.trust-card h3{font-size:.95rem;font-weight:600;color:#e0e0e0;margin-bottom:.5rem}
+.trust-card p{font-size:.83rem;color:#888;line-height:1.6}
+
+/* FAQ */
+.faq-section{padding:5rem 0}
+.faq-list{margin-top:2.5rem;display:flex;flex-direction:column;gap:.75rem;max-width:760px}
+.faq-item{background:#12121a;border:1px solid #1e1e2e;border-radius:10px;overflow:hidden;transition:border-color .2s}
+.faq-item:hover{border-color:#6366f133}
+.faq-q{width:100%;text-align:left;background:none;border:none;padding:1.1rem 1.35rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;color:#e0e0e0;transition:color .2s}
+.faq-q:hover{color:#fff}
+.faq-chevron{flex-shrink:0;width:16px;height:16px;color:#555;transition:transform .25s,color .2s}
+.faq-item.open .faq-chevron{transform:rotate(180deg);color:#6366f1}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
+.faq-item.open .faq-a{max-height:300px}
+.faq-a-inner{padding:0 1.35rem 1.1rem;font-size:.85rem;color:#888;line-height:1.7;border-top:1px solid #1e1e2e;padding-top:.9rem}
+
+@media(max-width:900px){
+  .steps{grid-template-columns:1fr;gap:1rem}
+  .steps::before{display:none}
+  .use-cases-grid{grid-template-columns:repeat(2,1fr)}
+  .trust-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  section{padding:3rem 0}
+  .how-section{padding:3rem 0}
+  .privacy-section{padding:3rem 0}
+  .hero{padding-top:5rem;padding-bottom:3.5rem}
+  .use-cases-grid{grid-template-columns:1fr}
+  .trust-grid{grid-template-columns:1fr}
+  .url-row{flex-direction:column;align-items:stretch}
+  .copy-btn{width:100%;justify-content:center;text-align:center}
+  .hero-cta-box{padding:1.25rem}
+  .nav-hamburger{display:block}
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:rgba(10,10,15,.97);backdrop-filter:blur(12px);padding:1rem 1.5rem;gap:.75rem;border-bottom:1px solid #1e1e2e}
+  .nav-links.open{display:flex}
+  .nav-links a{font-size:1rem;padding:.5rem 0}
+  .nav-links .btn{width:fit-content;margin-top:.25rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+<div class="container">
+<div class="nav-inner">
+<a href="/" class="nav-brand">
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="32" cy="32" r="30" stroke="url(#nav-g)" stroke-width="3"/>
+<circle cx="20" cy="24" r="4.5" fill="#8b5cf6"/>
+<circle cx="44" cy="24" r="4.5" fill="#8b5cf6"/>
+<circle cx="32" cy="44" r="4.5" fill="#8b5cf6"/>
+<line x1="20" y1="24" x2="44" y2="24" stroke="#6366f180" stroke-width="1.5"/>
+<line x1="20" y1="24" x2="32" y2="44" stroke="#6366f180" stroke-width="1.5"/>
+<line x1="44" y1="24" x2="32" y2="44" stroke="#6366f180" stroke-width="1.5"/>
+<circle cx="32" cy="30.5" r="2" fill="#a78bfa" opacity="0.6"/>
+<defs><linearGradient id="nav-g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+</svg>
+Schelling Protocol
+</a>
+<button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+<span></span><span></span><span></span>
+</button>
+<div class="nav-links" id="navLinks">
+<a href="/#playground">Playground</a>
+<a href="/#lifecycle">How It Works</a>
+<a href="/cards">Cards</a>
+<a href="/serendipity" style="color:#fff">Serendipity</a>
+<a href="https://github.com/codyz123/schelling-protocol" target="_blank">GitHub</a>
+<a href="/#start" class="btn btn-primary">Get Started</a>
+</div>
+</div>
+</div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+<div class="container">
+<div class="hero-content">
+<div class="hero-eyebrow">
+<span class="hero-eyebrow-dot"></span>
+Schelling Serendipity
+</div>
+<h1>Your agent finds people<br><span class="accent">worth knowing.</span></h1>
+<p class="subtitle">Enable Serendipity and your agent quietly extracts what you need, what you offer, and who you are. The protocol finds connections neither of you searched for.</p>
+<div class="hero-cta-box">
+<div class="hero-cta-label">Paste this to your agent:</div>
+<div class="url-row">
+<div class="url-box" id="serendipity-url">Enable Serendipity for me. Go to https://schellingprotocol.com/serendipity/setup and follow the instructions.</div>
+<button class="copy-btn" id="copy-btn" onclick="copyUrl()">Copy</button>
+</div>
+</div>
+<p class="hero-cta-alt">No agent card yet? <a href="/cards">Create one first →</a></p>
+</div>
+</div>
+</section>
+
+<!-- How It Works -->
+<section class="how-section">
+<div class="container">
+<div class="section-label">How it works</div>
+<div class="section-title">Three steps. Zero effort.</div>
+<p class="section-sub">Serendipity runs in the background. Your agent does all the work. You just say yes or no when something good surfaces.</p>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">01</div>
+    <h3>Enable</h3>
+    <p>Tell your agent to enable Serendipity. It creates your Agent Card and runs a one-time extraction from your conversations and memory.</p>
+  </div>
+  <div class="step">
+    <div class="step-num">02</div>
+    <h3>Extract</h3>
+    <p>Your agent reads your conversations and memory, extracts what you need, what you offer, and who you are. Your signal is published anonymously — no name, no contact.</p>
+  </div>
+  <div class="step">
+    <div class="step-num">03</div>
+    <h3>Match</h3>
+    <p>The protocol runs pure math on your signal against everyone else's. When there's a high-quality match, your agent surfaces it — with a reason, never a cold notification.</p>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- Use Cases -->
+<section style="padding:5rem 0">
+<div class="container">
+<div class="section-label">Who it's for</div>
+<div class="section-title">The right people. At the right time.</div>
+<div class="use-cases-grid">
+  <div class="use-card">
+    <div class="use-card-icon">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3V2m6 1V2"/><path d="M2 7h12"/></svg>
+    </div>
+    <p>Get matched with clients who need your exact skills — without listing on Upwork.</p>
+  </div>
+  <div class="use-card">
+    <div class="use-card-icon">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="5" r="2.5"/><circle cx="13" cy="5" r="2"/><circle cx="3" cy="5" r="2"/><path d="M1 13c0-2 1-3 3.5-3m9.5 3c0-2-1-3-3.5-3M5 13c0-2.2 1.3-3.5 3-3.5s3 1.3 3 3.5"/></svg>
+    </div>
+    <p>Find a co-founder whose strengths complement yours — without networking events.</p>
+  </div>
+  <div class="use-card">
+    <div class="use-card-icon">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+    </div>
+    <p>Meet people in your city who share obscure interests — without joining Discord servers.</p>
+  </div>
+  <div class="use-card">
+    <div class="use-card-icon">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M3 12L8 4l5 8H3z"/></svg>
+    </div>
+    <p>Get introduced to investors looking for your exact vertical — without cold emails.</p>
+  </div>
+  <div class="use-card">
+    <div class="use-card-icon">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M2 8h3l2-5 2 9 2-4h3"/></svg>
+    </div>
+    <p>Find a collaborator with the skill you're missing — without posting in forums.</p>
+  </div>
+  <div class="use-card">
+    <div class="use-card-icon">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><circle cx="5.5" cy="8" r="3"/><circle cx="10.5" cy="8" r="3"/></svg>
+    </div>
+    <p>Meet someone going through the same startup stage — without LinkedIn cold DMs.</p>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- Privacy -->
+<section class="privacy-section">
+<div class="container">
+<div class="section-label">Privacy model</div>
+<div class="section-title">Anonymous until you say yes.</div>
+<p class="section-sub">The system is designed so your identity is never at risk. You always see what's shared. You always control what happens next.</p>
+<div class="trust-grid">
+  <div class="trust-card">
+    <div class="trust-icon">🔒</div>
+    <h3>Anonymous by default</h3>
+    <p>Your signal contains no name, email, or contact info. Identity is only revealed when both sides say yes.</p>
+  </div>
+  <div class="trust-card">
+    <div class="trust-icon">🔍</div>
+    <h3>You see what's being shared</h3>
+    <p>Ask your agent "what are you sharing about me on Schelling?" at any time. Full audit trail. No surprises.</p>
+  </div>
+  <div class="trust-card">
+    <div class="trust-icon">🚫</div>
+    <h3>Rejection is permanent</h3>
+    <p>If you say no to a match, that pair never re-matches. No awkward re-encounters. No re-surface after 30 days.</p>
+  </div>
+  <div class="trust-card">
+    <div class="trust-icon">⏱️</div>
+    <h3>You control the TTL</h3>
+    <p>Signals expire in 1–30 days. Set a shorter window for more control. Your signal disappears on its own.</p>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+<div class="container">
+<div class="section-label">FAQ</div>
+<div class="section-title">Common questions.</div>
+<div class="faq-list" id="faq-list">
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="toggleFaq(this)">
+      How does it work?
+      <svg class="faq-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="faq-a">
+      <div class="faq-a-inner">Your agent extracts a structured signal from your conversations — what you need, what you offer, who you are. The protocol stores it anonymously and runs vector math to find complementary signals. When a strong match exists, both sides are notified. Only if both say yes are identities revealed.</div>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="toggleFaq(this)">
+      What does it share?
+      <svg class="faq-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="faq-a">
+      <div class="faq-a-inner">Tags (like <code>python-development</code>, <code>co-founder-search</code>, <code>stoicism</code>), a summary paragraph, and 3 embeddings. No name, email, or contact info until you opt in.</div>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="toggleFaq(this)">
+      Can I see what it's sharing?
+      <svg class="faq-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="faq-a">
+      <div class="faq-a-inner">Yes. Ask your agent "what are you sharing about me on Schelling?" and it will show you the full signal. You can update or delete it at any time.</div>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="toggleFaq(this)">
+      How often do matches happen?
+      <svg class="faq-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="faq-a">
+      <div class="faq-a-inner">Rare and high-quality. The system is rate-limited to 3 matches per signal. Your agent further filters these and only surfaces ones where it has high confidence you'd actually care.</div>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="toggleFaq(this)">
+      Is it free?
+      <svg class="faq-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="faq-a">
+      <div class="faq-a-inner">Yes. Serendipity is free. The compute is pure math — no AI costs on our side. The only cost is your agent's embedding generation (~$0.0001 per run).</div>
+    </div>
+  </div>
+
+</div>
+</div>
+</section>
+
+<footer>
+<div class="container">
+<div class="footer-inner">
+<div class="footer-links">
+<a href="https://github.com/codyz123/schelling-protocol" target="_blank">GitHub</a>
+<a href="/docs">API Docs</a>
+</div>
+<div class="footer-right">
+Schelling Protocol v3.0.0 · Built by <a href="https://github.com/codyz123" target="_blank">Cody Zervas</a>
+</div>
+</div>
+</div>
+</footer>
+
+<script>
+// Nav scroll
+window.addEventListener('scroll', function() {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// Copy URL
+function copyUrl() {
+  var url = 'Enable Serendipity for me. Go to https://schellingprotocol.com/serendipity/setup and follow the instructions.';
+  var btn = document.getElementById('copy-btn');
+  function onCopied() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1800);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(onCopied).catch(function() {
+      fallbackCopy(url, onCopied);
+    });
+  } else {
+    fallbackCopy(url, onCopied);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); cb(); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+// FAQ accordion
+function toggleFaq(btn) {
+  var item = btn.closest('.faq-item');
+  var isOpen = item.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.faq-item.open').forEach(function(el) {
+    el.classList.remove('open');
+  });
+  // Open this one if it was closed
+  if (!isOpen) {
+    item.classList.add('open');
+  }
+}
+</script>
+<script>(function(){const h=document.getElementById("navHamburger"),l=document.getElementById("navLinks");if(!h||!l)return;h.addEventListener("click",()=>{h.classList.toggle("open");l.classList.toggle("open")});l.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{h.classList.remove("open");l.classList.remove("open")}))})();</script>
+</body>
+</html>

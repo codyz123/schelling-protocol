@@ -427,11 +427,173 @@ describe("edge cases", () => {
     expect(res!.status).toBe(400);
   });
 
-  test("very long display_name is accepted", async () => {
+  test("very long display_name is rejected (now validates max 100)", async () => {
     const longName = "A".repeat(500);
     const res = await route("POST", "/api/cards", { slug: "long-name", display_name: longName });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("display_name");
+  });
+});
+
+// ─── card_type field ─────────────────────────────────────────────────
+
+describe("card_type field", () => {
+  test("create card with card_type", async () => {
+    const { card } = await createCard({ slug: "typed-agent", card_type: "agent" });
+    expect(card.card_type).toBe("agent");
+  });
+
+  test("create card with human type", async () => {
+    const { card } = await createCard({ slug: "typed-human", card_type: "human" });
+    expect(card.card_type).toBe("human");
+  });
+
+  test("update card_type", async () => {
+    const { api_key } = await createCard({ slug: "update-type", card_type: "agent" });
+    const res = await route("PUT", "/api/cards/update-type", { card_type: "team" }, api_key);
+    expect(res!.status).toBe(200);
+    const data = await res!.json();
+    expect(data.card_type).toBe("team");
+  });
+
+  test("card_type defaults to null if not set", async () => {
+    const { card } = await createCard({ slug: "no-type" });
+    expect(card.card_type == null).toBe(true);
+  });
+
+  test("verified is not settable via create", async () => {
+    const { card } = await createCard({ slug: "verify-test", verified: 1 });
+    // verified should be 0 (not settable via create)
+    expect(card.verified).toBeFalsy();
+  });
+});
+
+// ─── Field length validation ──────────────────────────────────────────
+
+describe("field length validation", () => {
+  test("display_name at exactly 100 chars is accepted", async () => {
+    const name = "A".repeat(100);
+    const res = await route("POST", "/api/cards", { slug: "exact-100", display_name: name });
     expect(res!.status).toBe(201);
   });
+
+  test("display_name at 101 chars is rejected", async () => {
+    const name = "A".repeat(101);
+    const res = await route("POST", "/api/cards", { slug: "too-long-name", display_name: name });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("display_name");
+  });
+
+  test("tagline at 200 chars is accepted", async () => {
+    const res = await route("POST", "/api/cards", { slug: "tagline-ok", display_name: "X", tagline: "T".repeat(200) });
+    expect(res!.status).toBe(201);
+  });
+
+  test("tagline at 201 chars is rejected", async () => {
+    const res = await route("POST", "/api/cards", { slug: "tagline-bad", display_name: "X", tagline: "T".repeat(201) });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("tagline");
+  });
+
+  test("bio at 1000 chars is accepted", async () => {
+    const res = await route("POST", "/api/cards", { slug: "bio-ok", display_name: "X", bio: "B".repeat(1000) });
+    expect(res!.status).toBe(201);
+  });
+
+  test("bio at 1001 chars is rejected", async () => {
+    const res = await route("POST", "/api/cards", { slug: "bio-bad", display_name: "X", bio: "B".repeat(1001) });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("bio");
+  });
+
+  test("skills with 20 items is accepted", async () => {
+    const skills = Array.from({ length: 20 }, (_, i) => `skill-${i}`);
+    const res = await route("POST", "/api/cards", { slug: "skills-ok", display_name: "X", skills });
+    expect(res!.status).toBe(201);
+  });
+
+  test("skills with 21 items is rejected", async () => {
+    const skills = Array.from({ length: 21 }, (_, i) => `skill-${i}`);
+    const res = await route("POST", "/api/cards", { slug: "skills-bad", display_name: "X", skills });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("skills");
+  });
+
+  test("skill item over 50 chars is rejected", async () => {
+    const res = await route("POST", "/api/cards", { slug: "long-skill", display_name: "X", skills: ["s".repeat(51)] });
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("skill");
+  });
+
+  test("PUT also validates tagline length", async () => {
+    const { api_key } = await createCard({ slug: "put-validate" });
+    const res = await route("PUT", "/api/cards/put-validate", { tagline: "T".repeat(201) }, api_key);
+    expect(res!.status).toBe(400);
+    expect((await res!.json()).message).toContain("tagline");
+  });
+
+  test("PUT validates skills count", async () => {
+    const { api_key } = await createCard({ slug: "put-skills-bad" });
+    const skills = Array.from({ length: 21 }, (_, i) => `skill-${i}`);
+    const res = await route("PUT", "/api/cards/put-skills-bad", { skills }, api_key);
+    expect(res!.status).toBe(400);
+  });
+});
+
+// ─── Rotate Key ───────────────────────────────────────────────────────
+
+describe("POST /api/cards/:slug/rotate-key", () => {
+  test("rotates key and returns new key", async () => {
+    const { api_key } = await createCard({ slug: "rotate-card" });
+    const res = await route("POST", "/api/cards/rotate-card/rotate-key", undefined, api_key);
+    expect(res!.status).toBe(200);
+    const data = await res!.json();
+    expect(data.api_key).toBeDefined();
+    expect(data.api_key).toMatch(/^[0-9a-f]{64}$/);
+    expect(data.api_key).not.toBe(api_key);
+  });
+
+  test("old key no longer works after rotation", async () => {
+    const { api_key } = await createCard({ slug: "rotate-invalidate" });
+    await route("POST", "/api/cards/rotate-invalidate/rotate-key", undefined, api_key);
+    // Old key should no longer authenticate
+    const res = await route("PUT", "/api/cards/rotate-invalidate", { tagline: "hack" }, api_key);
+    expect(res!.status).toBe(401);
+  });
+
+  test("new key works after rotation", async () => {
+    const { api_key } = await createCard({ slug: "rotate-works" });
+    const rotateRes = await route("POST", "/api/cards/rotate-works/rotate-key", undefined, api_key);
+    const { api_key: newKey } = await rotateRes!.json();
+    const res = await route("PUT", "/api/cards/rotate-works", { tagline: "updated" }, newKey);
+    expect(res!.status).toBe(200);
+  });
+
+  test("returns 401 without auth", async () => {
+    await createCard({ slug: "rotate-noauth" });
+    const res = await route("POST", "/api/cards/rotate-noauth/rotate-key");
+    expect(res!.status).toBe(401);
+  });
+
+  test("returns 401 with wrong key", async () => {
+    await createCard({ slug: "rotate-wrongkey" });
+    const res = await route("POST", "/api/cards/rotate-wrongkey/rotate-key", undefined, "bad-key");
+    expect(res!.status).toBe(401);
+  });
+});
+
+// ─── Reserved slug rejection (extended) ──────────────────────────────
+
+describe("reserved slugs — AI companies", () => {
+  const aiReserved = ["anthropic", "openai", "google", "microsoft", "meta", "amazon", "apple", "nvidia", "deepmind", "mistral", "cohere", "huggingface"];
+
+  for (const slug of aiReserved) {
+    test(`rejects reserved slug: ${slug}`, async () => {
+      const res = await route("POST", "/api/cards", { slug, display_name: "Test" });
+      expect(res!.status).toBe(400);
+      expect((await res!.json()).message).toContain("reserved");
+    });
+  }
 });
 
 // ─── Route non-match ─────────────────────────────────────────────────

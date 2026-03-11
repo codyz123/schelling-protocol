@@ -9,6 +9,8 @@ const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 const RESERVED_SLUGS = new Set([
   "admin", "api", "create", "directory", "freelance",
   "dashboard", "settings", "health", "status", "docs", "demo",
+  "anthropic", "openai", "google", "microsoft", "meta", "amazon",
+  "apple", "nvidia", "deepmind", "mistral", "cohere", "huggingface",
 ]);
 
 // Cluster used for card-backed user rows (no real cluster row needed — no FK constraint)
@@ -63,6 +65,13 @@ export function initAgentCardsTables(db: DatabaseConnection): void {
     );
     CREATE INDEX IF NOT EXISTS idx_coord_requests_target ON coordination_requests(target_card_slug);
   `);
+  // Add new columns for existing DBs (idempotent — ALTER TABLE fails if column already exists)
+  for (const stmt of [
+    "ALTER TABLE agent_cards ADD COLUMN card_type TEXT",
+    "ALTER TABLE agent_cards ADD COLUMN verified INTEGER DEFAULT 0",
+  ]) {
+    try { db.exec(stmt); } catch { /* column already exists */ }
+  }
 }
 
 // ─── Auth Helper ─────────────────────────────────────────────────────
@@ -118,9 +127,9 @@ export async function handleCardsRoute(
   const err = (message: string, status = 400, code = "INVALID_INPUT"): Response =>
     Response.json({ code, message }, { status, headers: corsHeaders });
 
-  // Parse /api/cards[/:slug[/(request|requests)[/:reqId]]]
+  // Parse /api/cards[/:slug[/(request|requests|rotate-key)[/:reqId]]]
   const match = path.match(
-    /^\/api\/cards(?:\/([^/]+)(?:\/(request|requests)(?:\/([^/]+))?)?)?$/,
+    /^\/api\/cards(?:\/([^/]+)(?:\/(request|requests|rotate-key)(?:\/([^/]+))?)?)?$/,
   );
   if (!match) return null;
 
@@ -147,6 +156,18 @@ export async function handleCardsRoute(
     }
     if (RESERVED_SLUGS.has(normalizedSlug)) {
       return err(`slug "${normalizedSlug}" is reserved`);
+    }
+
+    // Field length validation
+    if (displayName.length > 100) return err("display_name must be 100 characters or less");
+    if (body.tagline && body.tagline.length > 200) return err("tagline must be 200 characters or less");
+    if (body.bio && body.bio.length > 1000) return err("bio must be 1000 characters or less");
+    if (body.skills != null) {
+      const skillsArr = Array.isArray(body.skills) ? body.skills : [];
+      if (skillsArr.length > 20) return err("skills must have 20 or fewer items");
+      for (const s of skillsArr) {
+        if (typeof s === "string" && s.length > 50) return err("each skill must be 50 characters or less");
+      }
     }
 
     // Check both live and soft-deleted cards — slug is globally unique (column constraint)
@@ -180,6 +201,7 @@ export async function handleCardsRoute(
           hourly_rate_min_cents, hourly_rate_max_cents,
           availability, timezone, contact_email, website, avatar_url,
           social_links, preferences, api_key_hash, is_freelancer, webhook_url,
+          card_type,
           created_at, updated_at
         ) VALUES (
           ?, ?, ?, ?, ?, ?,
@@ -187,6 +209,7 @@ export async function handleCardsRoute(
           ?, ?,
           ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?,
+          ?,
           datetime('now'), datetime('now')
         )
       `).run(
@@ -207,6 +230,7 @@ export async function handleCardsRoute(
         apiKeyHash,
         body.is_freelancer ? 1 : 0,
         body.webhook_url ?? null,
+        body.card_type ?? null,
       );
     });
 
@@ -288,10 +312,22 @@ export async function handleCardsRoute(
     let body: any;
     try { body = await req.json(); } catch { return err("Invalid JSON body"); }
 
+    // Field length validation
+    if (body.display_name && body.display_name.length > 100) return err("display_name must be 100 characters or less");
+    if (body.tagline && body.tagline.length > 200) return err("tagline must be 200 characters or less");
+    if (body.bio && body.bio.length > 1000) return err("bio must be 1000 characters or less");
+    if (body.skills != null) {
+      const skillsArr = Array.isArray(body.skills) ? body.skills : [];
+      if (skillsArr.length > 20) return err("skills must have 20 or fewer items");
+      for (const s of skillsArr) {
+        if (typeof s === "string" && s.length > 50) return err("each skill must be 50 characters or less");
+      }
+    }
+
     const UPDATABLE_SCALAR = new Set([
       "display_name", "tagline", "bio", "availability", "timezone",
       "contact_email", "website", "avatar_url", "is_freelancer", "webhook_url",
-      "hourly_rate_min_cents", "hourly_rate_max_cents",
+      "hourly_rate_min_cents", "hourly_rate_max_cents", "card_type",
     ]);
     const UPDATABLE_JSON = new Set(["offers", "needs", "skills", "social_links", "preferences"]);
     // Strip immutable fields
@@ -383,6 +419,21 @@ export async function handleCardsRoute(
       )
       .all(slug);
     return json({ requests });
+  }
+
+  // ── POST /api/cards/:slug/rotate-key — Rotate API key ───────────
+  if (method === "POST" && subpath === "rotate-key") {
+    const authed = await authenticateCard(ctx.db, slug, req.headers.get("Authorization"));
+    if (!authed) return err("Unauthorized", 401, "UNAUTHORIZED");
+
+    const newApiKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("hex");
+    const newApiKeyHash = await Bun.password.hash(newApiKey);
+
+    ctx.db.prepare(
+      "UPDATE agent_cards SET api_key_hash = ?, updated_at = datetime('now') WHERE slug = ?",
+    ).run(newApiKeyHash, slug);
+
+    return json({ api_key: newApiKey });
   }
 
   // ── PUT /api/cards/:slug/requests/:id — Update request status ────

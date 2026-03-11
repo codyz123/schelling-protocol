@@ -54,6 +54,8 @@ import {
 } from "../handlers/tools.js";
 // ─── Agent Cards imports ──────────────────────────────────────────────
 import { handleCardsRoute, initAgentCardsTables } from "../handlers/cards.js";
+// ─── Serendipity imports ──────────────────────────────────────────────
+import { handleSerendipityRoute, initSerendipityTables, cleanupExpiredSerendipity } from "../handlers/serendipity.js";
 
 // ─── Marketplace imports ──────────────────────────────────────────────
 import {
@@ -285,6 +287,10 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 
     // Initialize Agent Cards tables
     try { initAgentCardsTables(ctx.db); } catch { /* tables may already exist */ }
+    // Initialize Serendipity tables
+    try { initSerendipityTables(ctx.db); } catch { /* tables may already exist */ }
+    // Run serendipity cleanup on startup
+    try { cleanupExpiredSerendipity(ctx.db); } catch { /* ignore cleanup errors */ }
 
     server = serve({
       port,
@@ -601,12 +607,48 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           });
         }
 
+        // GET /cards — Agent Cards marketing page
+        if (method === "GET" && url.pathname === "/cards") {
+          const f = Bun.file(process.cwd() + "/public/cards.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /cards/setup — Agent Cards setup guide
+        if (method === "GET" && url.pathname === "/cards/setup") {
+          const f = Bun.file(process.cwd() + "/public/cards-setup.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /cards/:slug — Public agent card profile
+        if (method === "GET" && url.pathname.startsWith("/cards/") && url.pathname !== "/cards/setup") {
+          const f = Bun.file(process.cwd() + "/public/card.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /serendipity — Serendipity marketing/info page
+        if (method === "GET" && url.pathname === "/serendipity") {
+          const f = Bun.file(process.cwd() + "/public/serendipity.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
+        // GET /serendipity/setup — Serendipity setup guide
+        if (method === "GET" && url.pathname === "/serendipity/setup") {
+          const f = Bun.file(process.cwd() + "/public/serendipity-setup.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
         // GET /robots.txt
         if (method === "GET" && url.pathname === "/robots.txt") {
           return new Response(
             "User-agent: *\nAllow: /\n\nSitemap: https://schellingprotocol.com/openapi.yaml\n",
             { headers: { ...corsHeaders, "Content-Type": "text/plain" } }
           );
+        }
+
+        // /api/serendipity/* — Serendipity passive discovery engine
+        if (url.pathname.startsWith("/api/serendipity")) {
+          const serendipityResponse = await handleSerendipityRoute(req, url, ctx, corsHeaders);
+          if (serendipityResponse) return serendipityResponse;
         }
 
         // /api/cards/* — Agent Cards REST API
