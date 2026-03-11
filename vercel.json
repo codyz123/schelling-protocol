@@ -37,6 +37,14 @@
       "destination": "https://schelling-protocol-production.up.railway.app/robots.txt"
     },
     {
+      "source": "/serendipity/setup",
+      "destination": "/serendipity-setup.html"
+    },
+    {
+      "source": "/serendipity",
+      "destination": "/serendipity.html"
+    },
+    {
       "source": "/cards/setup",
       "destination": "/cards-setup.html"
     },

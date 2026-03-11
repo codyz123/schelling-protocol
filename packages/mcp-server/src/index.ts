@@ -824,6 +824,309 @@ server.tool(
   async (params) => mcpCall("payout_request", params),
 );
 
+// ─── REST API Client (Agent Cards & Serendipity) ─────────────────────
+
+async function apiFetch(
+  path: string,
+  options: {
+    method?: string;
+    api_key?: string;
+    body?: unknown;
+    query?: Record<string, string | undefined>;
+  } = {},
+): Promise<unknown> {
+  const url = new URL(`${SERVER_URL}${path}`);
+  if (options.query) {
+    for (const [k, v] of Object.entries(options.query)) {
+      if (v !== undefined) url.searchParams.set(k, v);
+    }
+  }
+  const headers: Record<string, string> = {};
+  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.api_key) headers["Authorization"] = `Bearer ${options.api_key}`;
+  const res = await fetch(url.toString(), {
+    method: options.method ?? "GET",
+    headers,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    throw new Error((body as any).message || (body as any).error || `HTTP ${res.status}`);
+  }
+  return body;
+}
+
+async function mcpApi(
+  path: string,
+  options: Parameters<typeof apiFetch>[1] = {},
+) {
+  try {
+    return toMcp(await apiFetch(path, options));
+  } catch (err) {
+    return toMcpError(err);
+  }
+}
+
+// ─── Agent Cards ──────────────────────────────────────────────────────
+
+server.tool(
+  "card.create",
+  "Create a public Agent Card on Schelling Protocol — a shareable profile URL that other agents and people can find and send coordination requests to. Returns an api_key shown only once; store it securely.",
+  {
+    slug: z.string().describe("URL identifier — becomes schellingprotocol.com/cards/{slug}. Lowercase, hyphens allowed, 3-30 characters."),
+    display_name: z.string().describe("Public name shown on the profile (max 100 chars)"),
+    tagline: z.string().optional().describe("One-liner description (max 200 chars)"),
+    bio: z.string().optional().describe("Longer description (max 1000 chars)"),
+    card_type: z.string().optional().describe("What this card represents: agent, human, team, service"),
+    skills: z.array(z.string()).optional().describe("Array of capabilities (max 20 items, each max 50 chars)"),
+    availability: z.enum(["available", "busy", "away"]).optional().describe("Current status (default: available)"),
+    contact_email: z.string().optional().describe("Email for notifications"),
+    website: z.string().optional().describe("Link to website or portfolio"),
+    timezone: z.string().optional().describe("IANA timezone (e.g. America/Denver)"),
+    is_freelancer: z.boolean().optional().describe("Whether accepting paid work"),
+    hourly_rate_min: z.number().optional().describe("Minimum hourly rate in USD"),
+    hourly_rate_max: z.number().optional().describe("Maximum hourly rate in USD"),
+  },
+  async (params) => mcpApi("/api/cards", { method: "POST", body: params }),
+);
+
+server.tool(
+  "card.get",
+  "Get a public Agent Card by slug. Returns the card's profile, skills, availability, and contact info.",
+  {
+    slug: z.string().describe("The card's URL slug"),
+  },
+  async ({ slug }) => mcpApi(`/api/cards/${slug}`),
+);
+
+server.tool(
+  "card.update",
+  "Update your Agent Card. Only include fields you want to change.",
+  {
+    slug: z.string().describe("Your card's slug"),
+    api_key: z.string().describe("Your card's API key (Bearer token)"),
+    display_name: z.string().optional().describe("Public name (max 100 chars)"),
+    tagline: z.string().optional().describe("One-liner description (max 200 chars)"),
+    bio: z.string().optional().describe("Longer description (max 1000 chars)"),
+    card_type: z.string().optional().describe("agent, human, team, or service"),
+    skills: z.array(z.string()).optional().describe("Array of capabilities (max 20 items)"),
+    availability: z.enum(["available", "busy", "away"]).optional().describe("Current status"),
+    contact_email: z.string().optional().describe("Email for notifications"),
+    website: z.string().optional().describe("Website or portfolio URL"),
+    timezone: z.string().optional().describe("IANA timezone"),
+    is_freelancer: z.boolean().optional().describe("Whether accepting paid work"),
+    hourly_rate_min: z.number().optional().describe("Minimum hourly rate in USD"),
+    hourly_rate_max: z.number().optional().describe("Maximum hourly rate in USD"),
+  },
+  async ({ slug, api_key, ...fields }) =>
+    mcpApi(`/api/cards/${slug}`, { method: "PUT", api_key, body: fields }),
+);
+
+server.tool(
+  "card.list",
+  "List or search Agent Cards on the Schelling Protocol network.",
+  {
+    query: z.string().optional().describe("Search query to filter cards by name, tagline, or skills"),
+    limit: z.number().optional().describe("Max results (default 20)"),
+  },
+  async (params) => {
+    const query: Record<string, string | undefined> = {};
+    if (params.query) query.query = params.query;
+    if (params.limit) query.limit = String(params.limit);
+    return mcpApi("/api/cards", { query });
+  },
+);
+
+server.tool(
+  "card.send_request",
+  "Send a coordination request to an Agent Card. The card owner will be notified and can accept or decline.",
+  {
+    slug: z.string().describe("Target card's slug"),
+    from_name: z.string().describe("Your name or agent name"),
+    intent: z.string().describe("Brief intent title (max 200 chars)"),
+    message: z.string().describe("Full message explaining what you need (max 5000 chars)"),
+    from_email: z.string().optional().describe("Your email for the card owner to reply"),
+    budget_cents: z.number().optional().describe("Proposed budget in cents (e.g. 50000 = $500)"),
+    from_card_slug: z.string().optional().describe("Your own Agent Card slug if you have one"),
+  },
+  async ({ slug, ...body }) =>
+    mcpApi(`/api/cards/${slug}/requests`, { method: "POST", body }),
+);
+
+server.tool(
+  "card.check_requests",
+  "Check inbound coordination requests for your Agent Card. Returns pending requests with sender details.",
+  {
+    slug: z.string().describe("Your card's slug"),
+    api_key: z.string().describe("Your card's API key"),
+  },
+  async ({ slug, api_key }) =>
+    mcpApi(`/api/cards/${slug}/requests`, { api_key }),
+);
+
+server.tool(
+  "card.respond_request",
+  "Accept or decline an inbound coordination request on your Agent Card.",
+  {
+    slug: z.string().describe("Your card's slug"),
+    api_key: z.string().describe("Your card's API key"),
+    request_id: z.string().describe("The request ID to respond to"),
+    status: z.enum(["accepted", "declined"]).describe("Your decision"),
+    response_message: z.string().optional().describe("Optional message to the sender (max 2000 chars)"),
+  },
+  async ({ slug, api_key, request_id, ...body }) =>
+    mcpApi(`/api/cards/${slug}/requests/${request_id}`, { method: "PUT", api_key, body }),
+);
+
+// ─── Serendipity ──────────────────────────────────────────────────────
+
+server.tool(
+  "serendipity.publish_signal",
+  `Publish or update your Serendipity signal — enabling passive discovery on the Schelling Protocol. Your agent extracts structured dimensions from conversations and publishes them anonymously. The server matches against others using pure vector math.
+
+Signal extraction guidance:
+- needs: Things this person currently needs (services, collaborators, resources). Include speculative needs at lower weight.
+- offers: Concrete WORK SKILLS and SERVICES — what someone would actually hire them for. Examples: "python-development", "tax-accounting", "graphic-design", "copywriting", "financial-modeling". NOT abstract qualities. Think: what would they put on a freelance profile?
+- interests: Recurring topics, hobbies, obsessions. Specific: "stoicism" not "philosophy".
+- personality: Communication style, energy, collaboration preferences.
+- context: Location (City, State), IANA timezone, career stage, industry.
+- summary: One paragraph describing them to a matchmaker. Specific, vivid, honest.
+
+Embeddings: Use OpenAI text-embedding-3-small with dimensions: 256.
+- needs_embedding: embed concatenated needs tags + context strings
+- offers_embedding: embed concatenated offers tags + context strings
+- profile_embedding: embed the summary paragraph`,
+  {
+    card_slug: z.string().describe("Your Agent Card slug (required for auth)"),
+    api_key: z.string().describe("Your Agent Card API key"),
+    signal_id: z.string().describe("UUID for this signal — generate with crypto.randomUUID()"),
+    needs: z.array(z.object({
+      tag: z.string().describe("Lowercase-hyphenated tag, e.g. 'co-founder', 'web-developer'"),
+      weight: z.number().describe("Confidence 0.0-1.0: 1.0=explicit, 0.3=weak inference"),
+      context: z.string().describe("Why you inferred this need"),
+    })).describe("What this person needs (max 20 items)"),
+    offers: z.array(z.object({
+      tag: z.string().describe("Concrete work skill or service, e.g. 'python-development', 'bookkeeping'"),
+      weight: z.number().describe("Confidence 0.0-1.0"),
+      context: z.string().describe("Evidence from conversations supporting this skill"),
+    })).describe("Concrete work skills and services this person offers — what they could be hired for (max 20 items)"),
+    interests: z.array(z.string()).describe("Recurring topics, hobbies, passions (max 30 items)"),
+    personality: z.object({
+      style: z.string().optional().describe("Communication style: analytical, creative, pragmatic, etc."),
+      energy: z.string().optional().describe("Energy level: high, moderate, focused, etc."),
+      collaboration: z.string().optional().describe("Collaboration style: solo, pair-focused, team-oriented, etc."),
+    }).describe("Personality dimensions"),
+    context: z.object({
+      location: z.string().optional().describe("City, State format, e.g. 'Denver, CO'"),
+      timezone: z.string().optional().describe("IANA timezone, e.g. 'America/Denver'"),
+      stage: z.string().optional().describe("Career stage: early-career, senior, founder, etc."),
+      industry: z.string().optional().describe("Primary industry: ai, software, design, etc."),
+    }).describe("Geographic and professional context"),
+    summary: z.string().describe("One paragraph describing this person to a matchmaker. Max 2000 chars."),
+    needs_embedding: z.array(z.number()).describe("256-dimensional float array from text-embedding-3-small"),
+    offers_embedding: z.array(z.number()).describe("256-dimensional float array from text-embedding-3-small"),
+    profile_embedding: z.array(z.number()).describe("256-dimensional float array from text-embedding-3-small"),
+    ttl_days: z.number().optional().describe("Signal lifetime in days (1-30, default 7)"),
+  },
+  async ({ card_slug, api_key, signal_id, ...body }) =>
+    mcpApi(`/api/serendipity/signals/${signal_id}`, {
+      method: "PUT",
+      api_key,
+      query: { card: card_slug },
+      body,
+    }),
+);
+
+server.tool(
+  "serendipity.get_signal",
+  "Get your current published Serendipity signal — for auditing what you're sharing. Returns the full signal including all dimensions and embeddings.",
+  {
+    card_slug: z.string().describe("Your Agent Card slug"),
+    api_key: z.string().describe("Your Agent Card API key"),
+  },
+  async ({ card_slug, api_key }) =>
+    mcpApi("/api/serendipity/signals/mine", {
+      api_key,
+      query: { card: card_slug },
+    }),
+);
+
+server.tool(
+  "serendipity.withdraw",
+  "Delete your Serendipity signal and stop matching. Also cancels any pending matches that haven't been responded to.",
+  {
+    card_slug: z.string().describe("Your Agent Card slug"),
+    api_key: z.string().describe("Your Agent Card API key"),
+    signal_id: z.string().describe("The signal ID to withdraw"),
+  },
+  async ({ card_slug, api_key, signal_id }) =>
+    mcpApi(`/api/serendipity/signals/${signal_id}`, {
+      method: "DELETE",
+      api_key,
+      query: { card: card_slug },
+    }),
+);
+
+server.tool(
+  "serendipity.check_matches",
+  "Check for pending Serendipity matches. Each match includes the other party's signal dimensions (needs, offers, interests, context, summary) without revealing their identity — privacy is preserved until both sides opt in.",
+  {
+    card_slug: z.string().describe("Your Agent Card slug"),
+    api_key: z.string().describe("Your Agent Card API key"),
+    status: z.enum(["pending", "revealed", "rejected", "expired"]).optional().describe("Filter by status (default: all)"),
+  },
+  async ({ card_slug, api_key, status }) =>
+    mcpApi("/api/serendipity/matches", {
+      api_key,
+      query: { card: card_slug, ...(status ? { status } : {}) },
+    }),
+);
+
+server.tool(
+  "serendipity.get_match",
+  "Get details of a specific Serendipity match, including the other party's signal dimensions and match score breakdown.",
+  {
+    card_slug: z.string().describe("Your Agent Card slug"),
+    api_key: z.string().describe("Your Agent Card API key"),
+    match_id: z.string().describe("The match ID to retrieve"),
+  },
+  async ({ card_slug, api_key, match_id }) =>
+    mcpApi(`/api/serendipity/matches/${match_id}`, {
+      api_key,
+      query: { card: card_slug },
+    }),
+);
+
+server.tool(
+  "serendipity.respond",
+  `Respond to a Serendipity match with yes or no.
+
+If yes: Your opt-in is recorded. If the other side has also said yes, both identities are revealed — you receive their card slug and profile URL. If not, you wait.
+
+If no: The match is permanently rejected — this pair will never re-match.
+
+Before responding, evaluate the match using other_signal:
+- Do their offers address your human's needs?
+- Do your human's offers address their needs?
+- Do they share context (location/timezone) or interests?
+- Would your human genuinely want to meet this person?
+
+Be conservative. A bad yes wastes both parties' time. A no is final but keeps the signal clean.`,
+  {
+    card_slug: z.string().describe("Your Agent Card slug"),
+    api_key: z.string().describe("Your Agent Card API key"),
+    match_id: z.string().describe("The match ID to respond to"),
+    decision: z.enum(["yes", "no"]).describe("yes to opt in, no to reject permanently"),
+  },
+  async ({ card_slug, api_key, match_id, decision }) =>
+    mcpApi(`/api/serendipity/matches/${match_id}`, {
+      method: "PUT",
+      api_key,
+      query: { card: card_slug },
+      body: { decision },
+    }),
+);
+
 // ─── Start Server ────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
