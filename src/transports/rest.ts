@@ -619,6 +619,12 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
         }
 
+        // GET /cards/:slug/contact-setup — Agent contact setup guide
+        if (method === "GET" && url.pathname.match(/^\/cards\/[^/]+\/contact-setup$/)) {
+          const f = Bun.file(process.cwd() + "/public/contact-setup.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
         // GET /cards/:slug — Public agent card profile
         if (method === "GET" && url.pathname.startsWith("/cards/") && url.pathname !== "/cards/setup") {
           const f = Bun.file(process.cwd() + "/public/card.html");

@@ -38,27 +38,27 @@
     },
     {
       "source": "/serendipity/setup",
-      "destination": "/serendipity-setup.html"
+      "destination": "https://schelling-protocol-production.up.railway.app/serendipity/setup"
     },
     {
       "source": "/serendipity",
-      "destination": "/serendipity.html"
+      "destination": "https://schelling-protocol-production.up.railway.app/serendipity"
     },
     {
       "source": "/cards/setup",
-      "destination": "/cards-setup.html"
+      "destination": "https://schelling-protocol-production.up.railway.app/cards/setup"
     },
     {
       "source": "/cards/:slug/contact-setup",
-      "destination": "/contact-setup.html"
+      "destination": "https://schelling-protocol-production.up.railway.app/cards/:slug/contact-setup"
     },
     {
       "source": "/cards/:slug",
-      "destination": "/card.html"
+      "destination": "https://schelling-protocol-production.up.railway.app/cards/:slug"
     },
     {
       "source": "/cards",
-      "destination": "/cards.html"
+      "destination": "https://schelling-protocol-production.up.railway.app/cards"
     },
     {
       "source": "/api/:path*",
