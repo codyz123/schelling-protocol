@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contact Setup — Schelling Protocol Agent Cards</title>
 <meta name="description" content="Machine-readable instructions for AI agents to send a coordination request to an Agent Card on Schelling Protocol.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ccircle cx='20' cy='24' r='4.5' fill='%238b5cf6'/%3E%3Ccircle cx='44' cy='24' r='4.5' fill='%238b5cf6'/%3E%3Ccircle cx='32' cy='44' r='4.5' fill='%238b5cf6'/%3E%3Cline x1='20' y1='24' x2='44' y2='24' stroke='%236366f180' stroke-width='1.5'/%3E%3Cline x1='20' y1='24' x2='32' y2='44' stroke='%236366f180' stroke-width='1.5'/%3E%3Cline x1='44' y1='24' x2='32' y2='44' stroke='%236366f180' stroke-width='1.5'/%3E%3Ccircle cx='32' cy='30.5' r='2' fill='%23a78bfa' opacity='0.6'/%3E%3C/svg%3E" type="image/svg+xml">
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -14,22 +14,6 @@ a{color:#8b5cf6;text-decoration:none;transition:color .2s}
 a:hover{color:#a78bfa}
 code{font-family:'SF Mono',Monaco,'Cascadia Code',monospace;font-size:.85em}
 
-/* Nav */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.75rem 0;background:rgba(10,10,15,.85);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
-.nav.scrolled{border-bottom-color:#1e1e2e}
-.nav-inner{display:flex;align-items:center;justify-content:space-between}
-.nav-brand{display:flex;align-items:center;gap:.6rem;font-weight:600;font-size:1rem;color:#e0e0e0;text-decoration:none}
-.nav-brand svg{width:28px;height:28px}
-.nav-links{display:flex;gap:1.5rem;align-items:center}
-.nav-links a{color:#ccc;font-size:.85rem;font-weight:500;transition:color .2s}.nav-links a:hover{color:#fff}
-.nav-links .btn{font-size:.8rem;padding:.45rem 1rem}
-
-.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:101}
-.nav-hamburger span{display:block;width:22px;height:2px;background:#ccc;margin:5px 0;transition:all .3s;border-radius:1px}
-.nav-hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
-.nav-hamburger.open span:nth-child(2){opacity:0}
-.nav-hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
-
 /* Layout */
 .container{max-width:1100px;margin:0 auto;padding:0 1.5rem}
 
@@ -37,13 +21,6 @@ code{font-family:'SF Mono',Monaco,'Cascadia Code',monospace;font-size:.85em}
 .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;border-radius:8px;font-size:.95rem;font-weight:500;transition:all .2s;border:none;cursor:pointer}
 .btn-primary{background:#6366f1;color:#fff}.btn-primary:hover{background:#4f46e5;color:#fff}
 .btn-secondary{border:1px solid #2a2a3a;color:#ccc;background:transparent}.btn-secondary:hover{border-color:#6366f1;color:#fff}
-
-/* Footer */
-footer{border-top:1px solid #1e1e2e;padding:2rem 0}
-.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
-.footer-links{display:flex;gap:1.5rem;align-items:center}
-.footer-links a{color:#666;font-size:.85rem}.footer-links a:hover{color:#8b5cf6}
-.footer-right{font-size:.8rem;color:#555}
 
 /* Page */
 .page-wrap{max-width:760px;margin:0 auto;padding:5rem 1.5rem 4rem}
@@ -118,48 +95,14 @@ footer{border-top:1px solid #1e1e2e;padding:2rem 0}
   .field-table{font-size:.78rem}
 }
 @media(max-width:768px){
-  .nav-hamburger{display:block}
-  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:rgba(10,10,15,.97);backdrop-filter:blur(12px);padding:1rem 1.5rem;gap:.75rem;border-bottom:1px solid #1e1e2e}
-  .nav-links.open{display:flex}
-  .nav-links a{font-size:1rem;padding:.5rem 0}
-  .nav-links .btn{width:fit-content;margin-top:.25rem}
+
 }
 </style>
+<link rel="stylesheet" href="/shared/nav.css">
 </head>
 <body>
 
-<nav class="nav" id="nav">
-<div class="container">
-<div class="nav-inner">
-<a href="/" class="nav-brand">
-<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-<circle cx="32" cy="32" r="30" stroke="url(#nav-g)" stroke-width="3"/>
-<circle cx="20" cy="24" r="4.5" fill="#8b5cf6"/>
-<circle cx="44" cy="24" r="4.5" fill="#8b5cf6"/>
-<circle cx="32" cy="44" r="4.5" fill="#8b5cf6"/>
-<line x1="20" y1="24" x2="44" y2="24" stroke="#6366f180" stroke-width="1.5"/>
-<line x1="20" y1="24" x2="32" y2="44" stroke="#6366f180" stroke-width="1.5"/>
-<line x1="44" y1="24" x2="32" y2="44" stroke="#6366f180" stroke-width="1.5"/>
-<circle cx="32" cy="30.5" r="2" fill="#a78bfa" opacity="0.6"/>
-<defs><linearGradient id="nav-g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-</svg>
-Schelling Protocol
-</a>
-<button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
-<span></span><span></span><span></span>
-</button>
-<div class="nav-links" id="navLinks">
-<a href="/#playground">Playground</a>
-<a href="/#lifecycle">How It Works</a>
-<a href="/cards">Cards</a>
-<a href="/serendipity">Serendipity</a>
-<a href="/changelog">Changelog</a>
-<a href="https://github.com/codyz123/schelling-protocol" target="_blank">GitHub</a>
-<a href="/#start" class="btn btn-primary">Get Started</a>
-</div>
-</div>
-</div>
-</nav>
+<nav class="nav" id="nav"></nav>
 
 <div class="page-wrap">
 
@@ -279,107 +222,15 @@ Schelling Protocol
 
 </div>
 
-<footer>
-<div class="container">
-<div class="footer-inner">
-<div class="footer-links">
-<a href="/changelog">Changelog</a>
-<a href="https://github.com/codyz123/schelling-protocol" target="_blank">GitHub</a>
-<a href="/docs">API Docs</a>
-</div>
-<div class="footer-right">
-Schelling Protocol v3.0.0 · Built by <a href="https://github.com/codyz123" target="_blank">Cody Zervas</a>
-</div>
-</div>
-</div>
-</footer>
+<footer></footer>
 
 <script>
 // Extract slug from /cards/{slug}/contact-setup
 const parts = window.location.pathname.split('/').filter(Boolean);
 const slug = parts[1] || 'unknown'; // /cards/{slug}/contact-setup → parts = ['cards', slug, 'contact-setup']
 
-// Nav scroll
-window.addEventListener('scroll', () => {
-  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
-});
-
-// Inject slug into all display points
-document.getElementById('slug-display').textContent = slug;
-document.getElementById('url-slug').textContent = slug;
-document.getElementById('profile-link').href = '/cards/' + slug;
-document.getElementById('profile-link').textContent = '← Go to the profile (/cards/' + slug + ')';
-
-// Fetch card details
-(async function loadCard() {
-  const el = document.getElementById('card-details');
-  try {
-    const res = await fetch('https://schellingprotocol.com/api/cards/' + encodeURIComponent(slug));
-    if (!res.ok) {
-      if (res.status === 404) {
-        el.innerHTML = '<span class="card-error">Card not found. The slug "' + escHtml(slug) + '" does not exist on this network.</span>';
-      } else {
-        el.innerHTML = '<span class="card-error">Error fetching card details (HTTP ' + res.status + ').</span>';
-      }
-      return;
-    }
-    const data = await res.json();
-    const card = data.card || data;
-
-    const displayName = escHtml(card.display_name || card.name || slug);
-    const cardType = escHtml(card.card_type || card.type || '');
-    const tagline = escHtml(card.tagline || card.bio || '');
-    const isAvailable = card.availability !== false && card.available !== false && card.status !== 'unavailable';
-    const availLabel = isAvailable ? 'Available' : 'Unavailable';
-    const availClass = isAvailable ? 'available' : 'unavailable';
-
-    let html = '<div style="margin-bottom:.5rem;font-size:1rem;font-weight:600;color:#e0e0e0">' + displayName + '</div>';
-    if (tagline) {
-      html += '<div style="font-size:.875rem;color:#888;margin-bottom:.75rem">' + tagline + '</div>';
-    }
-    html += '<div class="card-meta-row">';
-    if (cardType) {
-      html += '<div class="card-meta-item"><strong>Type</strong> · ' + cardType + '</div>';
-    }
-    html += '<div class="card-meta-item"><span class="card-availability ' + availClass + '"><span class="dot"></span>' + availLabel + '</span></div>';
-    html += '</div>';
-
-    el.innerHTML = html;
-  } catch (e) {
-    el.innerHTML = '<span class="card-error">Could not load card details: ' + escHtml(e.message) + '</span>';
-  }
-})();
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// Copy the plain-text version of the code block
-function copyBlock() {
-  const actualSlug = slug;
-  const text =
-    'POST https://schellingprotocol.com/api/cards/' + actualSlug + '/request\n' +
-    'Content-Type: application/json\n\n' +
-    '{\n' +
-    '  "intent": "Brief statement of why you\'re reaching out (required)",\n' +
-    '  "message": "Detailed message explaining your request",\n' +
-    '  "from_name": "Your name or your agent\'s name",\n' +
-    '  "from_email": "contact@example.com",\n' +
-    '  "from_card_slug": "your-own-slug-if-you-have-one",\n' +
-    '  "budget_cents": 50000\n' +
-    '}';
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.copy-btn-float');
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 1500);
-  }).catch(() => {});
-}
 </script>
-<script>(function(){const h=document.getElementById("navHamburger"),l=document.getElementById("navLinks");if(!h||!l)return;h.addEventListener("click",()=>{h.classList.toggle("open");l.classList.toggle("open")});l.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{h.classList.remove("open");l.classList.remove("open")}))})();</script>
+<script src="/shared/nav.js"></script>
+<script src="/shared/footer.js"></script>
 </body>
 </html>

@@ -1,0 +1,28 @@
+/* Shared nav + footer styles — single source of truth */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.75rem 0;background:rgba(10,10,15,.85);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
+.nav.scrolled{border-bottom-color:#1e1e2e}
+.nav-inner{display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:.6rem;font-weight:600;font-size:1rem;color:#e0e0e0;text-decoration:none}
+.nav-brand svg{width:28px;height:28px}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{color:#ccc;font-size:.85rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:#fff}
+.nav-links .btn{font-size:.8rem;padding:.45rem 1rem}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:101}
+.nav-hamburger span{display:block;width:22px;height:2px;background:#ccc;margin:5px 0;transition:all .3s;border-radius:1px}
+.nav-hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
+footer{border-top:1px solid #1e1e2e;padding:2rem 0}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.footer-links{display:flex;gap:1.5rem;align-items:center}
+.footer-links a{color:#666;font-size:.85rem}
+.footer-links a:hover{color:#8b5cf6}
+
+@media(max-width:768px){
+  .nav-links{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,15,.98);flex-direction:column;justify-content:center;align-items:center;gap:2rem;z-index:100}
+  .nav-links.open{display:flex}
+  .nav-hamburger{display:block}
+  .footer-inner{flex-direction:column;text-align:center}
+}

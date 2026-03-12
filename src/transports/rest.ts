@@ -649,6 +649,18 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
         }
 
+        // GET /shared/* — shared static assets (nav.js, footer.js, nav.css)
+        if (method === "GET" && url.pathname.startsWith("/shared/")) {
+          const fname = url.pathname.slice(8); // after "/shared/"
+          if (/^[a-z0-9.-]+$/.test(fname)) {
+            const contentTypes: Record<string, string> = { js: "application/javascript", css: "text/css" };
+            const ext = fname.split('.').pop() || '';
+            const ct = contentTypes[ext] || "application/octet-stream";
+            const f = Bun.file(process.cwd() + "/public/shared/" + fname);
+            return new Response(f, { headers: { ...corsHeaders, "Content-Type": `${ct}; charset=utf-8`, "Cache-Control": "public, max-age=3600" } });
+          }
+        }
+
         // GET /robots.txt
         if (method === "GET" && url.pathname === "/robots.txt") {
           return new Response(

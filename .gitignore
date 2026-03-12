@@ -24,3 +24,8 @@ schelling-protocol
 google*.json
 packages/mcp-server/.mcpregistry_*
 .vercel
+
+# Dev artifacts
+dev-server.ts
+.render-tmp.mjs
+**/CLAUDE.md

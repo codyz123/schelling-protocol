@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
-    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 70px 20px 40px; }
     h1 { font-size: 28px; margin-bottom: 8px; color: #fff; }
     .subtitle { color: #888; margin-bottom: 32px; font-size: 15px; }
     .subtitle a { color: #818cf8; text-decoration: none; }
@@ -64,8 +64,10 @@
       .input-row { flex-direction: column; }
     }
   </style>
+<link rel="stylesheet" href="/shared/nav.css">
 </head>
 <body>
+<nav class="nav" id="nav"></nav>
 <div class="container">
   <h1>◉ Schelling Protocol — Try It</h1>
   <p class="subtitle">
@@ -297,5 +299,8 @@ function copyCurl() {
 
 renderScenarios();
 </script>
+<footer></footer>
+<script src="/shared/nav.js"></script>
+<script src="/shared/footer.js"></script>
 </body>
 </html>

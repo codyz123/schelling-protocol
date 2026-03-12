@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { HandlerContext } from "../types.js";
 import type { DatabaseConnection } from "../db/interface.js";
+import { authenticateBySlug } from "./auth.js";
 
 // ─── Constants ───────────────────────────────────────────────────────
 
@@ -74,26 +75,8 @@ export function initAgentCardsTables(db: DatabaseConnection): void {
   }
 }
 
-// ─── Auth Helper ─────────────────────────────────────────────────────
-
-// Dummy hash for constant-time comparison when card doesn't exist (prevents timing-based slug enumeration)
-const DUMMY_HASH = "$argon2id$v=19$m=65536,t=2,p=1$0000000000000000$0000000000000000000000000000000000000000000";
-
-async function authenticateCard(
-  db: DatabaseConnection,
-  slug: string,
-  authHeader: string | null,
-): Promise<Record<string, any> | null> {
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  const token = authHeader.slice(7);
-  const card = db.prepare(
-    "SELECT * FROM agent_cards WHERE slug = ? AND deleted_at IS NULL",
-  ).get(slug) as Record<string, any> | undefined;
-  // Always run verify to prevent timing-based slug enumeration
-  const hashToCheck = card?.api_key_hash ?? DUMMY_HASH;
-  const valid = await Bun.password.verify(token, hashToCheck).catch(() => false);
-  return valid && card ? card : null;
-}
+// ─── Auth (shared via auth.ts) ───────────────────────────────────────
+const authenticateCard = authenticateBySlug;
 
 // ─── Response Helpers ────────────────────────────────────────────────
 
@@ -139,6 +122,10 @@ export async function handleCardsRoute(
 
   // ── POST /api/cards — Create card ────────────────────────────────
   if (method === "POST" && !slug) {
+    const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+    if (contentLength > 100_000) {
+      return err("Request body too large (max 100KB)", 413, "PAYLOAD_TOO_LARGE");
+    }
     let body: any;
     try { body = await req.json(); } catch { return err("Invalid JSON body"); }
 
