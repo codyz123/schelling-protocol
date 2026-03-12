@@ -65,6 +65,10 @@
       "destination": "https://schelling-protocol-production.up.railway.app/cards"
     },
     {
+      "source": "/shared/:path*",
+      "destination": "https://schelling-protocol-production.up.railway.app/shared/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://schelling-protocol-production.up.railway.app/api/:path*"
     }

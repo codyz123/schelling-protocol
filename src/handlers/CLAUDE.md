@@ -1,9 +1,0 @@
-<claude-mem-context>
-# Recent Activity
-
-### Mar 10, 2026
-
-| ID | Time | T | Title | Read |
-|----|------|---|-------|------|
-| #1945 | 8:07 PM | 🔵 | Serendipity Backend Handler Review | ~283 |
-</claude-mem-context>
