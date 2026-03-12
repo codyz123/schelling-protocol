@@ -631,6 +631,12 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
         }
 
+        // GET /changelog — Changelog page
+        if (method === "GET" && url.pathname === "/changelog") {
+          const f = Bun.file(process.cwd() + "/public/changelog.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
         // GET /serendipity — Serendipity marketing/info page
         if (method === "GET" && url.pathname === "/serendipity") {
           const f = Bun.file(process.cwd() + "/public/serendipity.html");
