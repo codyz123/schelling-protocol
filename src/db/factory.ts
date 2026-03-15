@@ -1,6 +1,5 @@
 import type { DatabaseConnection, DatabaseConfig, DatabaseType } from "./interface.js";
 import { SqliteConnection } from "./sqlite-adapter.js";
-import { PostgresConnection } from "./postgres-adapter.js";
 
 export function createDatabaseConnection(config?: DatabaseConfig): DatabaseConnection {
   // Default to SQLite for backwards compatibility
@@ -10,13 +9,16 @@ export function createDatabaseConnection(config?: DatabaseConfig): DatabaseConne
     case "sqlite":
       return new SqliteConnection(config?.sqlite);
 
-    case "postgres":
+    case "postgres": {
       console.warn(
         "WARNING: Postgres support is experimental. The current codebase uses synchronous " +
         "database operations, but Postgres requires async. For production use with Postgres, " +
         "the handlers need to be refactored to use async/await. Using SQLite is recommended."
       );
+      // Lazy import — only load postgres adapter (and its 'postgres' dependency) when actually needed
+      const { PostgresConnection } = require("./postgres-adapter.js");
       return new PostgresConnection(config?.postgres);
+    }
 
     default:
       throw new Error(`Unsupported database type: ${dbType}`);
