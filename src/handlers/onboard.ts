@@ -1,5 +1,6 @@
 import type { HandlerContext, HandlerResult } from "../types.js";
 import { PROTOCOL_VERSION } from "../types.js";
+import { getFeatures, generateNextSteps, getLegacyFeatureDescriptions } from "../features.js";
 
 // ─── Input / Output types ────────────────────────────────────────────
 
@@ -63,6 +64,20 @@ interface OnboardOutput {
   registration_template: RegistrationTemplate;
   clarification_needed: null;
   cluster_priors: Record<string, unknown>;
+  next_steps: {
+    step: number;
+    action: string;
+    description: string;
+    endpoint?: string;
+  }[];
+  features: {
+    core_protocol: string;
+    agent_cards: string;
+    serendipity: string;
+    mcp_server: string;
+    sdks: string;
+    community: string;
+  };
 }
 
 // ─── Keyword → cluster mapping ───────────────────────────────────────
@@ -407,6 +422,34 @@ export async function handleOnboard(
       intents: [],
     };
 
+    // Get dynamic features and next steps
+    const featureRegistry = await getFeatures(ctx);
+    const nextSteps = generateNextSteps(featureRegistry.features);
+    const legacyFeatures = getLegacyFeatureDescriptions();
+    
+    // Build features object from registry
+    const features = {
+      core_protocol: "",
+      agent_cards: "",
+      serendipity: "",
+      mcp_server: "",
+      sdks: "",
+      community: "",
+    };
+    
+    for (const feature of featureRegistry.features) {
+      if (feature.id in features) {
+        (features as any)[feature.id] = feature.description;
+      }
+    }
+    
+    // Fill any missing features with legacy descriptions
+    for (const [key, value] of Object.entries(legacyFeatures)) {
+      if (key in features && !(features as any)[key]) {
+        (features as any)[key] = value;
+      }
+    }
+
     const output: OnboardOutput = {
       suggested_cluster: {
         cluster_id: primary.cluster_id,
@@ -421,6 +464,15 @@ export async function handleOnboard(
       registration_template: registrationTemplate,
       clarification_needed: null,
       cluster_priors: {},
+      next_steps: nextSteps.length > 0 ? nextSteps : [
+        {
+          step: 1,
+          action: "Register on the protocol",
+          description: "You just completed this step! Your registration template is ready above.",
+          endpoint: "POST /schelling/register"
+        }
+      ],
+      features,
     };
 
     return { ok: true, data: output };

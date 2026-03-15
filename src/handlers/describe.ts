@@ -1,5 +1,6 @@
 import type { HandlerContext, HandlerResult, ClusterRecord, ToolRecord } from "../types.js";
 import { PROTOCOL_VERSION, SERVER_VERSION, SERVER_NAME } from "../types.js";
+import { getFeatures, getLegacyFeatureDescriptions } from "../features.js";
 
 interface ClusterSummary {
   cluster_id: string;
@@ -49,6 +50,14 @@ interface DescribeOutput {
     fast_paths: boolean;
     deliverables: boolean;
   };
+  features: {
+    core_protocol: string;
+    agent_cards: string;
+    serendipity: string;
+    mcp_server: string;
+    sdks: string;
+    community: string;
+  };
   server: {
     name: string;
     version: string;
@@ -91,6 +100,33 @@ export async function handleDescribe(
          ORDER BY usage_count DESC`
       )
       .all() as Pick<ToolRecord, "tool_id" | "display_name" | "one_line_description">[];
+
+    // Get dynamic feature descriptions
+    const featureRegistry = await getFeatures(ctx);
+    const legacyFeatures = getLegacyFeatureDescriptions();
+    
+    // Build features object from registry, falling back to legacy descriptions
+    const features = {
+      core_protocol: "",
+      agent_cards: "",
+      serendipity: "",
+      mcp_server: "",
+      sdks: "",
+      community: "",
+    };
+    
+    for (const feature of featureRegistry.features) {
+      if (feature.id in features) {
+        (features as any)[feature.id] = feature.description;
+      }
+    }
+    
+    // Fill any missing features with legacy descriptions
+    for (const [key, value] of Object.entries(legacyFeatures)) {
+      if (key in features && !(features as any)[key]) {
+        (features as any)[key] = value;
+      }
+    }
 
     const output: DescribeOutput = {
       protocol: {
@@ -150,6 +186,7 @@ export async function handleDescribe(
         fast_paths: true,
         deliverables: true,
       },
+      features,
       server: {
         name: SERVER_NAME,
         version: SERVER_VERSION,
