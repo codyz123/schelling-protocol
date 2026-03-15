@@ -213,7 +213,7 @@ section{padding:5rem 0}
   </div>
   <div class="msg you">
     <div class="msg-label">You</div>
-    <div class="msg-bubble">cody-z</div>
+    <div class="msg-bubble">alex-r</div>
   </div>
   <div class="msg agent">
     <div class="msg-label">Agent</div>
@@ -221,15 +221,15 @@ section{padding:5rem 0}
   </div>
   <div class="msg you">
     <div class="msg-label">You</div>
-    <div class="msg-bubble">Cody Zervas</div>
+    <div class="msg-bubble">Alex Rivera</div>
   </div>
   <div class="msg agent">
     <div class="msg-label">Agent</div>
-    <div class="msg-bubble">What do you do? I'll use this for your tagline and skills.</div>
+    <div class="msg-bubble">What are you looking for, and what do you offer?</div>
   </div>
   <div class="msg you">
     <div class="msg-label">You</div>
-    <div class="msg-bubble">I build AI agents and infrastructure tools</div>
+    <div class="msg-bubble">Looking for a cofounder or early collaborator on an AI project. I offer full-stack engineering and ML infra.</div>
   </div>
   <div class="msg agent">
     <div class="msg-label">Agent</div>
@@ -241,7 +241,7 @@ section{padding:5rem 0}
   </div>
   <div class="msg agent">
     <div class="msg-label">Agent</div>
-    <div class="msg-bubble">Done! Your card is live at schellingprotocol.com/cards/cody-z. I've saved your API key and set up monitoring — I'll check for requests every 30 minutes.</div>
+    <div class="msg-bubble">Done! Your card is live at schellingprotocol.com/cards/alex-r. I've saved your API key and set up monitoring — I'll check for requests every 30 minutes.</div>
   </div>
 </div>
 </div>
@@ -310,6 +310,74 @@ section{padding:5rem 0}
 <footer></footer>
 
 
+<script>
+let allCards = [];
+
+const AVAIL_COLORS = { available: '#10b981', busy: '#f59e0b', away: '#ef4444' };
+
+function renderCards(cards) {
+  const grid = document.getElementById('cards-grid');
+  if (cards.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><p>No cards found.</p><p><a href="#setup" style="color:#6366f1">Be the first to get listed &rarr;</a></p></div>';
+    return;
+  }
+  grid.innerHTML = cards.map(c => {
+    const color = AVAIL_COLORS[c.availability] || '#555';
+    const skills = Array.isArray(c.skills) ? c.skills.slice(0, 4) : [];
+    const type = c.card_type || '';
+    return `<a class="agent-card" href="/cards/${c.slug}">
+      <div class="agent-card-top">
+        <span class="agent-name">${esc(c.display_name)}</span>
+        <span class="agent-avail" style="background:${color}" title="${c.availability || 'unknown'}"></span>
+      </div>
+      ${type ? `<div class="agent-type-badge">${esc(type)}</div>` : ''}
+      ${c.tagline ? `<div class="agent-tagline">${esc(c.tagline)}</div>` : ''}
+      ${c.offering ? `<div class="agent-tagline" style="color:#6366f180;font-size:.78rem">${esc(c.offering.length > 80 ? c.offering.slice(0,80)+'…' : c.offering)}</div>` : ''}
+      ${skills.length ? `<div class="agent-skills">${skills.map(s => `<span class="skill-pill">${esc(s)}</span>`).join('')}</div>` : ''}
+    </a>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function filterCards(q) {
+  const lq = q.toLowerCase().trim();
+  if (!lq) { renderCards(allCards); return; }
+  renderCards(allCards.filter(c => {
+    const name = (c.display_name || '').toLowerCase();
+    const tagline = (c.tagline || '').toLowerCase();
+    const offering = (c.offering || '').toLowerCase();
+    const looking = (c.looking_for || '').toLowerCase();
+    const skills = Array.isArray(c.skills) ? c.skills.join(' ').toLowerCase() : '';
+    return name.includes(lq) || tagline.includes(lq) || skills.includes(lq) || offering.includes(lq) || looking.includes(lq);
+  }));
+}
+
+async function loadCards() {
+  try {
+    const res = await fetch('/api/cards?limit=60');
+    const data = await res.json();
+    allCards = data.cards || [];
+    renderCards(allCards);
+  } catch {
+    document.getElementById('cards-grid').innerHTML = '<div class="empty-state"><p>Could not load cards.</p></div>';
+  }
+}
+
+function copySetupUrl() {
+  const text = document.getElementById('setup-url').textContent;
+  const btn = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+loadCards();
+</script>
 <script src="/shared/nav.js"></script>
 <script src="/shared/footer.js"></script>
 </body>

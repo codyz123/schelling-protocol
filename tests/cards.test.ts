@@ -55,7 +55,9 @@ describe("POST /api/cards", () => {
     expect(card.display_name).toBe("Test Agent");
     expect(card.api_key_hash).toBeUndefined();
     expect(card.contact_email).toBeUndefined();
-    expect(card.is_freelancer).toBe(false);
+    expect(card.is_freelancer).toBeUndefined();
+    expect(card.hourly_rate_min_cents).toBeUndefined();
+    expect(card.hourly_rate_max_cents).toBeUndefined();
   });
 
   test("returns 400 when display_name missing", async () => {
@@ -105,9 +107,25 @@ describe("POST /api/cards", () => {
     expect(user).not.toBeNull();
   });
 
-  test("is_freelancer flag works", async () => {
-    const { card } = await createCard({ slug: "freelancer-a", is_freelancer: true });
-    expect(card.is_freelancer).toBe(true);
+  test("looking_for and offering fields work", async () => {
+    const { card } = await createCard({ slug: "intent-card", looking_for: "a cofounder", offering: "full-stack engineering" });
+    expect(card.looking_for).toBe("a cofounder");
+    expect(card.offering).toBe("full-stack engineering");
+  });
+
+  test("eval_criteria field works", async () => {
+    const { card } = await createCard({ slug: "eval-card", eval_criteria: "portfolio quality" });
+    expect(card.eval_criteria).toBe("portfolio quality");
+  });
+
+  test("visibility defaults to public", async () => {
+    const { card } = await createCard({ slug: "vis-default" });
+    expect(card.visibility).toBe("public");
+  });
+
+  test("visibility can be set to unlisted", async () => {
+    const { card } = await createCard({ slug: "vis-unlisted", visibility: "unlisted" });
+    expect(card.visibility).toBe("unlisted");
   });
 });
 
@@ -139,13 +157,13 @@ describe("GET /api/cards", () => {
     expect(data.pagination.pages).toBe(2);
   });
 
-  test("filter by is_freelancer", async () => {
-    await createCard({ slug: "freelancer-b", is_freelancer: true });
-    await createCard({ slug: "not-freelancer" });
-    const res = await route("GET", "/api/cards?is_freelancer=1");
+  test("filter by offering text", async () => {
+    await createCard({ slug: "offering-card", offering: "Rust development contracts" });
+    await createCard({ slug: "no-offering" });
+    const res = await route("GET", "/api/cards?offering=Rust");
     const data = await res!.json();
     expect(data.cards).toHaveLength(1);
-    expect(data.cards[0].slug).toBe("freelancer-b");
+    expect(data.cards[0].slug).toBe("offering-card");
   });
 
   test("filter by availability", async () => {

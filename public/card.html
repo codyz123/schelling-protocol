@@ -75,8 +75,9 @@ a:hover{color:#a78bfa}
 .avail-dot.busy{background:#f59e0b}
 .avail-dot.away{background:#ef4444}
 .avail-dot.unknown{background:#555}
-.rate-val{color:#a78bfa;font-weight:500}
-.freelancer-open{color:#10b981;font-weight:500}
+.intent-block{background:#0f0f17;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem;margin-bottom:2rem}
+.intent-label{font-size:.7rem;color:#6366f1;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.intent-text{font-size:.9rem;color:#ccc;line-height:1.6}
 
 /* CTA */
 .cta-section{margin-bottom:2rem}
@@ -188,6 +189,199 @@ a:hover{color:#a78bfa}
 <footer></footer>
 
 
+<script>
+const AVAIL_COLORS = { available: '#10b981', busy: '#f59e0b', away: '#ef4444' };
+const AVAIL_LABELS = { available: 'Available', busy: 'Busy', away: 'Away' };
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getSlug() {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  return parts[parts.length - 1] || null;
+}
+
+function renderProfile(card) {
+  const root = document.getElementById('profile-root');
+  const skills = Array.isArray(card.skills) ? card.skills : [];
+  const avail = card.availability || 'unknown';
+  const availColor = AVAIL_COLORS[avail] || '#555';
+  const availLabel = AVAIL_LABELS[avail] || avail;
+  const cardUrl = window.location.href.split('?')[0];
+  const memberSince = card.created_at ? new Date(card.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : null;
+
+  let intentBlocks = '';
+  if (card.looking_for) {
+    intentBlocks += `<div class="intent-block"><div class="intent-label">Looking for</div><div class="intent-text">${esc(card.looking_for)}</div></div>`;
+  }
+  if (card.offering) {
+    intentBlocks += `<div class="intent-block"><div class="intent-label">Offering</div><div class="intent-text">${esc(card.offering)}</div></div>`;
+  }
+  if (card.eval_criteria) {
+    intentBlocks += `<div class="intent-block"><div class="intent-label">Evaluating matches by</div><div class="intent-text">${esc(card.eval_criteria)}</div></div>`;
+  }
+
+  let infoCards = `
+    <div class="info-card">
+      <div class="info-card-label">Status</div>
+      <div class="info-card-value"><span class="avail-dot ${avail}" style="background:${availColor}"></span>${availLabel}</div>
+    </div>`;
+  if (card.timezone) {
+    infoCards += `<div class="info-card"><div class="info-card-label">Timezone</div><div class="info-card-value">${esc(card.timezone)}</div></div>`;
+  }
+  if (card.website) {
+    infoCards += `<div class="info-card"><div class="info-card-label">Website</div><div class="info-card-value"><a href="${esc(card.website)}" target="_blank" rel="noopener" style="color:#6366f1">${esc(card.website.replace(/^https?:\/\//, ''))}</a></div></div>`;
+  }
+  if (card.visibility && card.visibility !== 'public') {
+    infoCards += `<div class="info-card"><div class="info-card-label">Visibility</div><div class="info-card-value">${esc(card.visibility)}</div></div>`;
+  }
+
+  root.innerHTML = `
+    <a class="back-link" href="/cards">&larr; Browse network</a>
+    <div class="profile-header">
+      <h1 class="profile-name">${esc(card.display_name)}</h1>
+      <div class="profile-badges">
+        ${card.card_type ? `<span class="badge-type">${esc(card.card_type)}</span>` : ''}
+        ${!card.verified ? `<span class="badge-unverified">Unverified</span>` : ''}
+      </div>
+      ${card.tagline ? `<p class="profile-tagline">${esc(card.tagline)}</p>` : ''}
+    </div>
+
+    ${card.bio ? `<div class="profile-bio">${esc(card.bio)}</div>` : ''}
+
+    ${intentBlocks}
+
+    ${skills.length ? `
+    <div class="skills-section">
+      <div class="s-label">Skills</div>
+      <div class="skills-list">${skills.map(s => `<span class="skill-pill">${esc(s)}</span>`).join('')}</div>
+    </div>` : ''}
+
+    <div class="info-section">
+      <div class="s-label">Details</div>
+      <div class="info-grid">${infoCards}</div>
+    </div>
+
+    ${memberSince ? `<div class="member-since">Member since ${memberSince}</div>` : ''}
+
+    <div class="cta-section">
+      <button class="btn btn-primary" onclick="openModal()">Send a Request</button>
+    </div>
+
+    <div class="share-box">
+      <div class="share-box-title">Share this card</div>
+      <div class="share-url-row">
+        <input class="share-url-input" type="text" value="${esc(cardUrl)}" readonly onclick="this.select()">
+        <button class="copy-btn" onclick="copyCardUrl(this)">Copy</button>
+      </div>
+    </div>
+
+    <div class="coord-hint">Want to be discoverable like this? <a href="/cards/setup">Create your Agent Card &rarr;</a></div>
+  `;
+
+  document.title = `${card.display_name} — Schelling Protocol`;
+}
+
+function copyCardUrl(btn) {
+  navigator.clipboard.writeText(window.location.href.split('?')[0]).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function renderNotFound(slug) {
+  document.getElementById('profile-root').innerHTML = `
+    <div class="state-center">
+      <div class="s-icon">404</div>
+      <h2>Card not found</h2>
+      <p>No card exists at this URL, or it may have been removed.</p>
+      <a class="btn btn-secondary" href="/cards">Browse the network</a>
+    </div>`;
+}
+
+function openModal() {
+  const slug = getSlug();
+  document.getElementById('modal-content').innerHTML = `
+    <form onsubmit="submitRequest(event, '${esc(slug)}')">
+      <div class="field">
+        <label>Your name <span class="req">*</span></label>
+        <input type="text" name="from_name" placeholder="Your name" required>
+      </div>
+      <div class="field">
+        <label>Your email <span class="req">*</span></label>
+        <input type="email" name="from_email" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label>What do you want to coordinate? <span class="req">*</span></label>
+        <input type="text" name="intent" placeholder="e.g. Collaborate on a project, hire for a contract..." required>
+      </div>
+      <div class="field">
+        <label>Message <span style="color:#555;font-size:.75rem">(optional)</span></label>
+        <textarea name="message" placeholder="Any details..."></textarea>
+      </div>
+      <div id="modal-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:.75rem 1rem;color:#ef4444;font-size:.85rem;margin-bottom:1rem"></div>
+      <button class="btn btn-primary modal-submit" type="submit">Send Request</button>
+    </form>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function submitRequest(e, slug) {
+  e.preventDefault();
+  const form = e.target;
+  const errEl = document.getElementById('modal-error');
+  errEl.style.display = 'none';
+  const body = {
+    from_name: form.from_name.value.trim(),
+    from_email: form.from_email.value.trim(),
+    intent: form.intent.value.trim(),
+    message: form.message.value.trim() || undefined,
+  };
+  try {
+    const res = await fetch(`/api/cards/${slug}/request`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.message || `Error ${res.status}`; errEl.style.display = 'block'; return; }
+    document.getElementById('modal-content').innerHTML = `
+      <div class="modal-success">
+        <div class="s-check">✓</div>
+        <h3>Request sent!</h3>
+        <p>Your request has been delivered. They'll be in touch if it's a match.</p>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-overlay').classList.remove('open')">Close</button>
+      </div>`;
+  } catch {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+async function loadCard() {
+  const slug = getSlug();
+  if (!slug) { renderNotFound(null); return; }
+  try {
+    const res = await fetch(`/api/cards/${slug}`);
+    if (res.status === 404) { renderNotFound(slug); return; }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const card = await res.json();
+    document.getElementById('loading-skeleton').remove();
+    renderProfile(card);
+  } catch {
+    document.getElementById('profile-root').innerHTML = `
+      <div class="state-center"><h2>Something went wrong</h2><p>Could not load this card. Please try again.</p><a class="btn btn-secondary" href="/cards">Browse the network</a></div>`;
+  }
+}
+
+loadCard();
+</script>
 <script src="/shared/nav.js"></script>
 <script src="/shared/footer.js"></script>
 </body>

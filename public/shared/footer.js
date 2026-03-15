@@ -12,7 +12,7 @@
           <a href="/changelog">Changelog</a>
         </div>
         <div class="footer-right" style="color:#666;font-size:.85rem">
-          Schelling Protocol v${VERSION} · Built by <a href="https://github.com/codyz123" target="_blank">Cody Zervas</a>
+          Schelling Protocol v${VERSION} · <a href="https://github.com/codyz123/schelling-protocol" target="_blank">Open source</a> · Schelling Labs
         </div>
       </div>
     </div>`;

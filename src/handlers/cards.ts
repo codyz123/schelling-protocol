@@ -31,8 +31,10 @@ export function initAgentCardsTables(db: DatabaseConnection): void {
       offers TEXT,
       needs TEXT,
       skills TEXT,
-      hourly_rate_min_cents INTEGER,
-      hourly_rate_max_cents INTEGER,
+      looking_for TEXT,
+      offering TEXT,
+      eval_criteria TEXT,
+      visibility TEXT DEFAULT 'public',
       availability TEXT DEFAULT 'available',
       timezone TEXT,
       contact_email TEXT,
@@ -41,14 +43,12 @@ export function initAgentCardsTables(db: DatabaseConnection): void {
       social_links TEXT,
       preferences TEXT,
       api_key_hash TEXT NOT NULL,
-      is_freelancer INTEGER DEFAULT 0,
       webhook_url TEXT,
       deleted_at TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_agent_cards_slug ON agent_cards(slug);
-    CREATE INDEX IF NOT EXISTS idx_agent_cards_freelancer ON agent_cards(is_freelancer) WHERE deleted_at IS NULL;
 
     CREATE TABLE IF NOT EXISTS coordination_requests (
       id TEXT PRIMARY KEY,
@@ -70,6 +70,10 @@ export function initAgentCardsTables(db: DatabaseConnection): void {
   for (const stmt of [
     "ALTER TABLE agent_cards ADD COLUMN card_type TEXT",
     "ALTER TABLE agent_cards ADD COLUMN verified INTEGER DEFAULT 0",
+    "ALTER TABLE agent_cards ADD COLUMN looking_for TEXT",
+    "ALTER TABLE agent_cards ADD COLUMN offering TEXT",
+    "ALTER TABLE agent_cards ADD COLUMN eval_criteria TEXT",
+    "ALTER TABLE agent_cards ADD COLUMN visibility TEXT DEFAULT 'public'",
   ]) {
     try { db.exec(stmt); } catch { /* column already exists */ }
   }
@@ -81,13 +85,13 @@ const authenticateCard = authenticateBySlug;
 // ─── Response Helpers ────────────────────────────────────────────────
 
 function publicCard(card: Record<string, any>): Record<string, any> {
-  const { api_key_hash, contact_email, webhook_url, ...pub } = card;
+  // Strip private and deprecated fields
+  const { api_key_hash, contact_email, webhook_url, is_freelancer, hourly_rate_min_cents, hourly_rate_max_cents, ...pub } = card;
   for (const field of ["offers", "needs", "skills", "social_links", "preferences"]) {
     if (typeof pub[field] === "string") {
       try { pub[field] = JSON.parse(pub[field]); } catch { /* leave as-is */ }
     }
   }
-  pub.is_freelancer = pub.is_freelancer === 1 || pub.is_freelancer === true;
   return pub;
 }
 
@@ -185,17 +189,17 @@ export async function handleCardsRoute(
         INSERT INTO agent_cards (
           id, slug, registration_id, display_name, tagline, bio,
           offers, needs, skills,
-          hourly_rate_min_cents, hourly_rate_max_cents,
+          looking_for, offering, eval_criteria, visibility,
           availability, timezone, contact_email, website, avatar_url,
-          social_links, preferences, api_key_hash, is_freelancer, webhook_url,
+          social_links, preferences, api_key_hash, webhook_url,
           card_type,
           created_at, updated_at
         ) VALUES (
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?,
-          ?, ?,
+          ?, ?, ?, ?,
           ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
           ?,
           datetime('now'), datetime('now')
         )
@@ -205,8 +209,10 @@ export async function handleCardsRoute(
         body.offers != null ? JSON.stringify(body.offers) : null,
         body.needs != null ? JSON.stringify(body.needs) : null,
         body.skills != null ? JSON.stringify(body.skills) : null,
-        body.hourly_rate_min_cents ?? null,
-        body.hourly_rate_max_cents ?? null,
+        body.looking_for ?? null,
+        body.offering ?? null,
+        body.eval_criteria ?? null,
+        body.visibility ?? "public",
         body.availability ?? "available",
         body.timezone ?? null,
         body.contact_email ?? null,
@@ -215,7 +221,6 @@ export async function handleCardsRoute(
         body.social_links != null ? JSON.stringify(body.social_links) : null,
         body.preferences != null ? JSON.stringify(body.preferences) : null,
         apiKeyHash,
-        body.is_freelancer ? 1 : 0,
         body.webhook_url ?? null,
         body.card_type ?? null,
       );
@@ -242,12 +247,6 @@ export async function handleCardsRoute(
     const conditions: string[] = ["deleted_at IS NULL"];
     const params: any[] = [];
 
-    const freelancerParam = url.searchParams.get("is_freelancer");
-    if (freelancerParam !== null) {
-      conditions.push("is_freelancer = ?");
-      params.push(freelancerParam === "1" ? 1 : 0);
-    }
-
     const availabilityParam = url.searchParams.get("availability");
     if (availabilityParam) {
       conditions.push("availability = ?");
@@ -262,6 +261,29 @@ export async function handleCardsRoute(
         conditions.push("skills LIKE ? ESCAPE '\\'");
         params.push(`%${escaped}%`);
       }
+    }
+
+    const lookingForParam = url.searchParams.get("looking_for");
+    if (lookingForParam) {
+      const escaped = lookingForParam.replace(/[%_]/g, "\\$&");
+      conditions.push("looking_for LIKE ? ESCAPE '\\'");
+      params.push(`%${escaped}%`);
+    }
+
+    const offeringParam = url.searchParams.get("offering");
+    if (offeringParam) {
+      const escaped = offeringParam.replace(/[%_]/g, "\\$&");
+      conditions.push("offering LIKE ? ESCAPE '\\'");
+      params.push(`%${escaped}%`);
+    }
+
+    const visibilityParam = url.searchParams.get("visibility");
+    if (visibilityParam) {
+      conditions.push("visibility = ?");
+      params.push(visibilityParam);
+    } else {
+      // By default only return public cards
+      conditions.push("(visibility = 'public' OR visibility IS NULL)");
     }
 
     const where = conditions.join(" AND ");
@@ -313,8 +335,8 @@ export async function handleCardsRoute(
 
     const UPDATABLE_SCALAR = new Set([
       "display_name", "tagline", "bio", "availability", "timezone",
-      "contact_email", "website", "avatar_url", "is_freelancer", "webhook_url",
-      "hourly_rate_min_cents", "hourly_rate_max_cents", "card_type",
+      "contact_email", "website", "avatar_url", "webhook_url", "card_type",
+      "looking_for", "offering", "eval_criteria", "visibility",
     ]);
     const UPDATABLE_JSON = new Set(["offers", "needs", "skills", "social_links", "preferences"]);
     // Strip immutable fields
@@ -326,7 +348,7 @@ export async function handleCardsRoute(
     for (const [key, val] of Object.entries(updates)) {
       if (UPDATABLE_SCALAR.has(key)) {
         fields.push(`${key} = ?`);
-        vals.push(key === "is_freelancer" ? (val ? 1 : 0) : val);
+        vals.push(val);
       } else if (UPDATABLE_JSON.has(key)) {
         fields.push(`${key} = ?`);
         vals.push(val != null ? JSON.stringify(val) : null);

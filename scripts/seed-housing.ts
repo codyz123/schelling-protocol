@@ -217,8 +217,8 @@ async function seed() {
     }
   }
 
-  // Now test a search as Cody
-  console.log("\n--- Testing search as Cody ---");
+  // Now test a search as the demo user
+  console.log("\n--- Testing search ---");
   const seekRes = await fetch(`${API}/agent_seek`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
