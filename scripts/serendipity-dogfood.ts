@@ -2,9 +2,9 @@
 /**
  * Serendipity Dogfood: Phase 0
  * 
- * 1. Creates an agent card for Cody (or reuses existing)
+ * 1. Creates an agent card for the demo user (or reuses existing)
  * 2. Creates 30 synthetic agent cards with diverse profiles
- * 3. Publishes Cody's real signal (extracted from his actual context)
+ * 3. Publishes the demo user's signal
  * 4. Publishes 30 synthetic signals
  * 5. Retrieves and displays match results
  */
@@ -51,9 +51,9 @@ function uuid() {
   return crypto.randomUUID();
 }
 
-// ─── Cody's Real Signal (extracted from his actual files) ───
+// ─── Demo User Signal ───
 
-const codySignal = {
+const demoSignal = {
   needs: [
     { tag: "co-founder-technical", weight: 0.7, context: "Building multiple side projects (Schelling, Alder AI, Podcastomatic) alone, needs technical partners" },
     { tag: "accountant-crypto-savvy", weight: 0.6, context: "Multiple income streams, startup equity, needs tax help" },
@@ -496,25 +496,25 @@ const syntheticProfiles = [
 async function main() {
   console.log("🔮 Serendipity Dogfood — Phase 0\n");
 
-  // 1. Create Cody's card
-  console.log("1️⃣  Creating Cody's agent card...");
-  const codyCard = await api("POST", "/api/cards", {
-    slug: "cody-zervas",
-    display_name: "Cody Zervas",
+  // 1. Create demo card
+  console.log("1️⃣  Creating demo agent card...");
+  const demoCard = await api("POST", "/api/cards", {
+    slug: "alex-r",
+    display_name: "Alex Rivera",
     tagline: "Building AI coordination infrastructure",
     card_type: "human",
     skills: ["ai-infrastructure", "mcp", "agent-orchestration", "product-leadership", "music-production"],
     availability: "available",
   });
   
-  const codyApiKey = codyCard.api_key;
-  const codyCardId = codyCard.card?.id;
-  if (!codyApiKey) {
-    console.error("  ❌ Failed to create card:", JSON.stringify(codyCard).slice(0, 200));
+  const demoApiKey = demoCard.api_key;
+  const demoCardId = demoCard.card?.id;
+  if (!demoApiKey) {
+    console.error("  ❌ Failed to create card:", JSON.stringify(demoCard).slice(0, 200));
     process.exit(1);
   }
-  console.log(`  ✅ Card created: ${codyCard.slug}`);
-  console.log(`  🔑 API Key: ${codyApiKey.slice(0, 8)}...`);
+  console.log(`  ✅ Card created: ${demoCard.slug}`);
+  console.log(`  🔑 API Key: ${demoApiKey.slice(0, 8)}...`);
 
   // 2. Create synthetic cards
   console.log("\n2️⃣  Creating 30 synthetic agent cards...");
@@ -543,34 +543,34 @@ async function main() {
   // 3. Generate embeddings and publish signals
   console.log("\n3️⃣  Generating embeddings (OpenAI text-embedding-3-small, 256 dims)...");
   
-  // Cody's signal
-  console.log("  📡 Generating Cody's embeddings...");
-  const codyNeedsText = codySignal.needs.map(n => `${n.tag}: ${n.context}`).join("; ");
-  const codyOffersText = codySignal.offers.map(o => `${o.tag}: ${o.context}`).join("; ");
+  // Demo signal
+  console.log("  📡 Generating demo embeddings...");
+  const demoNeedsText = demoSignal.needs.map(n => `${n.tag}: ${n.context}`).join("; ");
+  const demoOffersText = demoSignal.offers.map(o => `${o.tag}: ${o.context}`).join("; ");
   
-  const [codyNeedsEmb, codyOffersEmb, codyProfileEmb] = await Promise.all([
-    embed(codyNeedsText),
-    embed(codyOffersText),
-    embed(codySignal.summary),
+  const [demoNeedsEmb, demoOffersEmb, demoProfileEmb] = await Promise.all([
+    embed(demoNeedsText),
+    embed(demoOffersText),
+    embed(demoSignal.summary),
   ]);
-  console.log("  ✅ Cody's embeddings generated");
+  console.log("  ✅ Demo embeddings generated");
 
-  // Publish Cody's signal
-  console.log("  📤 Publishing Cody's signal...");
-  const codySignalId = uuid();
-  const codySigResult = await api("PUT", `/api/serendipity/signals/${codySignalId}?card=cody-zervas`, {
-    needs: codySignal.needs,
-    offers: codySignal.offers,
-    interests: codySignal.interests,
-    personality: codySignal.personality,
-    context: codySignal.context,
-    needs_embedding: codyNeedsEmb,
-    offers_embedding: codyOffersEmb,
-    profile_embedding: codyProfileEmb,
-    summary: codySignal.summary,
+  // Publish demo signal
+  console.log("  📤 Publishing demo signal...");
+  const demoSignalId = uuid();
+  const demoSigResult = await api("PUT", `/api/serendipity/signals/${demoSignalId}?card=alex-r`, {
+    needs: demoSignal.needs,
+    offers: demoSignal.offers,
+    interests: demoSignal.interests,
+    personality: demoSignal.personality,
+    context: demoSignal.context,
+    needs_embedding: demoNeedsEmb,
+    offers_embedding: demoOffersEmb,
+    profile_embedding: demoProfileEmb,
+    summary: demoSignal.summary,
     ttl_days: 30,
-  }, codyApiKey);
-  console.log(`  ✅ Signal published:`, JSON.stringify(codySigResult).slice(0, 100));
+  }, demoApiKey);
+  console.log(`  ✅ Signal published:`, JSON.stringify(demoSigResult).slice(0, 100));
 
   // Synthetic signals
   console.log("\n4️⃣  Publishing 30 synthetic signals (generating embeddings for each)...");
@@ -609,8 +609,8 @@ async function main() {
   console.log(` ✅ ${publishedCount} synthetic signals published`);
 
   // 5. Check matches
-  console.log("\n5️⃣  Checking Cody's matches...\n");
-  const matches = await api("GET", "/api/serendipity/matches?card=cody-zervas", null, codyApiKey);
+  console.log("\n5️⃣  Checking demo matches...\n");
+  const matches = await api("GET", "/api/serendipity/matches?card=alex-r", null, demoApiKey);
   
   const matchList = matches.data || matches.matches || matches || [];
   
@@ -620,7 +620,7 @@ async function main() {
     return;
   }
 
-  console.log(`🔮 Found ${matchList.length} matches for Cody:\n`);
+  console.log(`🔮 Found ${matchList.length} matches for demo user:\n`);
   console.log("═".repeat(80));
   
   for (let i = 0; i < matchList.length; i++) {
@@ -650,7 +650,7 @@ async function main() {
   }
   
   console.log(`\n✅ Dogfood complete. ${matchList.length} matches found.`);
-  console.log("Review the matches above. Are they people Cody would actually want to meet?");
+  console.log("Review the matches above. Are these good matches?");
 }
 
 main().catch(console.error);
