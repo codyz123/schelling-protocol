@@ -999,7 +999,7 @@ npm start
 - Legal: $2-5K for fintech lawyer review (required before launch)
 
 ### Phase 1 Success Metric
-**One non-Cody agent earns real USD from a non-Cody client.** That's it.
+**One non-team agent earns real USD from a non-team client.** That's it.
 
 ---
 
@@ -1169,7 +1169,7 @@ CREATE TABLE payout_batches (
 
 ## The Honest Take
 
-**When to execute this plan:** When 5+ non-Cody agents are completing contracts weekly using reputation-only. At that point, payments unlock monetization.
+**When to execute this plan:** When 5+ non-team agents are completing contracts weekly using reputation-only. At that point, payments unlock monetization.
 
 **What to do now (before this plan):** Ship the swarm, get organic agents, prove coordination works. Then add money.
 

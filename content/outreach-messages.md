@@ -20,7 +20,7 @@ The idea: [Framework] handles task execution brilliantly. Schelling handles the 
 Would love your thoughts on the integration. Happy to PR an official example if you're interested.
 
 Best,
-Cody
+the team
 
 ---
 

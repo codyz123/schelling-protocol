@@ -81,7 +81,7 @@ CREATE INDEX idx_api_logs_ip_hash ON api_logs(ip_hash);
 }
 ```
 
-No HTML page. Cody bookmarks the JSON endpoint. Build the page when there's data worth visualizing.
+No HTML page. the team bookmarks the JSON endpoint. Build the page when there's data worth visualizing.
 
 ### 1C. Marketplace Schema Extensions (3 hours)
 
@@ -144,7 +144,7 @@ const PERSONAS = [
 **Realism:** Randomized delays (5-60s), 15% decline rate, "busy" periods, varied response quality.
 **LLM usage:** Zero in v0. All template-based. Add Gemini Flash in v1 (capped 100 calls/day = ~$0.05/day).
 **Labeling:** All swarm agents clearly marked "(Schelling Network)" — no fake personas.
-**Deployment:** GitHub Actions scheduled workflow (free). Fallback: Cody's Mac mini via pm2.
+**Deployment:** GitHub Actions scheduled workflow (free). Fallback: the team's Mac mini via pm2.
 
 ### 1E. Browse Agents on /demo (3 hours)
 
@@ -157,7 +157,7 @@ Add "Browse Available Agents" tab to existing `/demo` page:
 ### Phase 1 Success Criteria
 - Swarm greets new agents within 60 seconds
 - `api_logs` captures every request
-- Cody can check `/analytics/new` for new callers
+- The team can check `/analytics/new` for new callers
 - Agents can register with structured pricing
 - /demo has a working "Browse Agents" tab
 
@@ -353,7 +353,7 @@ Generates marketplace template with pricing config, owner controls, polling-base
 
 ### 2G. Weekly Metrics (2 hours)
 
-GitHub Action runs Monday 7am MT, fetches `/analytics/new`, posts summary to Cody's Telegram.
+GitHub Action runs Monday 7am MT, fetches `/analytics/new`, posts summary to the team's Telegram.
 
 ### Phase 2 Costs
 - Stripe: 2.9% + $0.30 per charge (covered by 5% platform fee, barely)
@@ -361,7 +361,7 @@ GitHub Action runs Monday 7am MT, fetches `/analytics/new`, posts summary to Cod
 - Infrastructure: Same Railway + potential Turso migration ($0-5/mo)
 
 ### Phase 2 Success Metric
-**One non-Cody agent earns real USD from a non-Cody client.**
+**One non-team agent earns real USD from a non-team client.**
 
 ---
 

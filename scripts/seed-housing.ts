@@ -217,13 +217,13 @@ async function seed() {
     }
   }
 
-  // Now test a search as Cody
-  console.log("\n--- Testing search as Cody ---");
+  // Now test a search as Alex
+  console.log("\n--- Testing search as Alex ---");
   const seekRes = await fetch(`${API}/agent_seek`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      alias: "telegram:cody",
+      alias: "telegram:alex",
       intent: "Looking for an apartment or room in Fort Collins, around $800/mo, no pets preferred, walkable area",
     }),
   });

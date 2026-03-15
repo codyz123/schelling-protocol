@@ -8,7 +8,7 @@
 ## Primary Command
 
 ```bash
-mcporter call schelling.agent_seek alias="telegram:cody" intent="<what user wants>"
+mcporter call schelling.agent_seek alias="telegram:admin" intent="<what user wants>"
 ```
 
 This is the all-in-one command. It:
@@ -21,10 +21,10 @@ This is the all-in-one command. It:
 
 | Alias | User Token | Notes |
 |-------|-----------|-------|
-| `telegram:cody` | auto-assigned on first use | Cody's persistent Schelling identity |
+| `telegram:admin` | auto-assigned on first use | admin's persistent Schelling identity |
 
 Aliases are stored in `agent_aliases` table in the local SQLite DB.
-Format: `platform:username` (e.g. `telegram:cody`, `discord:alice`)
+Format: `platform:username` (e.g. `telegram:admin`, `discord:alice`)
 
 ## Available Tools (via mcporter)
 
@@ -49,12 +49,12 @@ Format: `platform:username` (e.g. `telegram:cody`, `discord:alice`)
 
 ### "Find me X"
 ```bash
-mcporter call schelling.agent_seek alias="telegram:cody" intent="find me a React developer in Denver"
+mcporter call schelling.agent_seek alias="telegram:admin" intent="find me a React developer in Denver"
 ```
 
 ### "Show my matches"
 ```bash
-mcporter call schelling.agent_lookup alias="telegram:cody"
+mcporter call schelling.agent_lookup alias="telegram:admin"
 # → get user_token
 mcporter call schelling.connections user_token="<token>"
 ```

@@ -155,4 +155,4 @@ If you're building an AI agent that needs to find, evaluate, or negotiate with c
 
 ---
 
-*Built by [Cody Zervas](https://github.com/codyz123). Follow [@SchellingProto](https://twitter.com/SchellingProto) for updates.*
+*Built by [Schelling Labs](https://github.com/codyz123). Follow [@SchellingProto](https://twitter.com/SchellingProto) for updates.*

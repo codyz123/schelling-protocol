@@ -71,15 +71,15 @@ swarm.ts
 - Language: TypeScript (same as the server — zero context switch)
 - Runtime: Bun (already the project runtime)
 - Deployment: Same Railway project, separate service, or a simple cron that runs every minute
-- Could also run on Cody's Mac mini as a background process ($0 cost)
+- Could also run on the team's Mac mini as a background process ($0 cost)
 
 **Hardware — $0 option:**
-- Run on Cody's Mac mini via `pm2` or a launchd service
+- Run on the team's Mac mini via `pm2` or a launchd service
 - The swarm is just HTTP calls to the Railway API — lightweight
 - Fallback: Railway worker service ($5/mo) or fly.io free tier
 
 **Path to self-sustaining:**
-- Phase 1: Cody pays ($0-5/mo)
+- Phase 1: the team pays ($0-5/mo)
 - Phase 2: When real users appear, some always-on agents become "Schelling Official" agents (like Twitter's verified accounts) — they demonstrate the protocol
 - Phase 3: Real users' agents replace the swarm. Swarm agents gracefully reduce activity as organic agents grow
 
@@ -150,7 +150,7 @@ The SQLite database already tracks:
 
 3. **Update frequency:** Real-time (queries run on each dashboard load). SQLite handles this fine at low volume. Add caching (1-minute TTL) if it ever matters.
 
-4. **Cody's 7am check:** Bookmark `schellingprotocol.com/dashboard?key=xxx`. See:
+4. **the team's 7am check:** Bookmark `schellingprotocol.com/dashboard?key=xxx`. See:
    - Today's numbers vs yesterday (with arrows ↑↓)
    - This week vs last week
    - Funnel visualization
@@ -160,7 +160,7 @@ The SQLite database already tracks:
 
 #### External Metrics (Polled Daily)
 
-A simple cron (GitHub Action or Cody's Mac) runs daily:
+A simple cron (GitHub Action or the team's Mac) runs daily:
 ```bash
 # npm downloads
 curl -s "https://api.npmjs.org/downloads/point/last-week/@schelling/sdk" | jq .downloads
@@ -265,7 +265,7 @@ Already built into the protocol:
 
 ✅ Single process, multiple personas — correct call. 20 processes would be absurd.
 
-⚠️ **Concern: Running on Mac mini.** If Cody's machine sleeps, reboots, or goes offline, the swarm dies.
+⚠️ **Concern: Running on Mac mini.** If the team's machine sleeps, reboots, or goes offline, the swarm dies.
 **Fix:** Run on Railway as a worker service. $5/mo is worth not debugging "why did the network die at 3am." OR: use a GitHub Actions scheduled workflow (free, runs every 15 min) that calls the API to simulate activity. No long-running process needed.
 
 ⚠️ **Concern: LLM costs creep.** 50 calls/day at $0.01 is fine. But if the swarm gets chatty or a bug causes a loop, costs spike.
@@ -286,7 +286,7 @@ Already built into the protocol:
 ⚠️ **Concern: External metrics polling (npm, GitHub).** Cron jobs that break silently.
 **Fix:** Don't poll. Check npm/GitHub manually or add it to the dashboard page as client-side fetches (CORS-friendly APIs). Zero server-side cron for metrics.
 
-**Cut:** Daily email reports. Cody can check the dashboard. Don't build notification infrastructure for 1 user.
+**Cut:** Daily email reports. The team can check the dashboard. Don't build notification infrastructure for 1 user.
 
 ### Marketplace — APPROVED, cut aggressively
 
@@ -411,7 +411,7 @@ The bottleneck is: **nobody understands why they need this.** Building a swarm, 
 
 **What delights:** The moment an agent RESPONDS to your seek. That's magic. It proves the protocol works. Build the swarm specifically to create this moment for every new user.
 
-### Journey 3: Cody checking the dashboard at 7am
+### Journey 3: the team checking the dashboard at 7am
 
 **Current experience:** SSH into Railway, query SQLite. Painful.
 
@@ -421,7 +421,7 @@ The bottleneck is: **nobody understands why they need this.** Building a swarm, 
 - "1 new developer from Germany tried the API at 2am"
 - Graph showing API calls over last 7 days
 
-**What matters to Cody at 7am:**
+**What matters to the team at 7am:**
 - Is anyone new here? (list of new IPs/tokens with first operation)
 - Is the network alive? (last swarm heartbeat, API uptime)
 - What should I do today? (highlight: "0 framework integration posts this week")
@@ -510,7 +510,7 @@ const PERSONAS = [
 "Hi! I noticed you offer ${capabilities}. I'm working on a project that could use ${matched_capability} — would you be interested in discussing?"
 ```
 
-**Deployment:** GitHub Actions cron every 5 minutes (free) OR Railway worker ($5/mo) OR Cody's Mac mini ($0).
+**Deployment:** GitHub Actions cron every 5 minutes (free) OR Railway worker ($5/mo) OR the team's Mac mini ($0).
 
 **Recommendation:** Start with GitHub Actions cron. Zero cost, zero ops. Migrate to Railway worker only if 5-minute granularity is too coarse.
 
@@ -558,7 +558,7 @@ Returns:
 }
 ```
 
-**No HTML page yet.** Cody bookmarks the JSON endpoint. When he wants a page, it's 1 hour of HTML + Chart.js.
+**No HTML page yet.** the team bookmarks the JSON endpoint. When he wants a page, it's 1 hour of HTML + Chart.js.
 
 **Phase 1 Total:** ~3 days of work. $0-5/mo cost.
 
@@ -604,7 +604,7 @@ Add a "Browse Available Agents" tab to the existing `/demo` page:
 GitHub Action runs every Monday at 7am MT:
 - Fetches `/analytics/new`
 - Compares to last week
-- Posts summary to Cody's Telegram via OpenClaw (already has the integration)
+- Posts summary to the team's Telegram via OpenClaw (already has the integration)
 
 **Phase 2 Total:** ~1-2 weeks of work. $0-5/mo cost (same infrastructure).
 
@@ -612,7 +612,7 @@ GitHub Action runs every Monday at 7am MT:
 
 ## Phase 3: Build When There's Traction (>20 organic agents)
 
-Traction = 20+ non-Cody, non-swarm agents making weekly API calls.
+Traction = 20+ non-team, non-swarm agents making weekly API calls.
 
 ### 3A. Credits System
 
@@ -701,9 +701,9 @@ Dedicated `/marketplace` with:
 
 ## Success Criteria
 
-**Phase 1 success:** The swarm greets new agents within 60 seconds. api_logs captures every request. Cody can check `/analytics/new` for new callers.
+**Phase 1 success:** The swarm greets new agents within 60 seconds. api_logs captures every request. The team can check `/analytics/new` for new callers.
 
-**Phase 2 success:** A developer registers an agent, gets greeted by the swarm, sees other agents on /demo browse tab, and experiences a complete contract lifecycle — all without Cody's involvement.
+**Phase 2 success:** A developer registers an agent, gets greeted by the swarm, sees other agents on /demo browse tab, and experiences a complete contract lifecycle — all without the team's involvement.
 
 **Phase 3 trigger:** 20+ organic agents making weekly API calls. When this happens, build credits and the full marketplace.
 
@@ -711,8 +711,8 @@ Dedicated `/marketplace` with:
 
 ## The Honest Assessment
 
-These three systems are **important but not urgent.** The urgent problem is distribution — getting developers to try the protocol at all. The swarm helps distribution by making the first experience magical (instant interaction). The analytics help distribution by telling Cody what's working. The marketplace helps distribution by showing what's possible.
+These three systems are **important but not urgent.** The urgent problem is distribution — getting developers to try the protocol at all. The swarm helps distribution by making the first experience magical (instant interaction). The analytics help distribution by telling the team what's working. The marketplace helps distribution by showing what's possible.
 
-But if Cody spends 2 weeks building these systems and 0 time on framework integrations, outreach, and developer relations, the protocol will have a beautiful swarm of bots talking to each other on an empty network with a gorgeous dashboard showing flat-zero metrics.
+But if the team spends 2 weeks building these systems and 0 time on framework integrations, outreach, and developer relations, the protocol will have a beautiful swarm of bots talking to each other on an empty network with a gorgeous dashboard showing flat-zero metrics.
 
 **Ratio: 25% building these systems, 75% distribution.** Build Phase 1 this week (3 days), then spend the rest of the month on CrewAI/LangChain integrations, developer outreach, and the killer demo video. Circle back to Phase 2 when there's data worth looking at.

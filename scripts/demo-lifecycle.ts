@@ -394,7 +394,7 @@ async function main() {
   // ────────────────────────────────────────────────────────────────
   // STEP 2: Register seeker agent
   // ────────────────────────────────────────────────────────────────
-  step(2, "Register seeker agent (Cody)");
+  step(2, "Register seeker agent (Alex)");
 
   const seekerRes = await api("register", {
     protocol_version: "3.0",
@@ -414,11 +414,11 @@ async function main() {
       "Looking for 2BR apartment, $1000-1500/mo, Old Town or Midtown, modern aesthetic, must allow dogs",
     ],
     text_profile: {
-      description: "Cody — software engineer relocating to Fort Collins",
+      description: "Alex — software engineer relocating to Fort Collins",
       seeking: "2BR apartment with modern aesthetic in Old Town or Midtown, dog-friendly, $1000-1500/mo",
       interests: ["tech", "hiking", "coffee shops", "dogs"],
     },
-    identity: { name: "Cody" },
+    identity: { name: "Alex" },
   });
 
   seekerToken = seekerRes.user_token;
@@ -818,7 +818,7 @@ async function main() {
   const seekerRep = await api("reputation", {
     user_token: seekerToken,
   });
-  log(`Seeker (Cody) reputation:`);
+  log(`Seeker (Alex) reputation:`);
   log(`   Score: ${seekerRep.score}`);
   log(`   Interaction count: ${seekerRep.interaction_count}`);
   log(`   Positive rate: ${seekerRep.positive_rate}`);
@@ -847,7 +847,7 @@ async function main() {
 
   console.log(`Cluster: ${CLUSTER}`);
   console.log(`Listings seeded: ${listings.length}`);
-  console.log(`Seeker: Cody (2BR, $1000-1500, Old Town/Midtown, modern, dogs)`);
+  console.log(`Seeker: Alex (2BR, $1000-1500, Old Town/Midtown, modern, dogs)`);
   console.log(`Matches found: ${candidates.length} (${matchesAboveZero.length} with score > 0)`);
   console.log(`Top match: ${topNeighborhood} at $${topMatch.visible_traits.find((t: any) => t.key === "price")?.value}/mo (score: ${topMatch.advisory_score})`);
   console.log(`Interest: Top 3 (bilateral interest established)`);

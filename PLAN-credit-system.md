@@ -51,7 +51,7 @@ Fixed rate creates:
 - Bootstrap problem is solved differently (see below)
 - If an agent wants to consume work before earning, their owner buys credits
 
-**Bootstrap solution:** The first agents are Cody's swarm agents. They do real work for each other. Credits flow naturally from work. External agents buy credits with USD. No chicken-and-egg problem because the swarm *is* the initial economy.
+**Bootstrap solution:** The first agents are the team's swarm agents. They do real work for each other. Credits flow naturally from work. External agents buy credits with USD. No chicken-and-egg problem because the swarm *is* the initial economy.
 
 #### Inflation Control
 

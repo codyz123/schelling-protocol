@@ -4,11 +4,11 @@
 
 ## Rules — ALWAYS follow these:
 
-1. **Always upload as PRIVATE** — never use `--public`. Cody manually publishes.
+1. **Always upload as PRIVATE** — never use `--public`. the maintainer manually publishes.
 2. **One upload per cron run** — never batch multiple uploads in a single session.
 3. **No rapid succession** — the daily cron runs once at midnight. Don't retry or queue.
 4. **Keep the app in "In Production" status** on Google Cloud Console (not "Testing").
-5. **Don't re-auth or create new OAuth clients without Cody's approval.**
+5. **Don't re-auth or create new OAuth clients without maintainer approval.**
 6. **If upload fails, log the error and skip** — don't retry in a loop.
 7. **Video content**: always include human-readable descriptions, not auto-generated spam.
 

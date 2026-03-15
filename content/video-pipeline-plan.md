@@ -146,7 +146,7 @@ Use scripts/schelling-finds.ts for real match data, then visualize.
 - Batch: scripts/batch-videos.ts
 - Cron: 3 shorts + 1 long per week
 
-### Phase 5: Distribution (Needs Cody)
+### Phase 5: Distribution (Needs the team)
 - YouTube channel + OAuth
 - TikTok account
 

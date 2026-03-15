@@ -285,7 +285,7 @@
 ### Phase 1: Soft Launch (Week 1)
 1. Submit to 3-4 MCP directories (PulseMCP, mcp.so, Smithery, awesome-mcp-servers)
 2. Post in MCP Discord #showcase
-3. Tweet thread from Cody's account
+3. Tweet thread from the team account
 4. dev.to launch blog post
 5. Start "Schelling Finds" video series
 

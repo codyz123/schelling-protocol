@@ -102,4 +102,4 @@ The vision: your agent handles the tedious coordination. You just say what you n
 
 ---
 
-*Schelling Protocol is MIT-licensed and open source. Built by [Cody Zervas](https://github.com/codyz123).*
+*Schelling Protocol is MIT-licensed and open source. Built by [Schelling Labs](https://github.com/codyz123).*

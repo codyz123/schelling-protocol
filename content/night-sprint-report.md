@@ -43,7 +43,7 @@
 | 7 | 6 AM | SDK/MCP README fixes, issue templates, llms.txt |
 | 8 | 7 AM | Social media drafts, this report, edge case hardening |
 
-## What's Left for Cody
+## What's Left
 1. **Review and publish** launch blog post (`content/launch-post.md`)
 2. **Review and post** tweet thread (`content/tweet-thread.md`) and HN post (`content/hn-post.md`)
 3. **npm auth** — SDK and MCP server packages ready but can't publish without npm login
