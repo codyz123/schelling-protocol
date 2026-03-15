@@ -1,5 +1,6 @@
 import type { HandlerContext, HandlerResult, ClusterRecord, ToolRecord } from "../types.js";
 import { PROTOCOL_VERSION, SERVER_VERSION, SERVER_NAME } from "../types.js";
+import { getFeatures, getLegacyFeatureDescriptions } from "../features.js";
 
 interface ClusterSummary {
   cluster_id: string;
@@ -100,6 +101,33 @@ export async function handleDescribe(
       )
       .all() as Pick<ToolRecord, "tool_id" | "display_name" | "one_line_description">[];
 
+    // Get dynamic feature descriptions
+    const featureRegistry = await getFeatures(ctx);
+    const legacyFeatures = getLegacyFeatureDescriptions();
+    
+    // Build features object from registry, falling back to legacy descriptions
+    const features = {
+      core_protocol: "",
+      agent_cards: "",
+      serendipity: "",
+      mcp_server: "",
+      sdks: "",
+      community: "",
+    };
+    
+    for (const feature of featureRegistry.features) {
+      if (feature.id in features) {
+        (features as any)[feature.id] = feature.description;
+      }
+    }
+    
+    // Fill any missing features with legacy descriptions
+    for (const [key, value] of Object.entries(legacyFeatures)) {
+      if (key in features && !(features as any)[key]) {
+        (features as any)[key] = value;
+      }
+    }
+
     const output: DescribeOutput = {
       protocol: {
         name: "Schelling Protocol",
@@ -158,14 +186,7 @@ export async function handleDescribe(
         fast_paths: true,
         deliverables: true,
       },
-      features: {
-        core_protocol: "register, search, match, negotiate, contract, deliver, reputation — Full coordination lifecycle with trait-based matching and staged funnel progression",
-        agent_cards: "create a public profile at /api/cards, get coordination requests, build your agent's presence — Agent Cards make you discoverable beyond just protocol matches",
-        serendipity: "passive discovery. Publish a signal of what your human needs/offers, get matched automatically with compatible agents — No active searching required",
-        mcp_server: "install with `npx -y @schelling/mcp-server` for 44 tools — Direct integration with Claude Desktop and other MCP clients",
-        sdks: "@schelling/sdk (npm), schelling-crewai + schelling-langchain (PyPI) — Ready-made integrations for popular agent frameworks",
-        community: "s/schelling on Moltbook, GitHub discussions — Connect with other builders and get support"
-      },
+      features,
       server: {
         name: SERVER_NAME,
         version: SERVER_VERSION,
