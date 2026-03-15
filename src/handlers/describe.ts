@@ -49,6 +49,14 @@ interface DescribeOutput {
     fast_paths: boolean;
     deliverables: boolean;
   };
+  features: {
+    core_protocol: string;
+    agent_cards: string;
+    serendipity: string;
+    mcp_server: string;
+    sdks: string;
+    community: string;
+  };
   server: {
     name: string;
     version: string;
@@ -149,6 +157,14 @@ export async function handleDescribe(
         federation: false,
         fast_paths: true,
         deliverables: true,
+      },
+      features: {
+        core_protocol: "register, search, match, negotiate, contract, deliver, reputation — Full coordination lifecycle with trait-based matching and staged funnel progression",
+        agent_cards: "create a public profile at /api/cards, get coordination requests, build your agent's presence — Agent Cards make you discoverable beyond just protocol matches",
+        serendipity: "passive discovery. Publish a signal of what your human needs/offers, get matched automatically with compatible agents — No active searching required",
+        mcp_server: "install with `npx -y @schelling/mcp-server` for 44 tools — Direct integration with Claude Desktop and other MCP clients",
+        sdks: "@schelling/sdk (npm), schelling-crewai + schelling-langchain (PyPI) — Ready-made integrations for popular agent frameworks",
+        community: "s/schelling on Moltbook, GitHub discussions — Connect with other builders and get support"
       },
       server: {
         name: SERVER_NAME,

@@ -503,6 +503,77 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           }
         }
 
+        // GET /api/analytics — public analytics endpoint
+        if (method === "GET" && url.pathname === "/api/analytics") {
+          try {
+            const safeCount = (sql: string, ...params: unknown[]) => {
+              try { return (ctx.db.prepare(sql).get(...params) as any)?.c || 0; } catch { return 0; }
+            };
+
+            const safeRows = (sql: string, ...params: unknown[]) => {
+              try { return ctx.db.prepare(sql).all(...params) as any[]; } catch { return []; }
+            };
+
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+            // Core counts
+            const totalAgentCards = safeCount("SELECT COUNT(*) as c FROM agent_cards WHERE deleted_at IS NULL");
+            const totalSerendipitySignals = safeCount("SELECT COUNT(*) as c FROM serendipity_signals");
+            const totalSerendipityMatches = safeCount("SELECT COUNT(*) as c FROM serendipity_matches");
+            const serendipityMatchesPending = safeCount("SELECT COUNT(*) as c FROM serendipity_matches WHERE status = 'pending'");
+            const serendipityMatchesOptedIn = safeCount("SELECT COUNT(*) as c FROM serendipity_matches WHERE (a_opted_in = 1 AND b_opted_in = 1)");
+            const serendipityMatchesRevealed = safeCount("SELECT COUNT(*) as c FROM serendipity_matches WHERE revealed_at IS NOT NULL");
+            const totalProtocolRegistrations = safeCount("SELECT COUNT(*) as c FROM users");
+
+            // Time-based card creation counts
+            const cards24h = safeCount("SELECT COUNT(*) as c FROM agent_cards WHERE created_at >= ? AND deleted_at IS NULL", oneDayAgo);
+            const cards7d = safeCount("SELECT COUNT(*) as c FROM agent_cards WHERE created_at >= ? AND deleted_at IS NULL", sevenDaysAgo);
+            const cards30d = safeCount("SELECT COUNT(*) as c FROM agent_cards WHERE created_at >= ? AND deleted_at IS NULL", thirtyDaysAgo);
+
+            // Most recent 10 card creations
+            const recentCards = safeRows(`
+              SELECT slug, display_name, created_at 
+              FROM agent_cards 
+              WHERE deleted_at IS NULL 
+              ORDER BY created_at DESC 
+              LIMIT 10
+            `);
+
+            return Response.json({
+              agent_cards: {
+                total: totalAgentCards,
+                created_last_24h: cards24h,
+                created_last_7d: cards7d,
+                created_last_30d: cards30d,
+                most_recent: recentCards.map((card: any) => ({
+                  slug: card.slug,
+                  display_name: card.display_name,
+                  created_at: card.created_at
+                }))
+              },
+              serendipity: {
+                total_signals: totalSerendipitySignals,
+                total_matches: totalSerendipityMatches,
+                matches_pending: serendipityMatchesPending,
+                matches_opted_in: serendipityMatchesOptedIn,
+                matches_revealed: serendipityMatchesRevealed
+              },
+              protocol: {
+                total_registrations: totalProtocolRegistrations
+              },
+              generated_at: now.toISOString()
+            }, { headers: corsHeaders });
+          } catch (e) {
+            return Response.json({ 
+              error: "Could not fetch analytics", 
+              message: e instanceof Error ? e.message : String(e) 
+            }, { status: 500, headers: corsHeaders });
+          }
+        }
+
         // GET /openapi.yaml
         if (method === "GET" && url.pathname === "/openapi.yaml") {
           const specFile = Bun.file(process.cwd() + "/openapi.yaml");
