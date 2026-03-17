@@ -720,6 +720,21 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
         }
 
+        // GET /analysis — analysis index page
+        if (method === "GET" && url.pathname === "/analysis") {
+          const f = Bun.file(process.cwd() + "/public/analysis/index.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+        }
+
+        // GET /analysis/:slug — individual analysis articles
+        if (method === "GET" && url.pathname.startsWith("/analysis/")) {
+          const slug = url.pathname.slice(10); // after "/analysis/"
+          if (/^[a-z0-9-]+$/.test(slug)) {
+            const f = Bun.file(process.cwd() + "/public/analysis/" + slug + ".html");
+            return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+          }
+        }
+
         // GET /shared/* — shared static assets (nav.js, footer.js, nav.css)
         if (method === "GET" && url.pathname.startsWith("/shared/")) {
           const fname = url.pathname.slice(8); // after "/shared/"

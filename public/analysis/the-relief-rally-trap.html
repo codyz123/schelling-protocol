@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Relief Rally Trap: Why Monday's Market Euphoria Is Premature — Schelling Protocol</title>
+<meta name="description" content="Markets surged on escort coalition hopes. But Japan, Germany, and Australia already said no. The math doesn't work.">
+<meta property="og:title" content="The Relief Rally Trap: Why Monday's Market Euphoria Is Premature">
+<meta property="og:description" content="Markets surged on escort coalition hopes. But Japan, Germany, and Australia already said no. The math doesn't work.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://schellingprotocol.com/analysis/the-relief-rally-trap">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Relief Rally Trap">
+<meta name="twitter:description" content="Markets surged on escort coalition hopes. But Japan, Germany, and Australia already said no.">
+<meta name="author" content="Cody Zervas">
+<meta property="article:published_time" content="2026-03-17T05:00:00Z">
+<link rel="canonical" href="https://schellingprotocol.com/analysis/the-relief-rally-trap">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;background:#0a0a0f;color:#d4d4d8;line-height:1.8;-webkit-font-smoothing:antialiased}
+a{color:#8b5cf6;text-decoration:none;transition:color .2s}
+a:hover{color:#a78bfa}
+
+.site-header{border-bottom:1px solid #1e1e2e;padding:1rem 0}
+.site-header .hcontainer{max-width:960px;margin:0 auto;padding:0 1.5rem;display:flex;justify-content:space-between;align-items:center}
+.site-header .logo{font-weight:700;font-size:1.1rem;color:#e0e0e0;letter-spacing:-.02em}
+.site-header .logo span{color:#8b5cf6}
+.site-header nav a{color:#777;font-size:.85rem;margin-left:1.5rem;transition:color .2s}
+.site-header nav a:hover{color:#e0e0e0}
+
+.container{max-width:720px;margin:0 auto;padding:0 1.5rem}
+.article-header{padding:4rem 0 2rem;border-bottom:1px solid #1a1a2e}
+.article-header .meta{color:#666;font-size:.85rem;margin-bottom:1rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.article-header .tag{background:#1e1e2e;color:#8b5cf6;padding:.2rem .6rem;border-radius:4px;font-size:.75rem;font-weight:500}
+.article-header h1{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:700;line-height:1.2;color:#f0f0f0;margin-bottom:.75rem}
+.article-header .subtitle{font-size:1.15rem;color:#888;font-style:italic}
+.back-link{color:#666;font-size:.85rem;display:inline-block;margin-bottom:1.5rem;transition:color .2s}
+.back-link:hover{color:#8b5cf6}
+
+.article-body{padding:2.5rem 0 4rem}
+.article-body h2{font-size:1.5rem;font-weight:700;color:#e8e8e8;margin:2.5rem 0 1rem;padding-top:1rem;border-top:1px solid #1a1a2e}
+.article-body h3{font-size:1.15rem;font-weight:600;color:#d0d0d0;margin:2rem 0 .75rem}
+.article-body p{margin-bottom:1.25rem;color:#b8b8c8}
+.article-body strong{color:#e0e0e0;font-weight:600}
+.article-body em{color:#a0a0b0}
+.article-body hr{border:none;border-top:1px solid #1a1a2e;margin:2.5rem 0}
+.article-body ul,.article-body ol{margin-bottom:1.25rem;padding-left:1.5rem;color:#b8b8c8}
+.article-body li{margin-bottom:.5rem}
+.article-body blockquote{border-left:3px solid #8b5cf6;padding:.75rem 1.25rem;margin:1.25rem 0;background:#0f0f1a;border-radius:0 6px 6px 0;color:#a0a0b8;font-style:italic}
+
+.prediction{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem 1.5rem;margin:1.25rem 0}
+.prediction .conf{display:inline-block;background:#6366f1;color:#fff;font-size:.75rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;margin-bottom:.5rem}
+.prediction .conf.update{background:#f59e0b}
+.prediction .claim{color:#e0e0e0;font-weight:500;font-size:1rem;margin-bottom:.25rem}
+.prediction .reasoning{color:#888;font-size:.9rem;margin-top:.5rem}
+
+.callout{background:linear-gradient(135deg,#0f0f1a,#1a1025);border:1px solid #2d1f5e;border-radius:10px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+.callout .label{color:#8b5cf6;font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+
+.series-nav{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem 1.5rem;margin:2rem 0}
+.series-nav .label{color:#666;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.series-nav a{display:block;color:#8b5cf6;font-weight:500;margin-top:.25rem}
+
+.cta-box{background:linear-gradient(135deg,#0f0f1a,#1a1025);border:1px solid #2d1f5e;border-radius:12px;padding:2rem;margin:2.5rem 0;text-align:center}
+.cta-box h3{color:#e0e0e0;margin-bottom:.5rem}
+.cta-box p{color:#888;margin-bottom:1rem}
+.cta-box .btn{display:inline-block;background:#6366f1;color:#fff;padding:.6rem 1.5rem;border-radius:6px;font-weight:600;transition:background .2s}
+.cta-box .btn:hover{background:#4f46e5;color:#fff}
+
+footer{border-top:1px solid #1e1e2e;padding:2rem 0;text-align:center;color:#444;font-size:.8rem}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+<div class="hcontainer">
+<a href="/" class="logo">Schelling <span>Protocol</span></a>
+<nav>
+<a href="/analysis">Analysis</a>
+<a href="/cards">Cards</a>
+<a href="/docs">API</a>
+</nav>
+</div>
+</header>
+
+<article>
+<div class="container">
+
+<div class="article-header">
+<a href="/analysis" class="back-link">← All Analysis</a>
+<div class="meta">
+<span class="tag">MARKETS</span>
+<span class="tag">GEOPOLITICS</span>
+<span class="tag">PREDICTION UPDATE</span>
+<span>March 17, 2026</span>
+<span>·</span>
+<span>7 min read</span>
+</div>
+<h1>The Relief Rally Trap: Why Monday's Market Euphoria Is Premature</h1>
+<p class="subtitle">The S&P surged 1.2% on escort coalition hopes. But Japan, Germany, Australia, and China have already said no. The math doesn't add up.</p>
+</div>
+
+<div class="article-body">
+
+<div class="series-nav">
+<div class="label">Part 2 in the Iran War & AI series</div>
+<a href="/analysis/iran-war-ai-geography">Part 1: The First AI War — Data Centers Are the New Oil Fields →</a>
+</div>
+
+<p>Monday's rally was spectacular. S&P up 1.2%. Nasdaq up 1.4%. Nvidia up 2.6% as GTC 2026 kicked off. WTI crude dropped nearly 4% to $94.75. Goldman Sachs published a note calling the energy shock "narrowly contained." Energy Secretary Chris Wright expressed optimism about a resolution "within weeks."</p>
+
+<p>Markets love a narrative, and Monday's narrative was irresistible: the US-led maritime coalition will reopen the Strait of Hormuz, oil will come back down, the Fed holds Wednesday and signals cuts later this year, and the AI trade is back on.</p>
+
+<p>There's one problem. <strong>The coalition doesn't exist.</strong></p>
+
+<hr>
+
+<h2>The Coalition That Isn't</h2>
+
+<p>Here's who Trump has asked to participate in the Hormuz escort operation: the UK, France, Japan, South Korea, China. Here's who has agreed:</p>
+
+<p>Nobody.</p>
+
+<p>Japan's PM Sanae Takaichi confirmed the US hasn't even made a formal request yet. Germany and Australia ruled out deploying naval forces. China has made no comment. South Korea is "carefully considering" — diplomatic for "no." France mentioned a "purely defensive" mission but hasn't committed forces. The UK might send drone mine hunters. Might.</p>
+
+<p>This isn't Operation Earnest Will — the 1987 convoy escort that reopened the strait during the Iran-Iraq war. That operation took months to plan, involved reflagging Kuwaiti tankers under the American flag, and still resulted in the USS Samuel B. Roberts hitting an Iranian mine. And that was before Iran had anti-ship ballistic missiles, suicide drones, and a demonstrated willingness to lay mines in the waterway.</p>
+
+<h3>The operational problem is severe</h3>
+
+<p>Transit lanes through Hormuz run 3-4 miles from the Iranian coastline. Flight time for a drone or missile at that range is under two minutes. Iran has used remote-controlled explosive boats against tankers already. The IRGC naval commander put it bluntly: the strait "has not been militarily blocked and is merely under control."</p>
+
+<p>Translation: we'll let through what we want to let through. Good luck escorting ships through a chokepoint where we control the physics.</p>
+
+<p>The market priced in a solution that doesn't exist yet and may never work even if it does.</p>
+
+<hr>
+
+<h2>The FOMC Trap</h2>
+
+<p>Wednesday's Fed decision is the most interesting in years — not because of what they'll do (hold at 3.5-3.75%, virtually certain), but because of what the dot plot reveals about how they're thinking about oil-driven inflation.</p>
+
+<p>Here's the tension:</p>
+
+<ul>
+<li>February CPI came in at 2.4% YoY — manageable</li>
+<li>But oil above $95 feeds through to headline inflation with a 2-3 month lag</li>
+<li>The war creates a "stagflationary impulse" — weakening demand while prices rise</li>
+<li>The current median dot shows one 25bp cut in 2026</li>
+</ul>
+
+<p>Goldman's note is doing heavy lifting for bulls. "Narrowly contained" is doing a lot of work in that sentence. If three Fed governors shift their dots hawkish — and $100+ oil gives them every reason to — the signal flips to "no cuts this year." That would be a cold shower on the relief trade.</p>
+
+<div class="callout">
+<div class="label">The real question</div>
+<p>Does the Fed treat the oil shock as transient (like they treated COVID supply chains — wrong) or structural (like they should have treated COVID supply chains — too late)?</p>
+</div>
+
+<p>CBS News reporting puts it cleanly: "one 0.25-percentage-point rate cut in 2026, likely in December, but it is entirely plausible that the Fed won't deliver any rate cuts this year." That's the baseline now. Monday's rally was pricing in a more optimistic scenario than even optimistic analysts believe.</p>
+
+<hr>
+
+<h2>The "Bits to Atoms" Rotation Is Real</h2>
+
+<p>Underneath the day-to-day noise, something more structural is happening. Financial analysts are calling it the "Great Rotation" — capital flowing from software into energy, materials, and industrials. The thesis:</p>
+
+<ul>
+<li>ExxonMobil and Chevron up 25%+ since January</li>
+<li>Salesforce down 26% YTD on AI cannibalization fears</li>
+<li>Microsoft under pressure despite strong earnings — investors worried about $650B AI CapEx in a rising-energy-cost environment</li>
+<li>Caterpillar and industrial firms surging on infrastructure demand</li>
+</ul>
+
+<p>This is the irony of the AI boom: building AI requires physical infrastructure that depends on stable energy markets, and the geopolitics of 2026 has made energy markets maximally unstable. The "Power Wall" — the realization that you can buy all the GPUs you want but can't deploy them because the grid isn't ready — is forcing a reckoning.</p>
+
+<p>The DeepSeek shock in January compounded this. Frontier-level AI at a fraction of the cost means margin compression for proprietary models, which means the per-seat licensing model that SaaS companies depend on may be dying. The market is pricing this in violently.</p>
+
+<p>Monday's tech rally was a breather in a structural rotation, not a reversal of it.</p>
+
+<hr>
+
+<h2>Updating My Predictions</h2>
+
+<p>Last week I published <a href="/analysis/iran-war-ai-geography">five predictions</a> about the Iran war's impact on AI infrastructure. Here's how they look one week in:</p>
+
+<div class="prediction">
+<span class="conf update">PREDICTION UPDATE</span>
+<p class="claim">Middle East hyperscaler pause/cancel (75% → 80%)</p>
+<p class="reasoning">The Guardian, ABC News, Fortune, and Business Insider all ran pieces this week confirming the thesis. ABC quoted analysts saying "no country wants to put its data centres in an unstable environment." The published target list makes this worse, not better. Raising confidence.</p>
+</div>
+
+<div class="prediction">
+<span class="conf update">PREDICTION UPDATE</span>
+<p class="claim">FOMC holds, dots shift hawkish (65% → 70%)</p>
+<p class="reasoning">CBS, Morningstar, and Kiplinger all converging on "hold with hawkish signals." The stagflationary framing is gaining traction. Natixis: "little choice but to remain on hold." Only risk to this prediction: if the dot plot stays unchanged, that would be a dovish surprise and validate the relief rally.</p>
+</div>
+
+<div class="prediction">
+<span class="conf update">PREDICTION UPDATE</span>
+<p class="claim">Northern Europe absorbs redirected investment (60% — holding)</p>
+<p class="reasoning">No new evidence either way. This plays out over quarters, not weeks. Holding.</p>
+</div>
+
+<h3>New prediction:</h3>
+
+<div class="prediction">
+<span class="conf">70% CONFIDENCE</span>
+<p class="claim">Monday's relief rally reverses by end of week. S&P closes Friday below Monday's open.</p>
+<p class="reasoning">The rally was built on two pillars: escort coalition hopes and Goldman's "contained" framing. The coalition is vaporware. If Wednesday's FOMC dots shift hawkish, that's the second pillar gone. Oil at $95 is still elevated enough to feed inflation fears. The structural rotation from software to energy hasn't changed. And GTC is priced in — Nvidia's actual product announcements would need to be genuinely surprising to sustain a multi-day run.</p>
+</div>
+
+<div class="prediction">
+<span class="conf">60% CONFIDENCE</span>
+<p class="claim">The Hormuz escort operation, if launched, experiences at least one serious incident (mine strike, drone attack on escorted vessel, or standoff forcing a convoy to turn back) within its first 30 days.</p>
+<p class="reasoning">Iran's IRGC has already demonstrated willingness to attack commercial ships, lay mines, and use explosive drone boats. The operational geometry — narrow strait, short flight times, proximity to Iranian coast — strongly favors the defender. Operation Earnest Will in the 1980s had multiple incidents despite facing a less capable Iran. The US Energy Secretary already admitted "we're simply not ready."</p>
+</div>
+
+<hr>
+
+<h2>What I'm Watching This Week</h2>
+
+<ul>
+<li><strong>Wednesday FOMC</strong> — the dot plot is everything. Watch the median 2026 dot and the press conference tone on oil</li>
+<li><strong>Coalition formation</strong> — does anyone actually commit forces? If Friday comes and it's still just "discussions," oil goes back above $100</li>
+<li><strong>GTC 2026</strong> — Nvidia announcements. Can they provide a reason to buy beyond the bounce?</li>
+<li><strong>IEA strategic reserve release</strong> — 400M barrel release announced. How fast does it actually hit the market?</li>
+<li><strong>Iran IRGC response</strong> — do they escalate or de-escalate in response to coalition talk?</li>
+</ul>
+
+<hr>
+
+<h2>The Bottom Line</h2>
+
+<p>Monday was a relief rally driven by hopes, not facts. The escort coalition is a press statement, not an operation. The Fed hasn't spoken yet. Oil is still $30 above where it was six weeks ago. And the structural shift from software to infrastructure — from bits to atoms — continues underneath everything.</p>
+
+<p>The prediction markets are more sober than the equity markets right now. That's usually a signal worth paying attention to.</p>
+
+<p>We'll score these predictions publicly as they resolve. That's what separates analysis from opinion.</p>
+
+<div class="cta-box">
+<h3>Follow Schelling Protocol</h3>
+<p>Tracked predictions, scored publicly, updated weekly. No hiding from the record.</p>
+<a href="/analysis" class="btn">All Analysis →</a>
+</div>
+
+<hr>
+
+<p><em>Disclaimer: This is analysis, not financial advice. The author holds no positions in any securities mentioned. Part 1: <a href="/analysis/iran-war-ai-geography">The First AI War</a>.</em></p>
+
+</div>
+
+</div>
+</article>
+
+<footer>
+<div class="container">
+<p>© 2026 Schelling Protocol · <a href="/analysis">Analysis</a> · <a href="/cards">Cards</a> · <a href="/docs">API Docs</a></p>
+</div>
+</footer>
+
+</body>
+</html>
