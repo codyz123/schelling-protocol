@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Dot Plot Is the War: What Tomorrow's FOMC Tells Us About the Next Decade — Schelling Protocol</title>
+<meta name="description" content="The Fed holds tomorrow. Nobody cares. The dot plot is what matters — and it may signal the end of the cheap-money, cheap-energy era that powered the AI boom.">
+<meta property="og:title" content="The Dot Plot Is the War: What Tomorrow's FOMC Tells Us About the Next Decade">
+<meta property="og:description" content="The Fed holds tomorrow. Nobody cares. The dot plot is what matters — and it may signal the end of the cheap-money era.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://schellingprotocol.com/analysis/the-dot-plot-is-the-war">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Dot Plot Is the War">
+<meta name="twitter:description" content="The Fed holds tomorrow. The dot plot may signal the end of the cheap-money era that powered the AI boom.">
+<meta name="author" content="Cody Zervas">
+<meta property="article:published_time" content="2026-03-18T05:00:00Z">
+<link rel="canonical" href="https://schellingprotocol.com/analysis/the-dot-plot-is-the-war">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;background:#0a0a0f;color:#d4d4d8;line-height:1.8;-webkit-font-smoothing:antialiased}
+a{color:#8b5cf6;text-decoration:none;transition:color .2s}
+a:hover{color:#a78bfa}
+
+.site-header{border-bottom:1px solid #1e1e2e;padding:1rem 0}
+.site-header .hcontainer{max-width:960px;margin:0 auto;padding:0 1.5rem;display:flex;justify-content:space-between;align-items:center}
+.site-header .logo{font-weight:700;font-size:1.1rem;color:#e0e0e0;letter-spacing:-.02em}
+.site-header .logo span{color:#8b5cf6}
+.site-header nav a{color:#777;font-size:.85rem;margin-left:1.5rem;transition:color .2s}
+.site-header nav a:hover{color:#e0e0e0}
+
+.container{max-width:720px;margin:0 auto;padding:0 1.5rem}
+.article-header{padding:4rem 0 2rem;border-bottom:1px solid #1a1a2e}
+.article-header .meta{color:#666;font-size:.85rem;margin-bottom:1rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.article-header .tag{background:#1e1e2e;color:#8b5cf6;padding:.2rem .6rem;border-radius:4px;font-size:.75rem;font-weight:500}
+.article-header h1{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:700;line-height:1.2;color:#f0f0f0;margin-bottom:.75rem}
+.article-header .subtitle{font-size:1.15rem;color:#888;font-style:italic}
+.back-link{color:#666;font-size:.85rem;display:inline-block;margin-bottom:1.5rem;transition:color .2s}
+.back-link:hover{color:#8b5cf6}
+
+.article-body{padding:2.5rem 0 4rem}
+.article-body h2{font-size:1.5rem;font-weight:700;color:#e8e8e8;margin:2.5rem 0 1rem;padding-top:1rem;border-top:1px solid #1a1a2e}
+.article-body h3{font-size:1.15rem;font-weight:600;color:#d0d0d0;margin:2rem 0 .75rem}
+.article-body p{margin-bottom:1.25rem;color:#b8b8c8}
+.article-body strong{color:#e0e0e0;font-weight:600}
+.article-body em{color:#a0a0b0}
+.article-body hr{border:none;border-top:1px solid #1a1a2e;margin:2.5rem 0}
+.article-body ul,.article-body ol{margin-bottom:1.25rem;padding-left:1.5rem;color:#b8b8c8}
+.article-body li{margin-bottom:.5rem}
+.article-body blockquote{border-left:3px solid #8b5cf6;padding:.75rem 1.25rem;margin:1.25rem 0;background:#0f0f1a;border-radius:0 6px 6px 0;color:#a0a0b8;font-style:italic}
+
+.prediction{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem 1.5rem;margin:1.25rem 0}
+.prediction .conf{display:inline-block;background:#6366f1;color:#fff;font-size:.75rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;margin-bottom:.5rem}
+.prediction .conf.update{background:#f59e0b}
+.prediction .conf.new{background:#10b981}
+.prediction .claim{color:#e0e0e0;font-weight:500;font-size:1rem;margin-bottom:.25rem}
+.prediction .reasoning{color:#888;font-size:.9rem;margin-top:.5rem}
+
+.callout{background:linear-gradient(135deg,#0f0f1a,#1a1025);border:1px solid #2d1f5e;border-radius:10px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+.callout .label{color:#8b5cf6;font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+
+.watch-list{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.5rem;margin:1.5rem 0}
+.watch-list h3{color:#e0e0e0;margin-bottom:1rem;font-size:1.1rem}
+.watch-item{display:flex;gap:.75rem;margin-bottom:1rem;align-items:flex-start}
+.watch-item .num{background:#6366f1;color:#fff;font-size:.75rem;font-weight:700;min-width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:.15rem}
+.watch-item .text{color:#b8b8c8;font-size:.95rem}
+.watch-item .text strong{color:#e0e0e0}
+
+.series-nav{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem 1.5rem;margin:2rem 0}
+.series-nav .label{color:#666;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.series-nav a{display:block;color:#8b5cf6;font-weight:500;margin-top:.25rem}
+
+.cta-box{background:linear-gradient(135deg,#0f0f1a,#1a1025);border:1px solid #2d1f5e;border-radius:12px;padding:2rem;margin:2.5rem 0;text-align:center}
+.cta-box h3{color:#e0e0e0;margin-bottom:.5rem}
+.cta-box p{color:#888;margin-bottom:1rem}
+.cta-box .btn{display:inline-block;background:#6366f1;color:#fff;padding:.6rem 1.5rem;border-radius:6px;font-weight:600;transition:background .2s}
+.cta-box .btn:hover{background:#4f46e5;color:#fff}
+
+footer{border-top:1px solid #1e1e2e;padding:2rem 0;text-align:center;color:#444;font-size:.8rem}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+<div class="hcontainer">
+<a href="/" class="logo">Schelling <span>Protocol</span></a>
+<nav>
+<a href="/analysis">Analysis</a>
+<a href="/demo">Try It</a>
+<a href="/docs">API</a>
+</nav>
+</div>
+</header>
+
+<main class="container">
+<div class="article-header">
+<a href="/analysis" class="back-link">← All Analysis</a>
+<div class="meta">
+<span class="tag">FOMC</span>
+<span class="tag">Oil</span>
+<span class="tag">Iran War</span>
+<span class="tag">Part 3</span>
+<span>March 18, 2026 · 8 min read</span>
+</div>
+<h1>The Dot Plot Is the War</h1>
+<p class="subtitle">What tomorrow's FOMC tells us about the next decade</p>
+</div>
+
+<article class="article-body">
+
+<p>Tuesday's numbers told the story the market doesn't want to hear. S&P up 0.25%. Not a crash, not a rally. Just... nothing. The relief rally from Monday — S&P up 1.2%, remember — burned off in a single session. Oil clawed back 3%, with Brent settling at $103.42. Iran attacked UAE's Fujairah port for the third time in four days, igniting a fire at the export terminal that handles roughly 1% of global demand.</p>
+
+<p>And France formally said it would "never take part in operations to unblock the Strait of Hormuz."</p>
+
+<p>Never. Not "we're considering it." Not "we need to consult allies." <em>Never.</em></p>
+
+<p>The escort coalition that Monday's rally was priced on? It doesn't just not exist — it's being actively rejected by every country asked to join.</p>
+
+<hr>
+
+<h2>Why Tomorrow's Dot Plot Is the Most Important in a Decade</h2>
+
+<p>The Fed decision itself is boring. Hold at 3.50-3.75%. CME FedWatch has this at 92%+. Nobody cares.</p>
+
+<p>What everyone should care about — and what most retail investors will ignore — is the Summary of Economic Projections. The dot plot. The quarterly ritual where each FOMC member anonymously marks where they think rates will be at the end of 2026 and 2027.</p>
+
+<p>Here's why this one is different from every dot plot since 2019:</p>
+
+<div class="callout">
+<div class="label">The Core Tension</div>
+<p><strong>The Fed is staring at a genuine stagflationary impulse for the first time in the post-COVID era.</strong> February CPI came in at 2.4% — manageable. But oil above $100 feeds through to headline inflation with a 2-3 month lag. The war is entering its third week with Hormuz still effectively closed, UAE output halved, and Middle East crude benchmarks at all-time highs.</p>
+</div>
+
+<p>The December dot plot showed a median expectation of one 25bp cut in 2026. One cut. That was the market's baseline coming into the year. Now the question is whether that single dot moves up — signaling zero cuts — or stays put.</p>
+
+<p>Three members shifting their dots up eliminates the cut entirely. Three members. Out of nineteen.</p>
+
+<h2>The Stagflation Trap</h2>
+
+<p>The standard macro playbook says: geopolitical shock → flight to safety → rate cuts to cushion growth. That's what the market wants. That's what the relief rally was pricing in — a Fed that sees the war as a growth headwind and responds with easier money.</p>
+
+<p>But the Fed doesn't have that option when oil is at $103.</p>
+
+<p>Cut rates with oil-driven inflation feeding through to CPI, and you lose the 2% target you spent three years clawing back to. You also tell every energy trader on Earth that the Fed will accommodate supply-shock inflation — which means oil goes <em>higher</em>, not lower.</p>
+
+<p>Hold rates with a weakening economy, and you accept slower growth. Corporate earnings take a hit. The AI CapEx boom, which requires cheap capital and cheap energy, starts looking fragile.</p>
+
+<p>There is no clean answer. That's what makes it a trap.</p>
+
+<p>The last time the Fed faced a genuine oil-driven stagflationary shock was the 1970s. Volcker's response — crushing rates to 20% — worked, but it caused two recessions and unemployment above 10%. Nobody thinks we're headed there. But the <em>logic</em> is the same: you cannot cut rates into a supply shock without making the supply shock worse.</p>
+
+<h2>The Coalition That France Killed</h2>
+
+<p>Updated escort coalition scorecard:</p>
+
+<ul>
+<li><strong>Japan</strong>: PM Takaichi confirmed no formal request received. Not deploying.</li>
+<li><strong>Germany</strong>: Defense minister said "this is not our war, we have not started it."</li>
+<li><strong>Australia</strong>: Ruled out naval deployment.</li>
+<li><strong>France</strong>: President Macron said France would "never take part" during hostilities.</li>
+<li><strong>South Korea</strong>: "Carefully considering." Diplomatic for no.</li>
+<li><strong>China</strong>: No comment. They're buying discounted Iranian crude.</li>
+<li><strong>UK</strong>: Might send drone mine hunters. Might.</li>
+</ul>
+
+<p>This isn't a coalition forming slowly. This is a coalition that has been publicly and definitively rejected by every major ally. France didn't leave the door open. They welded it shut.</p>
+
+<p>Kevin Hassett told CNBC that tankers are "starting to dribble through." <em>Dribble.</em> That's the White House's best spin — a trickle of oil through a chokepoint that normally handles 20% of global supply.</p>
+
+<h2>The Bits-to-Atoms Rotation Is Accelerating</h2>
+
+<p>Part 2 flagged the structural rotation from digital to physical. Tuesday's data reinforced it:</p>
+
+<ul>
+<li><strong>ExxonMobil</strong>: Up 25%+ since January. The war is a revenue event for integrated oil majors.</li>
+<li><strong>Caterpillar and industrials</strong>: Surging on infrastructure demand.</li>
+<li><strong>Salesforce</strong>: Down 26% YTD. Enterprise SaaS most exposed to AI cannibalization and rising energy costs.</li>
+<li><strong>Microsoft</strong>: Under pressure despite strong earnings. Investors questioning $650B AI CapEx when energy costs are climbing and your data centers might be military targets.</li>
+</ul>
+
+<p>The market is doing what markets do: repricing from narrative to reality. For three years, the narrative was "AI will eat everything, buy anything that touches software, ignore the physical world." That thesis assumed two things: cheap energy and geopolitical stability. Both are gone.</p>
+
+<p>This isn't a sector rotation. It's a regime change. The last time energy and industrials outperformed tech for a sustained period was 2000-2008. That cycle lasted eight years.</p>
+
+<h2>What to Watch Tomorrow at 2 PM</h2>
+
+<p>Forget the rate decision. Here's what actually matters:</p>
+
+<div class="watch-list">
+<h3>Four signals from the FOMC</h3>
+<div class="watch-item"><div class="num">1</div><div class="text"><strong>The median 2026 dot.</strong> Currently shows one 25bp cut. If it moves to zero cuts, the market reprices everything — mortgage rates, corporate borrowing, AI CapEx plans, housing.</div></div>
+<div class="watch-item"><div class="num">2</div><div class="text"><strong>The inflation projection.</strong> December SEP showed 2026 PCE at 2.5%. If this moves above 2.7%, the Fed is telling you the oil shock feeds through structurally.</div></div>
+<div class="watch-item"><div class="num">3</div><div class="text"><strong>Powell's language on oil.</strong> Key word: "transitory." If he uses it, the market rallies and he's wrong. If he says "monitoring supply-side dynamics" — Fedspeak for "we can't fix this" — the market sells.</div></div>
+<div class="watch-item"><div class="num">4</div><div class="text"><strong>Dissents.</strong> A hawkish dissent — someone wanting to hike — would be the loudest signal possible. Unlikely but not impossible given $103 Brent.</div></div>
+</div>
+
+<h2>Prediction Scorecard Update</h2>
+
+<p>Eight active predictions across this series. Full transparency — here's where each stands:</p>
+
+<div class="prediction">
+<span class="conf">HOLDING — 80%</span>
+<div class="claim">1. Middle East hyperscaler pause/cancel by Dec 2026</div>
+<div class="reasoning">Confirmed by Guardian, ABC, Fortune, BI. Becoming consensus. The alpha now is <em>which</em> hyperscalers and <em>where</em> the investment redirects.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 60%</span>
+<div class="claim">2. Northern Europe absorbs largest share of redirected investment</div>
+<div class="reasoning">Multi-quarter thesis. No new evidence. Patience.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 70%</span>
+<div class="claim">3. Data sovereignty acceleration (5+ countries by end 2027)</div>
+<div class="reasoning">Political incentive is enormous but legislatures move slowly. Watch for post-war legislative activity.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 55%</span>
+<div class="claim">4. Amazon outperforms S&P over 12 months</div>
+<div class="reasoning">Counterintuitive thesis needs time. AWS multi-region demand should show up in Q1 earnings.</div>
+</div>
+
+<div class="prediction">
+<span class="conf update">UPDATED — 72%</span>
+<div class="claim">5. FOMC holds + hawkish dots (was 65% → 70% → 72%)</div>
+<div class="reasoning">Every data point supports. Oil back above $100. Coalition rejected. UAE output halved. Only way dots stay dovish is if the Fed decides to look through an unresolved supply shock.</div>
+</div>
+
+<div class="prediction">
+<span class="conf update">UPDATED — 75%</span>
+<div class="claim">6. Relief rally reverses by Friday (was 70% → 75%)</div>
+<div class="reasoning">Tuesday's +0.25% is not continuation — it's exhaustion. A hawkish dot plot tomorrow finishes it.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 60%</span>
+<div class="claim">7. Hormuz escort incidents within 30 days</div>
+<div class="reasoning">France's rejection makes a US-only operation more likely. Politically fraught, operationally thinner.</div>
+</div>
+
+<div class="prediction">
+<span class="conf new">NEW — 75%</span>
+<div class="claim">8. Oil remains above $90 WTI through end of April</div>
+<div class="reasoning">Structural disruption, not episodic. UAE output halved, no coalition, accelerating Iranian attack cadence (3 strikes on Fujairah in 4 days). Even a ceasefire takes months to unwind — restarting shuttered production and rebuilding shipper confidence isn't a switch you flip.</div>
+</div>
+
+<h2>The Decade-Long View</h2>
+
+<p>Here's the uncomfortable synthesis of everything in Parts 1, 2, and 3:</p>
+
+<p>We are watching a real-time repricing of the assumption that the physical world doesn't matter. For twenty years, the dominant investment thesis has been: atoms are boring, bits are interesting. Every smart person went into software. Every smart dollar went into AI. Physical infrastructure — energy, shipping, industrial capacity, military logistics — was background noise.</p>
+
+<p>The Iran war didn't create a new world. It revealed the one we were already living in. A world where 20% of global oil transits a strait 3 miles from a hostile coastline. Where data centers are military targets. Where no allied nation will risk its navy to keep the lights on. Where the Fed can't cut rates because a war 6,000 miles away is feeding through to CPI.</p>
+
+<p>The dot plot tomorrow isn't just a rate signal. It's a thermometer for how quickly the world's most powerful economic institution is updating its model of reality.</p>
+
+<p><strong>Watch the dots. They'll tell you whether the Fed still believes this is a blip — or whether they've started pricing in the decade ahead.</strong></p>
+
+<hr>
+
+<div class="series-nav">
+<div class="label">Iran War & AI Series</div>
+<a href="/analysis/iran-war-ai-geography">← Part 1: The First AI War</a>
+<a href="/analysis/the-relief-rally-trap">← Part 2: The Relief Rally Trap</a>
+<strong style="color:#e0e0e0;display:block;margin-top:.25rem">Part 3: The Dot Plot Is the War (you are here)</strong>
+</div>
+
+<div class="cta-box">
+<h3>Predictions tracked publicly</h3>
+<p>8 active predictions. All scored. No hiding from bad calls.</p>
+<a href="/analysis" class="btn">View Full Scorecard →</a>
+</div>
+
+<p style="color:#666;font-size:.85rem;margin-top:2rem"><em>Disclaimer: This is analysis, not financial advice. The author holds no positions in any securities mentioned.</em></p>
+
+</article>
+</main>
+
+<footer>
+<div class="container">
+<p>© 2026 Schelling Protocol · <a href="/analysis">Analysis</a> · <a href="/docs">API</a></p>
+</div>
+</footer>
+
+</body>
+</html>
