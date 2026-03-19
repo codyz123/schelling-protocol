@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>South Pars and the Surrender Dots — Schelling Protocol</title>
+<meta name="description" content="The Fed admitted it's stuck. Israel struck the world's largest gas field. On the same day. Part 4 of the Iran War & AI series scores the dot plot predictions and analyzes the South Pars escalation.">
+<meta property="og:title" content="South Pars and the Surrender Dots">
+<meta property="og:description" content="The Fed admitted it's stuck. Israel struck the world's largest gas field. On the same day.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://schellingprotocol.com/analysis/south-pars-and-the-surrender-dots">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="South Pars and the Surrender Dots">
+<meta name="twitter:description" content="Two crises converged on Wednesday. The Fed can't cut. The war crossed a new threshold. Part 4 scores the predictions.">
+<meta name="author" content="Cody Zervas">
+<meta property="article:published_time" content="2026-03-19T05:00:00Z">
+<link rel="canonical" href="https://schellingprotocol.com/analysis/south-pars-and-the-surrender-dots">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;background:#0a0a0f;color:#d4d4d8;line-height:1.8;-webkit-font-smoothing:antialiased}
+a{color:#8b5cf6;text-decoration:none;transition:color .2s}
+a:hover{color:#a78bfa}
+
+.site-header{border-bottom:1px solid #1e1e2e;padding:1rem 0}
+.site-header .hcontainer{max-width:960px;margin:0 auto;padding:0 1.5rem;display:flex;justify-content:space-between;align-items:center}
+.site-header .logo{font-weight:700;font-size:1.1rem;color:#e0e0e0;letter-spacing:-.02em}
+.site-header .logo span{color:#8b5cf6}
+.site-header nav a{color:#777;font-size:.85rem;margin-left:1.5rem;transition:color .2s}
+.site-header nav a:hover{color:#e0e0e0}
+
+.container{max-width:720px;margin:0 auto;padding:0 1.5rem}
+.article-header{padding:4rem 0 2rem;border-bottom:1px solid #1a1a2e}
+.article-header .meta{color:#666;font-size:.85rem;margin-bottom:1rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.article-header .tag{background:#1e1e2e;color:#8b5cf6;padding:.2rem .6rem;border-radius:4px;font-size:.75rem;font-weight:500}
+.article-header h1{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:700;line-height:1.2;color:#f0f0f0;margin-bottom:.75rem}
+.article-header .subtitle{font-size:1.15rem;color:#888;font-style:italic}
+.back-link{color:#666;font-size:.85rem;display:inline-block;margin-bottom:1.5rem;transition:color .2s}
+.back-link:hover{color:#8b5cf6}
+
+.article-body{padding:2.5rem 0 4rem}
+.article-body h2{font-size:1.5rem;font-weight:700;color:#e8e8e8;margin:2.5rem 0 1rem;padding-top:1rem;border-top:1px solid #1a1a2e}
+.article-body h3{font-size:1.15rem;font-weight:600;color:#d0d0d0;margin:2rem 0 .75rem}
+.article-body p{margin-bottom:1.25rem;color:#b8b8c8}
+.article-body strong{color:#e0e0e0;font-weight:600}
+.article-body em{color:#a0a0b0}
+.article-body hr{border:none;border-top:1px solid #1a1a2e;margin:2.5rem 0}
+.article-body ul,.article-body ol{margin-bottom:1.25rem;padding-left:1.5rem;color:#b8b8c8}
+.article-body li{margin-bottom:.5rem}
+.article-body blockquote{border-left:3px solid #8b5cf6;padding:.75rem 1.25rem;margin:1.25rem 0;background:#0f0f1a;border-radius:0 6px 6px 0;color:#a0a0b8;font-style:italic}
+
+.prediction{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem 1.5rem;margin:1.25rem 0}
+.prediction .conf{display:inline-block;background:#6366f1;color:#fff;font-size:.75rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;margin-bottom:.5rem}
+.prediction .conf.update{background:#f59e0b}
+.prediction .conf.new{background:#10b981}
+.prediction .conf.resolved{background:#22c55e}
+.prediction .conf.partial{background:#eab308}
+.prediction .claim{color:#e0e0e0;font-weight:500;font-size:1rem;margin-bottom:.25rem}
+.prediction .reasoning{color:#888;font-size:.9rem;margin-top:.5rem}
+
+.callout{background:linear-gradient(135deg,#0f0f1a,#1a1025);border:1px solid #2d1f5e;border-radius:10px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+.callout .label{color:#8b5cf6;font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+
+.score-card{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.5rem;margin:1.5rem 0}
+.score-card h3{color:#e0e0e0;margin-bottom:1rem;font-size:1.1rem}
+.score-item{display:flex;gap:.75rem;margin-bottom:1rem;align-items:flex-start}
+.score-item .grade{font-size:.75rem;font-weight:700;min-width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:.15rem}
+.score-item .grade.correct{background:#22c55e;color:#fff}
+.score-item .grade.partial{background:#eab308;color:#000}
+.score-item .grade.wrong{background:#ef4444;color:#fff}
+.score-item .text{color:#b8b8c8;font-size:.95rem}
+.score-item .text strong{color:#e0e0e0}
+
+.series-nav{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:1.25rem 1.5rem;margin:2rem 0}
+.series-nav .label{color:#666;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.series-nav a{display:block;color:#8b5cf6;font-weight:500;margin-top:.25rem}
+
+.cta-box{background:linear-gradient(135deg,#0f0f1a,#1a1025);border:1px solid #2d1f5e;border-radius:12px;padding:2rem;margin:2.5rem 0;text-align:center}
+.cta-box h3{color:#e0e0e0;margin-bottom:.5rem}
+.cta-box p{color:#888;margin-bottom:1rem}
+.cta-box .btn{display:inline-block;background:#6366f1;color:#fff;padding:.6rem 1.5rem;border-radius:6px;font-weight:600;transition:background .2s}
+.cta-box .btn:hover{background:#4f46e5;color:#fff}
+
+footer{border-top:1px solid #1e1e2e;padding:2rem 0;text-align:center;color:#444;font-size:.8rem}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+<div class="hcontainer">
+<a href="/" class="logo">Schelling <span>Protocol</span></a>
+<nav>
+<a href="/analysis">Analysis</a>
+<a href="/demo">Try It</a>
+<a href="/docs">API</a>
+</nav>
+</div>
+</header>
+
+<main class="container">
+<div class="article-header">
+<a href="/analysis" class="back-link">← All Analysis</a>
+<div class="meta">
+<span class="tag">FOMC</span>
+<span class="tag">South Pars</span>
+<span class="tag">Iran War</span>
+<span class="tag">Part 4</span>
+<span>March 19, 2026 · 9 min read</span>
+</div>
+<h1>South Pars and the Surrender Dots</h1>
+<p class="subtitle">The Fed admitted it's stuck. The war crossed a new threshold. On the same day.</p>
+</div>
+
+<article class="article-body">
+
+<p>Two things happened on Wednesday that will echo for months. The first was expected. The second was not.</p>
+
+<p>At 2:00 PM ET, the Fed held rates at 3.50-3.75% and released a dot plot showing one cut in 2026 — the same median as December. Seven of nineteen members now favor zero cuts, up from six. The inflation projection moved from 2.5% to 2.7% PCE. Powell said the Fed was not making "as much progress on inflation as we had hoped." Markets fell 1.4%.</p>
+
+<p>Sometime earlier that morning, Israel — in coordination with the United States — struck Iran's South Pars gas field. The largest natural gas reserve on Earth. First time upstream Iranian energy infrastructure has been targeted since the war began three weeks ago. Brent spiked 5% to nearly $110. Iran published a list of energy facilities it intends to hit in retaliation: Saudi Aramco's Samref refinery, Jubail petrochemical complex, the Al Hosn gas field in the UAE. Tehran said it would escalate "in new ways."</p>
+
+<p>Qatar, which shares the South Pars field, called the strikes "dangerous and irresponsible."</p>
+
+<p>Same day. The Fed admitted it's stuck. And the war crossed a new threshold.</p>
+
+<hr>
+
+<h2>Scoring the Dot Plot</h2>
+
+<p>Part 3 said to watch four signals. Let's score them:</p>
+
+<div class="score-card">
+<h3>FOMC Prediction Scorecard</h3>
+
+<div class="score-item">
+<div class="grade partial">~</div>
+<div class="text"><strong>1. The median 2026 dot</strong> — Called for a potential shift to zero cuts. Result: median held at one cut, but seven members (up from six) now favor holding. Hawkish <em>drift</em>, not hawkish <em>shift</em>. Direction right, magnitude one dot shy.</div>
+</div>
+
+<div class="score-item">
+<div class="grade correct">✓</div>
+<div class="text"><strong>2. The inflation projection</strong> — Called for a move above 2.7% as the stagflation signal. Result: PCE projection moved from 2.5% to exactly 2.7%, both headline and core. The Fed is telling you the oil shock feeds through structurally.</div>
+</div>
+
+<div class="score-item">
+<div class="grade correct">✓</div>
+<div class="text"><strong>3. Powell's language on oil</strong> — Predicted he'd avoid "transitory." Result: "it is too soon to know the scope and duration." Used "uncertain" five times. Said inflation was "not coming down as much as we had hoped." Stocks sold to session lows during the presser.</div>
+</div>
+
+<div class="score-item">
+<div class="grade wrong">✗</div>
+<div class="text"><strong>4. Dissents</strong> — Called a hawkish dissent as possible. Result: Miran dissented <em>dovishly</em> (wanting a cut). No hawkish dissent. The pressure was on the wrong side.</div>
+</div>
+</div>
+
+<p>Score: 2 correct, 1 partially correct, 1 incorrect. The overall read was right — the Fed leaned hawkish relative to market hopes — but the mechanism was through projections and language, not through dissents.</p>
+
+<h2>The South Pars Escalation</h2>
+
+<p>This is the bigger story. And the market hasn't fully processed it because it happened on FOMC day, when every desk on Wall Street was staring at dot plots.</p>
+
+<p>South Pars isn't just any gas field. It's the <em>largest natural gas reserve on the planet</em>, shared between Iran and Qatar. Qatar uses its side — called North Dome — to supply roughly one-fifth of the world's LNG. The field accounts for the vast majority of Iran's domestic natural gas, which heats homes, powers electricity, and supplies Iran's petrochemical industry.</p>
+
+<div class="callout">
+<div class="label">Escalation Threshold</div>
+<p>Previous strikes targeted the Strait of Hormuz shipping lanes and Gulf-side infrastructure — ports, terminals, tanker routes. South Pars is <strong>upstream</strong>. It's the source. Hitting it is like the difference between blocking a road and blowing up the factory the trucks were leaving from.</p>
+</div>
+
+<p>Three consequences:</p>
+
+<p><strong>First, Iran's retaliation threat is credible and symmetric.</strong> Tehran published specific targets: Aramco's Samref refinery, Jubail petrochemicals, UAE's Al Hosn gas field. This isn't bluster — it's escalation signaling. Iran is saying: if you hit our upstream infrastructure, we hit everyone else's. And they've already demonstrated the capability. Fujairah was hit three times in four days before South Pars.</p>
+
+<p><strong>Second, Qatar's condemnation matters more than it looks.</strong> Qatar has been carefully neutral. It hosts the largest US military base in the Middle East (Al Udeid). It also has $335 billion in sovereign wealth and the world's third-largest natural gas reserves — all of which sit in the same geological formation that just got bombed. Qatar calling this "dangerous and irresponsible" is a diplomatic earthquake. It signals that even US allies in the region see the South Pars strike as a bridge too far.</p>
+
+<p><strong>Third, the LNG market is about to get very ugly.</strong> If Iran retaliates against Qatar's energy infrastructure — which they've now explicitly threatened — the impact isn't just oil. It's global natural gas. Europe gets 15% of its LNG from Qatar. Japan gets 12%. South Korea gets 20%. A disruption to Qatari LNG exports would create a second energy crisis on top of the oil crisis, and this one would hit the countries that have been trying hardest to stay out of the war.</p>
+
+<h2>The $50 Spread Nobody's Talking About</h2>
+
+<p>Here's a number that should terrify you: the spread between WTI crude (the US benchmark, ~$96) and Dubai crude (the Asian benchmark) is now over $50. Dubai crude hit an all-time high above $150 last week. Oman crude settled above $152 on Monday.</p>
+
+<p>Normal spread: $5-8. Current spread: <strong>$50+</strong>.</p>
+
+<p>This is the same commodity. The gap exists because physical barrels can't get from the Middle East to Asia through a closed strait, so Asian buyers are paying whatever it takes. Physical crude in Asia is trading at a $40 premium over paper futures — meaning actual oil is far scarcer than the futures market suggests.</p>
+
+<p>Why does this matter for the US? Because that gap can't hold forever. Asian refiners are now sourcing barrels from further afield — Africa, the Americas, wherever they can find them. That means the Hormuz disruption, which the US has been treating as a regional problem ("we're a net exporter!"), is becoming a global bidding war for every barrel not stuck behind the strait.</p>
+
+<p>As commodities analyst Rory Johnston wrote: the longer the Strait stays closed, the more Asia's supply shortage becomes everyone's problem.</p>
+
+<p>Powell even acknowledged this dynamic at the presser, saying the oil shock would create "upward pressure on inflation" but could be "offset to some extent" by higher US energy production. The operative phrase is "to some extent." He's hedging because he knows the offset isn't sufficient.</p>
+
+<h2>The Powell Exit Timeline</h2>
+
+<p>One more thing from the presser that markets are underpricing: Powell isn't leaving.</p>
+
+<p>He said he has "no intention of leaving the board until the investigation is well and truly over, with transparency and finality." The investigation — Jeanine Pirro's subpoena over the Fed's headquarters renovation — is a Trump pressure tactic that a federal judge already tossed. Pirro has vowed to appeal. Senator Tillis has said he'll block Warsh's confirmation until it's resolved.</p>
+
+<p>Translation: Powell stays as Fed chair for the foreseeable future. Kevin Warsh — Trump's pick, who favors lower rates — sits on the sideline. The Fed remains under the leadership of someone who just told you inflation isn't coming down fast enough and the war's impact is "uncertain."</p>
+
+<p>For the market, this means: <strong>stop pricing in a dovish Fed pivot under new leadership. The leadership isn't changing anytime soon.</strong></p>
+
+<h2>Prediction Scorecard Update</h2>
+
+<p>Nine predictions across the series. Here's where each stands after the FOMC decision and South Pars strike:</p>
+
+<div class="prediction">
+<span class="conf update">UPDATED — 82%</span>
+<div class="claim">1. Middle East hyperscaler pause/cancel by Dec 2026</div>
+<div class="reasoning">South Pars escalation adds risk to every Gulf data center. If Qatar's energy infrastructure gets hit, the hyperscaler thesis in the region is dead. Not paused. Dead.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 60%</span>
+<div class="claim">2. Northern Europe absorbs largest share of redirected investment</div>
+<div class="reasoning">Multi-quarter thesis. South Pars strengthens the case but evidence won't show in CapEx numbers for months.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 70%</span>
+<div class="claim">3. Data sovereignty acceleration (5+ countries by end 2027)</div>
+<div class="reasoning">Same timeline reasoning. No new legislative data.</div>
+</div>
+
+<div class="prediction">
+<span class="conf">HOLDING — 55%</span>
+<div class="claim">4. Amazon outperforms S&P over 12 months</div>
+<div class="reasoning">Need Q1 earnings for signal. AWS multi-region demand thesis intact but unproven.</div>
+</div>
+
+<div class="prediction">
+<span class="conf partial">PARTIALLY RESOLVED ✓</span>
+<div class="claim">5. FOMC holds + hawkish dots</div>
+<div class="reasoning">Hold: correct. Hawkish drift: correct (7/19 favor zero cuts, up from 6). Inflation to 2.7%: correct. But median dot held at one cut, dissent was dovish. Direction right, magnitude short. <strong>Grade: B+</strong></div>
+</div>
+
+<div class="prediction">
+<span class="conf resolved">ON TRACK ✓</span>
+<div class="claim">6. Relief rally reverses by Friday</div>
+<div class="reasoning">S&P down 1.4% Wednesday. Worst rate-decision day since Dec 2024. Five stocks down for every one up. All twelve sectors red. Resolves Friday at close.</div>
+</div>
+
+<div class="prediction">
+<span class="conf update">UPDATED — 65%</span>
+<div class="claim">7. Hormuz escort incidents within 30 days</div>
+<div class="reasoning">South Pars crossed a threshold. If Iran hits Saudi/UAE/Qatar infrastructure as threatened, pressure for naval response intensifies — even without allied participation.</div>
+</div>
+
+<div class="prediction">
+<span class="conf update">UPDATED — 85%</span>
+<div class="claim">8. Oil remains above $90 WTI through end of April</div>
+<div class="reasoning">South Pars is a structural escalation. Iran threatening Gulf energy infrastructure means supply disruption is widening. Brent at $110. WTI at $96. Physical market screaming shortage.</div>
+</div>
+
+<div class="prediction">
+<span class="conf new">NEW — 80%</span>
+<div class="claim">9. Powell remains Fed chair through end of 2026</div>
+<div class="reasoning">Explicitly said he won't leave until the investigation is over. Tillis blocking Warsh. Pirro appealing. Even the fastest resolution takes months. Powell hasn't decided whether to stay on the Board of Governors — which means he's considering it.</div>
+</div>
+
+<h2>What Happens Now</h2>
+
+<p>Wednesday was the day two separate crises — monetary and military — converged. The Fed told you it can't cut rates because inflation isn't cooperating. The US military told you the war is escalating into upstream energy infrastructure. These aren't separate problems. They're the same problem.</p>
+
+<p>Higher oil prices → higher inflation → tighter monetary policy → weaker growth. And the war is making oil prices higher, not lower. Each South Pars-style escalation tightens the noose. The Fed can't ease the pain because easing would make it worse. The military can't resolve the energy crisis because every strike creates new supply risk.</p>
+
+<div class="callout">
+<div class="label">The Trap, Closed</div>
+<p>This is the trap Part 3 described. On Wednesday, we watched it snap shut.</p>
+</div>
+
+<p>Three things to watch this week:</p>
+
+<p><strong>Thursday:</strong> Iran's response to South Pars. They published targets. The question is whether they follow through on Saudi/UAE/Qatar strikes. If they hit Qatar's North Dome facilities — the other side of the same field — LNG markets explode. European gas prices are already up 35% since the war began.</p>
+
+<p><strong>Friday:</strong> S&P close. Prediction #6 resolves. If the market closes below Wednesday's 6,624.70, the relief rally reversal is confirmed. The broader signal: the market has stopped hoping the Fed will rescue it.</p>
+
+<p><strong>Next week:</strong> Oil. If Brent stays above $110 and Iran escalates against Gulf energy targets, the IEA's 400-million-barrel emergency release starts looking like a band-aid on a bullet wound. The physical market — Dubai crude at $150+, the $50 WTI-Dubai spread — is telling you what the futures market hasn't priced in yet.</p>
+
+<p><strong>The dots surrendered. South Pars raised the stakes. And now we wait.</strong></p>
+
+<hr>
+
+<div class="series-nav">
+<div class="label">Iran War & AI Series</div>
+<a href="/analysis/iran-war-ai-geography">← Part 1: The First AI War</a>
+<a href="/analysis/the-relief-rally-trap">← Part 2: The Relief Rally Trap</a>
+<a href="/analysis/the-dot-plot-is-the-war">← Part 3: The Dot Plot Is the War</a>
+<strong style="color:#e0e0e0;display:block;margin-top:.25rem">Part 4: South Pars and the Surrender Dots (you are here)</strong>
+</div>
+
+<div class="cta-box">
+<h3>Predictions tracked publicly</h3>
+<p>9 active predictions. All scored. No hiding from bad calls.</p>
+<a href="/analysis" class="btn">View Full Scorecard →</a>
+</div>
+
+<p style="color:#666;font-size:.85rem;margin-top:2rem"><em>Disclaimer: This is analysis, not financial advice. The author holds no positions in any securities mentioned.</em></p>
+
+</article>
+</main>
+
+<footer>
+<div class="container">
+<p>© 2026 Schelling Protocol · <a href="/analysis">Analysis</a> · <a href="/docs">API</a></p>
+</div>
+</footer>
+
+</body>
+</html>
