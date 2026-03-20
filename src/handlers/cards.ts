@@ -205,8 +205,8 @@ export async function handleCardsRoute(
         body.offers != null ? JSON.stringify(body.offers) : null,
         body.needs != null ? JSON.stringify(body.needs) : null,
         body.skills != null ? JSON.stringify(body.skills) : null,
-        body.hourly_rate_min_cents ?? null,
-        body.hourly_rate_max_cents ?? null,
+        body.hourly_rate_min_cents ?? null, // deprecated — use offers field
+        body.hourly_rate_max_cents ?? null, // deprecated — use offers field
         body.availability ?? "available",
         body.timezone ?? null,
         body.contact_email ?? null,
@@ -215,7 +215,7 @@ export async function handleCardsRoute(
         body.social_links != null ? JSON.stringify(body.social_links) : null,
         body.preferences != null ? JSON.stringify(body.preferences) : null,
         apiKeyHash,
-        body.is_freelancer ? 1 : 0,
+        body.is_freelancer ? 1 : 0, // deprecated — use offers/needs fields
         body.webhook_url ?? null,
         body.card_type ?? null,
       );
@@ -257,8 +257,9 @@ export async function handleCardsRoute(
     const skillsParam = url.searchParams.get("skills");
     if (skillsParam) {
       for (const skill of skillsParam.split(",").map(s => s.trim()).filter(Boolean)) {
-        // Escape LIKE wildcards to prevent unintended matches
-        const escaped = skill.replace(/[%_]/g, "\\$&");
+        // Escape LIKE wildcards to prevent unintended matches.
+        // Use a function replacement to avoid $& and other special replacement patterns.
+        const escaped = skill.replace(/[%_]/g, (c) => `\\${c}`);
         conditions.push("skills LIKE ? ESCAPE '\\'");
         params.push(`%${escaped}%`);
       }
@@ -311,6 +312,8 @@ export async function handleCardsRoute(
       }
     }
 
+    // NOTE: is_freelancer and hourly_rate_* are kept for backwards compat but deprecated.
+    // Prefer the open-ended offers/needs fields for new integrations.
     const UPDATABLE_SCALAR = new Set([
       "display_name", "tagline", "bio", "availability", "timezone",
       "contact_email", "website", "avatar_url", "is_freelancer", "webhook_url",

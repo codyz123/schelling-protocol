@@ -64,4 +64,15 @@ export function initSchema(db: DatabaseConnection): void {
       // Tables may already exist, ignore
     }
   }
+
+  // Idempotent additions for existing v4 databases (ALTER TABLE fails if column already exists)
+  for (const stmt of [
+    "ALTER TABLE submissions ADD COLUMN search_mode TEXT DEFAULT 'active'",
+    "ALTER TABLE submissions ADD COLUMN search_source TEXT DEFAULT 'user_directed'",
+    "ALTER TABLE submissions ADD COLUMN hybrid_active_hours INTEGER DEFAULT 168",
+    "ALTER TABLE submissions ADD COLUMN alert_webhook TEXT",
+    "ALTER TABLE submissions ADD COLUMN alert_threshold REAL DEFAULT 0.5",
+  ]) {
+    try { db.exec(stmt); } catch { /* column already exists — safe to ignore */ }
+  }
 }

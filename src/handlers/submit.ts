@@ -196,6 +196,9 @@ export async function handleAgentCreate(
 
 // ─── Submit ───────────────────────────────────────────────────────────
 
+const VALID_SEARCH_MODES = ["active", "passive", "hybrid"] as const;
+const VALID_SEARCH_SOURCES = ["user_directed", "agent_inferred"] as const;
+
 export interface SubmitInput {
   agent_api_key?: string;
   intent_text: string;
@@ -210,6 +213,12 @@ export interface SubmitInput {
   ttl_hours?: number;
   until_datetime?: string;
   tags?: string[];
+  // Search behavior
+  search_mode?: string;
+  search_source?: string;
+  hybrid_active_hours?: number;
+  alert_webhook?: string;
+  alert_threshold?: number;
 }
 
 export interface SubmissionOutput {
@@ -337,6 +346,43 @@ export async function handleSubmit(
     }
   }
 
+  // Validate search_mode
+  if (params.search_mode !== undefined && !VALID_SEARCH_MODES.includes(params.search_mode as any)) {
+    return {
+      ok: false,
+      error: { code: "INVALID_INPUT", message: `search_mode must be one of: ${VALID_SEARCH_MODES.join(", ")}` },
+    };
+  }
+
+  // Validate search_source
+  if (params.search_source !== undefined && !VALID_SEARCH_SOURCES.includes(params.search_source as any)) {
+    return {
+      ok: false,
+      error: { code: "INVALID_INPUT", message: `search_source must be one of: ${VALID_SEARCH_SOURCES.join(", ")}` },
+    };
+  }
+
+  // Validate hybrid_active_hours
+  if (params.hybrid_active_hours !== undefined) {
+    if (!Number.isInteger(params.hybrid_active_hours) || params.hybrid_active_hours < 1 || params.hybrid_active_hours > 8760) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "hybrid_active_hours must be an integer between 1 and 8760." } };
+    }
+  }
+
+  // Validate alert_threshold
+  if (params.alert_threshold !== undefined) {
+    if (typeof params.alert_threshold !== "number" || params.alert_threshold < 0 || params.alert_threshold > 1) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "alert_threshold must be a number between 0 and 1." } };
+    }
+  }
+
+  // Validate alert_webhook
+  if (params.alert_webhook !== undefined && params.alert_webhook !== null) {
+    if (typeof params.alert_webhook !== "string" || params.alert_webhook.length > 2048) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "alert_webhook must be a string of 2048 characters or less." } };
+    }
+  }
+
   // Rate limit: max 10 submissions per day
   const submissionsToday = (ctx.db
     .prepare("SELECT COUNT(*) as c FROM submissions WHERE agent_id = ? AND created_at >= datetime('now', '-1 day')")
@@ -360,8 +406,9 @@ export async function handleSubmit(
           ask_embedding, offer_embedding,
           structured_data, required_tools, preferred_tools,
           match_config, status, ttl_mode, ttl_hours,
-          created_at, updated_at, expires_at, tags
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)`,
+          created_at, updated_at, expires_at, tags,
+          search_mode, search_source, hybrid_active_hours, alert_webhook, alert_threshold
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         submissionId,
@@ -380,6 +427,11 @@ export async function handleSubmit(
         now,
         expiresAt,
         params.tags ? JSON.stringify(params.tags) : null,
+        params.search_mode ?? "active",
+        params.search_source ?? "user_directed",
+        params.hybrid_active_hours ?? 168,
+        params.alert_webhook ?? null,
+        params.alert_threshold ?? 0.5,
       );
 
     // Update last_active_at
@@ -390,6 +442,17 @@ export async function handleSubmit(
       error: { code: "INTERNAL_ERROR", message: err instanceof Error ? err.message : String(err) },
     };
   }
+
+  // Trigger passive background matching for any existing active submissions
+  const alertThreshold = (params as any).alert_threshold ?? 0.5;
+  triggerPassiveAlerts(
+    ctx,
+    submissionId,
+    agent.id,
+    params.ask_embedding,
+    params.offer_embedding ?? null,
+    alertThreshold,
+  );
 
   const result: HandlerResult<SubmissionOutput> = {
     ok: true,
@@ -422,6 +485,11 @@ export interface SubmissionUpdateInput {
   match_config?: Record<string, unknown>;
   tags?: string[];
   status?: string;
+  search_mode?: string;
+  search_source?: string;
+  hybrid_active_hours?: number;
+  alert_webhook?: string;
+  alert_threshold?: number;
 }
 
 export async function handleSubmissionUpdate(
@@ -533,6 +601,24 @@ export async function handleSubmissionUpdate(
     if (itemErr) return { ok: false, error: { code: "INVALID_INPUT", message: itemErr } };
   }
 
+  // Validate new search behavior fields
+  if (params.search_mode !== undefined && !VALID_SEARCH_MODES.includes(params.search_mode as any)) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: `search_mode must be one of: ${VALID_SEARCH_MODES.join(", ")}` } };
+  }
+  if (params.search_source !== undefined && !VALID_SEARCH_SOURCES.includes(params.search_source as any)) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: `search_source must be one of: ${VALID_SEARCH_SOURCES.join(", ")}` } };
+  }
+  if (params.hybrid_active_hours !== undefined) {
+    if (!Number.isInteger(params.hybrid_active_hours) || params.hybrid_active_hours < 1 || params.hybrid_active_hours > 8760) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "hybrid_active_hours must be an integer between 1 and 8760." } };
+    }
+  }
+  if (params.alert_threshold !== undefined) {
+    if (typeof params.alert_threshold !== "number" || params.alert_threshold < 0 || params.alert_threshold > 1) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "alert_threshold must be a number between 0 and 1." } };
+    }
+  }
+
   const now = new Date().toISOString();
 
   // Build update
@@ -549,6 +635,11 @@ export async function handleSubmissionUpdate(
   if (params.match_config !== undefined) { updates.push("match_config = ?"); values.push(JSON.stringify(params.match_config)); }
   if (params.tags !== undefined) { updates.push("tags = ?"); values.push(JSON.stringify(params.tags)); }
   if (params.status !== undefined) { updates.push("status = ?"); values.push(params.status); }
+  if (params.search_mode !== undefined) { updates.push("search_mode = ?"); values.push(params.search_mode); }
+  if (params.search_source !== undefined) { updates.push("search_source = ?"); values.push(params.search_source); }
+  if (params.hybrid_active_hours !== undefined) { updates.push("hybrid_active_hours = ?"); values.push(params.hybrid_active_hours); }
+  if (params.alert_webhook !== undefined) { updates.push("alert_webhook = ?"); values.push(params.alert_webhook ?? null); }
+  if (params.alert_threshold !== undefined) { updates.push("alert_threshold = ?"); values.push(params.alert_threshold); }
 
   values.push(params.submission_id, agent.id);
 
@@ -711,5 +802,87 @@ export function safeJsonParse<T>(json: string | null | undefined, fallback: T): 
     return JSON.parse(json) as T;
   } catch {
     return fallback;
+  }
+}
+
+// ─── Passive Alert Trigger ────────────────────────────────────────────
+// Called after a new submission is inserted. Scores all existing active
+// submissions from other agents and creates v4_alerts for any matches
+// above the threshold. Runs synchronously, best-effort (never throws).
+
+function cosineSim(a: number[], b: number[]): number {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  const denom = Math.sqrt(na) * Math.sqrt(nb);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+export function triggerPassiveAlerts(
+  ctx: HandlerContext,
+  submissionId: string,
+  agentId: string,
+  askEmbedding: number[],
+  offerEmbedding: number[] | null,
+  threshold: number,
+): void {
+  try {
+    const now = new Date().toISOString();
+
+    const candidates = ctx.db
+      .prepare(
+        `SELECT s.id, s.agent_id, s.ask_embedding, s.offer_embedding, a.reputation_score
+         FROM submissions s
+         JOIN v4_agents a ON s.agent_id = a.id
+         WHERE s.status = 'active'
+           AND s.expires_at > ?
+           AND s.agent_id != ?`,
+      )
+      .all(now, agentId) as Record<string, any>[];
+
+    for (const cand of candidates) {
+      const askB: number[] | null = safeJsonParse(cand.ask_embedding, null);
+      if (!askB) continue;
+      const offerB: number[] | null = cand.offer_embedding
+        ? safeJsonParse(cand.offer_embedding, null)
+        : null;
+
+      // Cross-match score: directional cosine similarity
+      const simAB = offerB ? Math.max(0, cosineSim(askEmbedding, offerB)) : 0;
+      const simBA = offerEmbedding ? Math.max(0, cosineSim(askB, offerEmbedding)) : 0;
+
+      let crossScore: number;
+      if (offerEmbedding || offerB) {
+        crossScore = (simAB + simBA) / 2;
+      } else {
+        crossScore = Math.max(0, cosineSim(askEmbedding, askB));
+      }
+
+      if (crossScore < threshold) continue;
+
+      // Skip if alert already exists for this pair
+      const existing = ctx.db
+        .prepare("SELECT id FROM v4_alerts WHERE submission_id = ? AND matched_submission_id = ?")
+        .get(submissionId, cand.id);
+      if (existing) continue;
+
+      const breakdown = JSON.stringify({
+        cross_score: Math.round(crossScore * 10000) / 10000,
+        ask_offer_sim_ab: Math.round(simAB * 10000) / 10000,
+        ask_offer_sim_ba: Math.round(simBA * 10000) / 10000,
+      });
+
+      ctx.db
+        .prepare(
+          `INSERT INTO v4_alerts (id, submission_id, matched_submission_id, score, score_breakdown, status, created_at)
+           VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
+        )
+        .run(randomUUID(), submissionId, cand.id, crossScore, breakdown, now);
+    }
+  } catch {
+    // Best-effort: never block the submit response
   }
 }

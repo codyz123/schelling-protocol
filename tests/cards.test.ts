@@ -314,6 +314,22 @@ describe("PUT /api/cards/:slug/requests/:id", () => {
     expect(data.request.response_message).toBe("Sounds great!");
   });
 
+  test("preserves dollar signs in response_message ($150/hr)", async () => {
+    const { api_key } = await createCard();
+    const reqRes = await route("POST", "/api/cards/test-agent/request", { intent: "rate negotiation" });
+    const { request } = await reqRes!.json();
+
+    const res = await route(
+      "PUT",
+      `/api/cards/test-agent/requests/${request.id}`,
+      { status: "accepted", response_message: "Rate is $150/hr, total $1500" },
+      api_key,
+    );
+    expect(res!.status).toBe(200);
+    const data = await res!.json();
+    expect(data.request.response_message).toBe("Rate is $150/hr, total $1500");
+  });
+
   test("declines a request", async () => {
     const { api_key } = await createCard();
     const reqRes = await route("POST", "/api/cards/test-agent/request", { intent: "work" });

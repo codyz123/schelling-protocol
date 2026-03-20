@@ -309,6 +309,7 @@ export interface QuickSeekSearchResult {
   score: number;
   matching_traits: string[];
   candidate_id?: string;
+  card_slug?: string | null;
 }
 
 export interface QuickSeekOutput {
@@ -493,11 +494,21 @@ export async function handleQuickSeek(
     }
     const tokenHash = Math.abs(hash).toString(16).padStart(8, "0");
 
+    // Look up agent card slug for this user (if they have one)
+    let cardSlug: string | null = null;
+    try {
+      const cardRow = ctx.db
+        .prepare("SELECT slug FROM agent_cards WHERE registration_id = ? AND deleted_at IS NULL LIMIT 1")
+        .get(match.user.user_token) as { slug: string } | undefined;
+      cardSlug = cardRow?.slug ?? null;
+    } catch { /* agent_cards table may not exist in all environments */ }
+
     searchResults.push({
       user_token_hash: tokenHash,
       score: Math.round(match.score * 100) / 100,
       matching_traits: match.matchingTraits,
       candidate_id: candidateRow?.id,
+      card_slug: cardSlug,
     });
   }
 

@@ -55,7 +55,14 @@ CREATE TABLE IF NOT EXISTS submissions (
   expires_at       TEXT NOT NULL,
 
   -- Tags (optional, for discoverability)
-  tags             TEXT                            -- JSON: ["hiring", "software", "remote"]
+  tags             TEXT,                           -- JSON: ["hiring", "software", "remote"]
+
+  -- Search behavior (v4.1 additions)
+  search_mode           TEXT DEFAULT 'active',     -- active | passive | hybrid
+  search_source         TEXT DEFAULT 'user_directed', -- user_directed | agent_inferred
+  hybrid_active_hours   INTEGER DEFAULT 168,       -- hours to stay active before downgrading to passive (1 week)
+  alert_webhook         TEXT,                      -- optional webhook URL for passive match alerts
+  alert_threshold       REAL DEFAULT 0.5           -- minimum match score to trigger an alert
 );
 
 CREATE INDEX IF NOT EXISTS idx_submissions_agent   ON submissions(agent_id);
@@ -156,3 +163,21 @@ CREATE TABLE IF NOT EXISTS v4_rate_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_v4_rate_events ON v4_rate_events(agent_id, action, created_at);
+
+-- ─── Passive Match Alerts ─────────────────────────────────────────────
+-- Created automatically when a new submission matches an existing one above threshold.
+
+CREATE TABLE IF NOT EXISTS v4_alerts (
+  id                    TEXT PRIMARY KEY,
+  submission_id         TEXT NOT NULL REFERENCES submissions(id),    -- the new submission that triggered
+  matched_submission_id TEXT NOT NULL REFERENCES submissions(id),    -- the existing submission matched against
+  score                 REAL NOT NULL,                               -- composite match score
+  score_breakdown       TEXT,                                        -- JSON score details
+  status                TEXT DEFAULT 'pending',                      -- pending | dismissed
+  created_at            TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_v4_alerts_submission ON v4_alerts(submission_id);
+CREATE INDEX IF NOT EXISTS idx_v4_alerts_status     ON v4_alerts(status);
+-- Index for listing pending alerts owned by an agent (join via submissions.agent_id)
+CREATE INDEX IF NOT EXISTS idx_v4_alerts_created    ON v4_alerts(created_at DESC);
