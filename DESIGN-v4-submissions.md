@@ -173,7 +173,7 @@ CREATE INDEX idx_negotiation_candidate ON negotiation_records(candidate_id);
 The protocol specifies a canonical embedding model for interoperability. All embeddings in submissions MUST be computed using this model (or a compatible model that produces vectors in the same space).
 
 **v4.0 canonical model:** `text-embedding-3-small` (OpenAI)
-- Dimensions: 256 (using `dimensions` parameter for cost efficiency)
+- Dimensions: 512 (using `dimensions` parameter for quality/cost balance)
 - Normalization: L2-normalized
 - Encoding: float32 array
 
@@ -189,7 +189,7 @@ POST /schelling/embed
   "text": "I need a senior React developer in Denver",
   "api_key_header": "Bearer sk-..."  // agent's own API key, proxied
 }
-→ { "embedding": [0.12, -0.34, ...], "model": "text-embedding-3-small", "dimensions": 256 }
+→ { "embedding": [0.12, -0.34, ...], "model": "text-embedding-3-small", "dimensions": 512 }
 ```
 
 The server proxies the request to the embedding provider using the agent's own API key. The server incurs no cost.

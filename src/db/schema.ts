@@ -25,6 +25,15 @@ function loadMarketplaceMigration(): string {
   }
 }
 
+function loadV4Migration(): string {
+  const migrationPath = resolve(process.cwd(), "migrations/003_v4_submissions.sql");
+  try {
+    return readFileSync(migrationPath, 'utf-8');
+  } catch {
+    return "";
+  }
+}
+
 export function initSchema(db: DatabaseConnection): void {
   const dbType = getDatabaseType();
   const migrationSql = loadMigrationFile(dbType);
@@ -41,6 +50,16 @@ export function initSchema(db: DatabaseConnection): void {
   if (marketplaceSql) {
     try {
       db.exec(marketplaceSql);
+    } catch (error) {
+      // Tables may already exist, ignore
+    }
+  }
+
+  // Apply v4 submissions migration
+  const v4Sql = loadV4Migration();
+  if (v4Sql) {
+    try {
+      db.exec(v4Sql);
     } catch (error) {
       // Tables may already exist, ignore
     }
