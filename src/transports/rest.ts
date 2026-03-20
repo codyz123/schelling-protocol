@@ -54,6 +54,23 @@ import {
 } from "../handlers/tools.js";
 // ─── Agent Cards imports ──────────────────────────────────────────────
 import { handleCardsRoute, initAgentCardsTables } from "../handlers/cards.js";
+// ─── v4 Submission imports ────────────────────────────────────────────
+import {
+  handleAgentCreate,
+  handleSubmit,
+  handleSubmissionUpdate,
+  handleSubmissionWithdraw,
+  handleSubmissionsList,
+} from "../handlers/submit.js";
+import { handleMatch } from "../handlers/match.js";
+import { handleMarketInsights } from "../handlers/market-insights.js";
+import {
+  handleToolPublish,
+  handleToolList,
+  handleToolGet,
+  handleToolRecommend,
+  handleToolDeprecate,
+} from "../handlers/tool-marketplace.js";
 // ─── Serendipity imports ──────────────────────────────────────────────
 import { handleSerendipityRoute, initSerendipityTables, cleanupExpiredSerendipity } from "../handlers/serendipity.js";
 
@@ -79,7 +96,7 @@ const MARKETPLACE_ENABLED = process.env.MARKETPLACE_ENABLED === "true";
 
 // ─── Operation router ───────────────────────────────────────────────
 
-type HandlerFn = (params: any, ctx: HandlerContext) => Promise<HandlerResult<unknown>>;
+type HandlerFn = (params: any, ctx: HandlerContext, authHeader?: string | null) => Promise<HandlerResult<unknown>>;
 
 const OPERATIONS: Record<string, HandlerFn> = {
   // Discovery
@@ -140,6 +157,13 @@ const OPERATIONS: Record<string, HandlerFn> = {
   // Privacy
   export: handleExport,
   delete_account: handleDeleteAccount,
+  // v4: Agents
+  "agent/create": handleAgentCreate,
+  // v4: Submissions
+  submit: handleSubmit,
+  submissions: handleSubmissionsList,
+  match: handleMatch,
+  market_insights: handleMarketInsights,
 };
 
 // ─── Marketplace Operations (gated by MARKETPLACE_ENABLED) ──────────
@@ -204,8 +228,18 @@ const MARKETPLACE_OPERATIONS: Record<string, HandlerFn> = {
 
 // Special routing for nested paths
 const NESTED_OPERATIONS: Record<string, HandlerFn> = {
+  // v3 tools
   "tool/invoke": handleToolInvoke,
   "tool/feedback": handleToolFeedback,
+  // v4 submissions
+  "submission/update": handleSubmissionUpdate,
+  "submission/withdraw": handleSubmissionWithdraw,
+  // v4 coordination tools
+  "tool/publish": handleToolPublish,
+  "tool/list": handleToolList,
+  "tool/get": handleToolGet,
+  "tool/recommend": handleToolRecommend,
+  "tool/deprecate": handleToolDeprecate,
 };
 
 // ─── REST Server ────────────────────────────────────────────────────
@@ -816,8 +850,9 @@ export function createRestServer(ctx: HandlerContext): RestServer {
 
         // Extract Bearer token from Authorization header
         const authHeader = req.headers.get("Authorization");
-        if (authHeader?.startsWith("Bearer ") && !params.user_token) {
-          params.user_token = authHeader.slice(7);
+        if (authHeader?.startsWith("Bearer ")) {
+          if (!params.user_token) params.user_token = authHeader.slice(7);
+          // v4 agents: authHeader is passed directly to handlers via 3rd argument
         }
 
         // Extract operation from path: /schelling/{operation} or /schelling/tool/{sub}
@@ -843,7 +878,7 @@ export function createRestServer(ctx: HandlerContext): RestServer {
         }
 
         try {
-          const result = await handler(params, ctx);
+          const result = await handler(params, ctx, authHeader);
 
           if (!result.ok) {
             return Response.json(result.error, {
