@@ -14,6 +14,7 @@
   const FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ccircle cx='20' cy='24' r='4.5' fill='%238b5cf6'/%3E%3Ccircle cx='44' cy='24' r='4.5' fill='%238b5cf6'/%3E%3Ccircle cx='32' cy='44' r='4.5' fill='%238b5cf6'/%3E%3Cline x1='20' y1='24' x2='44' y2='24' stroke='%236366f180' stroke-width='1.5'/%3E%3Cline x1='20' y1='24' x2='32' y2='44' stroke='%236366f180' stroke-width='1.5'/%3E%3Cline x1='44' y1='24' x2='32' y2='44' stroke='%236366f180' stroke-width='1.5'/%3E%3Ccircle cx='32' cy='30.5' r='2' fill='%23a78bfa' opacity='0.6'/%3E%3C/svg%3E";
 
   const NAV_LINKS = [
+    { href: '/browse', label: 'Browse' },
     { href: '/cards', label: 'Cards' },
     { href: '/serendipity', label: 'Serendipity' },
     { href: '/changelog', label: 'Changelog' },

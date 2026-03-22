@@ -727,6 +727,12 @@ export function createRestServer(ctx: HandlerContext): RestServer {
           });
         }
 
+        // GET /browse — Submissions browse page
+        if (method === "GET" && url.pathname === "/browse") {
+          const f = Bun.file(process.cwd() + "/public/browse.html");
+          return new Response(f, { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } });
+        }
+
         // GET /cards — Agent Cards marketing page
         if (method === "GET" && url.pathname === "/cards") {
           const f = Bun.file(process.cwd() + "/public/cards.html");

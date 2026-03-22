@@ -173,7 +173,9 @@ export async function handleAgentCreate(
 export interface SubmitInput {
   agent_api_key?: string;
   intent_text: string;
-  intent_embedding: number[];
+  // Agents SHOULD provide a real embedding for quality matching.
+  // If omitted, the submission is created and browseable but won't participate in embedding-based matching.
+  intent_embedding?: number[] | null;
   identity_embedding?: number[];
   criteria_text?: string;
   criteria_data?: Record<string, unknown>;
@@ -216,10 +218,12 @@ export async function handleSubmit(
     return { ok: false, error: { code: "INVALID_INPUT", message: `intent_text must be ${MAX_INTENT_TEXT_CHARS} characters or fewer.` } };
   }
 
-  // Validate intent_embedding (required)
-  const intentErr = validateEmbedding(params.intent_embedding, "intent_embedding");
-  if (intentErr) {
-    return { ok: false, error: { code: "INVALID_INPUT", message: intentErr } };
+  // Validate intent_embedding (optional — if provided must be valid; if omitted, submission won't match via embeddings)
+  if (params.intent_embedding !== undefined && params.intent_embedding !== null) {
+    const intentErr = validateEmbedding(params.intent_embedding, "intent_embedding");
+    if (intentErr) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: intentErr } };
+    }
   }
 
   // Validate identity_embedding (optional)
@@ -359,7 +363,7 @@ export async function handleSubmit(
         submissionId,
         agent.id,
         params.intent_text.trim(),
-        JSON.stringify(params.intent_embedding),
+        params.intent_embedding != null ? JSON.stringify(params.intent_embedding) : null,
         params.identity_embedding ? JSON.stringify(params.identity_embedding) : null,
         params.criteria_text ?? null,
         params.criteria_data ? JSON.stringify(params.criteria_data) : null,
@@ -743,13 +747,15 @@ export interface IndexInput {
   limit?: number;
   offset?: number;
   tags_filter?: string[];
+  include_embeddings?: boolean;
 }
 
 export interface PublicSubmission {
   id: string;
   agent_id: string;
   intent_text: string;
-  intent_embedding: number[];
+  intent_embedding?: number[];
+  has_embedding: boolean;
   public_data: Record<string, unknown> | null;
   tags: string[] | null;
   status: string;
@@ -763,10 +769,11 @@ export async function handleIndex(
 ): Promise<HandlerResult<{ submissions: PublicSubmission[]; total: number }>> {
   const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
   const offset = Math.max(params.offset ?? 0, 0);
+  const includeEmbeddings = params.include_embeddings === true;
 
   const now = new Date().toISOString();
 
-  let query = `SELECT id, agent_id, intent_text, intent_embedding, public_data, tags, status, created_at, expires_at
+  let query = `SELECT id, agent_id, intent_text, ${includeEmbeddings ? "intent_embedding," : "(intent_embedding IS NOT NULL) as has_emb,"} public_data, tags, status, created_at, expires_at
     FROM submissions
     WHERE status = 'active' AND expires_at > ?`;
   const qParams: unknown[] = [now];
@@ -792,17 +799,23 @@ export async function handleIndex(
 
   const rows = ctx.db.prepare(query).all(...qParams) as Record<string, any>[];
 
-  const submissions: PublicSubmission[] = rows.map((row) => ({
-    id: row.id,
-    agent_id: row.agent_id,
-    intent_text: row.intent_text,
-    intent_embedding: safeJsonParse(row.intent_embedding, []),
-    public_data: row.public_data ? safeJsonParse(row.public_data, null) : null,
-    tags: row.tags ? safeJsonParse(row.tags, null) : null,
-    status: row.status,
-    created_at: row.created_at,
-    expires_at: row.expires_at,
-  }));
+  const submissions: PublicSubmission[] = rows.map((row) => {
+    const entry: PublicSubmission = {
+      id: row.id,
+      agent_id: row.agent_id,
+      intent_text: row.intent_text,
+      has_embedding: includeEmbeddings ? row.intent_embedding != null : !!row.has_emb,
+      public_data: row.public_data ? safeJsonParse(row.public_data, null) : null,
+      tags: row.tags ? safeJsonParse(row.tags, null) : null,
+      status: row.status,
+      created_at: row.created_at,
+      expires_at: row.expires_at,
+    };
+    if (includeEmbeddings) {
+      entry.intent_embedding = safeJsonParse(row.intent_embedding, []);
+    }
+    return entry;
+  });
 
   return { ok: true, data: { submissions, total } };
 }
@@ -837,6 +850,7 @@ export async function handleIndexGet(
       agent_id: row.agent_id,
       intent_text: row.intent_text,
       intent_embedding: safeJsonParse(row.intent_embedding, []),
+      has_embedding: row.intent_embedding != null,
       public_data: row.public_data ? safeJsonParse(row.public_data, null) : null,
       tags: row.tags ? safeJsonParse(row.tags, null) : null,
       status: row.status,

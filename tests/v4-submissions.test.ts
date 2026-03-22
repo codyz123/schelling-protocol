@@ -659,7 +659,7 @@ describe("index (public)", () => {
     expect(result.data.submissions).toHaveLength(2);
   });
 
-  test("returns public fields and intent_embedding, never private_data or identity_embedding", async () => {
+  test("returns public fields and has_embedding, never private_data or identity_embedding", async () => {
     const agent = await createAgent();
     await createSubmission(agent!.agent_api_key, {
       public_data: { budget: "$100/hr" },
@@ -667,6 +667,7 @@ describe("index (public)", () => {
       identity_embedding: makeEmbedding(99),
     });
 
+    // Default: no embeddings in response
     const result = await handleIndex({}, ctx);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -677,9 +678,18 @@ describe("index (public)", () => {
     expect(sub.id).toBeTruthy();
     expect(sub.agent_id).toBeTruthy();
     expect(sub.intent_text).toBeTruthy();
-    expect(Array.isArray(sub.intent_embedding)).toBe(true);
-    expect(sub.intent_embedding).toHaveLength(512);
+    expect(sub.has_embedding).toBe(true);
+    expect(sub.intent_embedding).toBeUndefined();
     expect(sub.public_data).toEqual({ budget: "$100/hr" });
+
+    // With include_embeddings=true, embedding is returned
+    const resultWithEmb = await handleIndex({ include_embeddings: true }, ctx);
+    expect(resultWithEmb.ok).toBe(true);
+    if (!resultWithEmb.ok) return;
+    const subWithEmb = resultWithEmb.data.submissions[0];
+    expect(Array.isArray(subWithEmb.intent_embedding)).toBe(true);
+    expect(subWithEmb.intent_embedding).toHaveLength(512);
+    expect(subWithEmb.has_embedding).toBe(true);
 
     // These fields MUST NOT be present
     expect((sub as any).private_data).toBeUndefined();
