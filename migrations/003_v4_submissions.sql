@@ -25,44 +25,40 @@ CREATE INDEX IF NOT EXISTS idx_v4_agents_prefix ON v4_agents(key_prefix);
 -- The atomic coordination unit. Each submission is an intent with embeddings.
 
 CREATE TABLE IF NOT EXISTS submissions (
-  id               TEXT PRIMARY KEY,               -- UUID
+  id               TEXT PRIMARY KEY,
   agent_id         TEXT NOT NULL REFERENCES v4_agents(id),
 
-  -- Intent (required)
-  intent_text      TEXT NOT NULL,                  -- free text, human-readable
-  intent_summary   TEXT,                           -- optional short version
+  -- Intent (required, short, indexed)
+  intent_text      TEXT NOT NULL,
+  intent_embedding TEXT NOT NULL,               -- 512-dim float32 JSON array
 
-  -- Embeddings (stored as JSON float arrays)
-  ask_embedding    TEXT NOT NULL,                  -- float32[] as JSON, canonical 512-dim
-  offer_embedding  TEXT,                           -- float32[] as JSON, nullable
+  -- Criteria (optional, can be long, free text + structured)
+  criteria_text    TEXT,                        -- free text: how you judge matches
+  criteria_data    TEXT,                        -- JSON: structured criteria via tools
 
-  -- Structured data (optional, keyed by tool ID)
-  structured_data  TEXT,                           -- JSON: { "tool_id": { ...filled schema... }, ... }
+  -- Identity (optional, what you bring to the table)
+  identity_text    TEXT,                        -- free text: who you are, what you offer
+  identity_embedding TEXT,                      -- 512-dim float32 JSON array
+  identity_data    TEXT,                        -- JSON: structured identity via tools
 
-  -- Tool requirements (optional)
-  required_tools   TEXT,                           -- JSON: ["tool_id_1", "tool_id_2"]
-  preferred_tools  TEXT,                           -- JSON: tools that help but aren't required
+  -- Visibility layers (simple: public + private)
+  public_data      TEXT,                        -- JSON: what everyone sees
+  private_data     TEXT,                        -- JSON: what authorized agents see
 
-  -- Matching configuration (agent's choice)
-  match_config     TEXT,                           -- JSON: { min_score, max_candidates, custom_weights }
+  -- Tool requirements
+  structured_data  TEXT,                        -- JSON: keyed by tool ID
+  required_tools   TEXT,                        -- JSON array of tool IDs
+  preferred_tools  TEXT,                        -- JSON array
+
+  -- Metadata
+  tags             TEXT,                        -- JSON array
+  metadata         TEXT,                        -- JSON: anything else agent wants to store
 
   -- Lifecycle
-  status           TEXT DEFAULT 'active',          -- active | paused | fulfilled | expired | withdrawn
-  ttl_mode         TEXT DEFAULT 'fixed',           -- fixed | until | recurring | indefinite
-  ttl_hours        INTEGER DEFAULT 720,            -- used when ttl_mode = 'fixed'
-  created_at       TEXT DEFAULT (datetime('now')),
-  updated_at       TEXT,
+  status           TEXT DEFAULT 'active',       -- active | paused | fulfilled | expired | withdrawn
   expires_at       TEXT NOT NULL,
-
-  -- Tags (optional, for discoverability)
-  tags             TEXT,                           -- JSON: ["hiring", "software", "remote"]
-
-  -- Search behavior (v4.1 additions)
-  search_mode           TEXT DEFAULT 'active',     -- active | passive | hybrid
-  search_source         TEXT DEFAULT 'user_directed', -- user_directed | agent_inferred
-  hybrid_active_hours   INTEGER DEFAULT 168,       -- hours to stay active before downgrading to passive (1 week)
-  alert_webhook         TEXT,                      -- optional webhook URL for passive match alerts
-  alert_threshold       REAL DEFAULT 0.5           -- minimum match score to trigger an alert
+  created_at       TEXT DEFAULT (datetime('now')),
+  updated_at       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_submissions_agent   ON submissions(agent_id);
@@ -82,8 +78,8 @@ CREATE TABLE IF NOT EXISTS submission_candidates (
 
   -- Scores
   score               REAL NOT NULL,               -- composite match score
-  ask_offer_sim_ab    REAL,                        -- cosine(A.ask, B.offer)
-  ask_offer_sim_ba    REAL,                        -- cosine(B.ask, A.offer)
+  ask_offer_sim_ab    REAL,                        -- cosine(A.intent, B.identity)
+  ask_offer_sim_ba    REAL,                        -- cosine(B.intent, A.identity)
   tool_satisfaction   REAL,                        -- how well structured data aligns
 
   -- Funnel stages (per-side)
@@ -165,19 +161,37 @@ CREATE TABLE IF NOT EXISTS v4_rate_events (
 CREATE INDEX IF NOT EXISTS idx_v4_rate_events ON v4_rate_events(agent_id, action, created_at);
 
 -- ─── Passive Match Alerts ─────────────────────────────────────────────
--- Created automatically when a new submission matches an existing one above threshold.
+-- Kept for schema compatibility; alert generation is no longer active.
 
 CREATE TABLE IF NOT EXISTS v4_alerts (
   id                    TEXT PRIMARY KEY,
-  submission_id         TEXT NOT NULL REFERENCES submissions(id),    -- the new submission that triggered
-  matched_submission_id TEXT NOT NULL REFERENCES submissions(id),    -- the existing submission matched against
-  score                 REAL NOT NULL,                               -- composite match score
-  score_breakdown       TEXT,                                        -- JSON score details
-  status                TEXT DEFAULT 'pending',                      -- pending | dismissed
+  submission_id         TEXT NOT NULL REFERENCES submissions(id),
+  matched_submission_id TEXT NOT NULL REFERENCES submissions(id),
+  score                 REAL NOT NULL,
+  score_breakdown       TEXT,
+  status                TEXT DEFAULT 'pending',    -- pending | dismissed
   created_at            TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_v4_alerts_submission ON v4_alerts(submission_id);
 CREATE INDEX IF NOT EXISTS idx_v4_alerts_status     ON v4_alerts(status);
--- Index for listing pending alerts owned by an agent (join via submissions.agent_id)
 CREATE INDEX IF NOT EXISTS idx_v4_alerts_created    ON v4_alerts(created_at DESC);
+
+-- ─── v4 Messages ─────────────────────────────────────────────────────
+-- Direct messaging between agents via their submissions.
+
+CREATE TABLE IF NOT EXISTS v4_messages (
+  id                   TEXT PRIMARY KEY,
+  target_submission_id TEXT NOT NULL REFERENCES submissions(id),
+  from_agent_id        TEXT NOT NULL REFERENCES v4_agents(id),
+  from_submission_id   TEXT REFERENCES submissions(id),
+  message_text         TEXT NOT NULL,
+  response_text        TEXT,
+  status               TEXT DEFAULT 'pending',     -- pending | responded | dismissed
+  created_at           TEXT DEFAULT (datetime('now')),
+  responded_at         TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_v4_messages_target   ON v4_messages(target_submission_id);
+CREATE INDEX IF NOT EXISTS idx_v4_messages_from     ON v4_messages(from_agent_id);
+CREATE INDEX IF NOT EXISTS idx_v4_messages_status   ON v4_messages(status);

@@ -7,11 +7,18 @@ import {
   handleSubmissionUpdate,
   handleSubmissionWithdraw,
   handleSubmissionsList,
+  handleIndex,
+  handleIndexGet,
   validateEmbedding,
   authenticateAgent,
 } from "../src/handlers/submit.js";
 import { handleMatch } from "../src/handlers/match.js";
 import { handleMarketInsights } from "../src/handlers/market-insights.js";
+import {
+  handleMessageSend,
+  handleMessageInbox,
+  handleMessageRespond,
+} from "../src/handlers/messages-v4.js";
 import {
   handleToolPublish,
   handleToolList,
@@ -56,6 +63,11 @@ function makeEmbedding(seed: number, norm = 0.9): number[] {
   });
 }
 
+/** Returns a future ISO datetime string (days from now). */
+function futureDate(daysFromNow = 7): string {
+  return new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000).toISOString();
+}
+
 /**
  * Create an agent and return { agent_id, agent_api_key }.
  */
@@ -76,8 +88,9 @@ async function createSubmission(
     {
       agent_api_key: apiKey,
       intent_text: "Test intent",
-      ask_embedding: makeEmbedding(1),
-      offer_embedding: makeEmbedding(2),
+      intent_embedding: makeEmbedding(1),
+      identity_embedding: makeEmbedding(2),
+      expires_at: futureDate(7),
       ...overrides,
     },
     ctx,
@@ -170,7 +183,8 @@ describe("submit", () => {
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "I need a React developer",
-        ask_embedding: makeEmbedding(1),
+        intent_embedding: makeEmbedding(1),
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -187,15 +201,20 @@ describe("submit", () => {
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "Hiring a senior React dev",
-        intent_summary: "React dev hire",
-        ask_embedding: makeEmbedding(1),
-        offer_embedding: makeEmbedding(2),
+        intent_embedding: makeEmbedding(1),
+        identity_embedding: makeEmbedding(2),
+        criteria_text: "Must have 5+ years TypeScript experience",
+        criteria_data: { min_years: 5 },
+        identity_text: "We are a fast-growing startup",
+        identity_data: { company_size: "50-200" },
+        public_data: { budget: "$100-150/hr" },
+        private_data: { internal_notes: "urgent" },
         structured_data: { "hiring/software-v1": { years: 5 } },
         required_tools: ["hiring/software-v1"],
         preferred_tools: ["hiring/portfolio-v1"],
         tags: ["hiring", "software"],
-        ttl_mode: "recurring",
-        ttl_hours: 168,
+        metadata: { source: "manual" },
+        expires_at: futureDate(30),
       },
       ctx,
     );
@@ -208,7 +227,8 @@ describe("submit", () => {
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "",
-        ask_embedding: makeEmbedding(1),
+        intent_embedding: makeEmbedding(1),
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -218,26 +238,44 @@ describe("submit", () => {
     expect(result.error.message).toContain("intent_text");
   });
 
-  test("rejects missing ask_embedding", async () => {
+  test("rejects intent_text over 1000 chars", async () => {
+    const agent = await createAgent();
+    const result = await handleSubmit(
+      {
+        agent_api_key: agent!.agent_api_key,
+        intent_text: "a".repeat(1001),
+        intent_embedding: makeEmbedding(1),
+        expires_at: futureDate(7),
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("INVALID_INPUT");
+  });
+
+  test("rejects missing intent_embedding", async () => {
     const agent = await createAgent();
     const result = await handleSubmit(
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "I need a React developer",
-        ask_embedding: [],
+        intent_embedding: [],
+        expires_at: futureDate(7),
       },
       ctx,
     );
     expect(result.ok).toBe(false);
   });
 
-  test("rejects invalid ask_embedding dimensions", async () => {
+  test("rejects invalid intent_embedding dimensions", async () => {
     const agent = await createAgent();
     const result = await handleSubmit(
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "Test",
-        ask_embedding: new Array(256).fill(0.01),
+        intent_embedding: new Array(256).fill(0.01),
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -246,41 +284,77 @@ describe("submit", () => {
     expect(result.error.message).toContain("512");
   });
 
-  test("rejects invalid offer_embedding", async () => {
+  test("rejects invalid identity_embedding", async () => {
     const agent = await createAgent();
     const result = await handleSubmit(
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        offer_embedding: new Array(100).fill(0.5) as any,
+        intent_embedding: makeEmbedding(1),
+        identity_embedding: new Array(100).fill(0.5) as any,
+        expires_at: futureDate(7),
       },
       ctx,
     );
     expect(result.ok).toBe(false);
   });
 
-  test("rejects invalid ttl_mode", async () => {
+  test("rejects missing expires_at", async () => {
     const agent = await createAgent();
     const result = await handleSubmit(
       {
         agent_api_key: agent!.agent_api_key,
         intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        ttl_mode: "turbo" as any,
+        intent_embedding: makeEmbedding(1),
+        expires_at: undefined as any,
       },
       ctx,
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error.message).toContain("ttl_mode");
+    expect(result.error.code).toBe("INVALID_INPUT");
+    expect(result.error.message).toContain("expires_at");
+  });
+
+  test("rejects past expires_at", async () => {
+    const agent = await createAgent();
+    const result = await handleSubmit(
+      {
+        agent_api_key: agent!.agent_api_key,
+        intent_text: "Test",
+        intent_embedding: makeEmbedding(1),
+        expires_at: new Date(Date.now() - 1000).toISOString(),
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("INVALID_INPUT");
+    expect(result.error.message).toContain("future");
+  });
+
+  test("rejects invalid expires_at format", async () => {
+    const agent = await createAgent();
+    const result = await handleSubmit(
+      {
+        agent_api_key: agent!.agent_api_key,
+        intent_text: "Test",
+        intent_embedding: makeEmbedding(1),
+        expires_at: "not-a-date",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("INVALID_INPUT");
   });
 
   test("rejects unauthorized (no api_key)", async () => {
     const result = await handleSubmit(
       {
         intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
+        intent_embedding: makeEmbedding(1),
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -289,20 +363,47 @@ describe("submit", () => {
     expect(result.error.code).toBe("UNAUTHORIZED");
   });
 
-  test("ttl_mode=indefinite sets far-future expires_at", async () => {
+  test("stores public_data and private_data", async () => {
     const agent = await createAgent();
     const result = await handleSubmit(
       {
         agent_api_key: agent!.agent_api_key,
-        intent_text: "Looking for a cofounder, always",
-        ask_embedding: makeEmbedding(1),
-        ttl_mode: "indefinite",
+        intent_text: "Test",
+        intent_embedding: makeEmbedding(1),
+        expires_at: futureDate(7),
+        public_data: { budget: "$100/hr" },
+        private_data: { internal: "secret" },
       },
       ctx,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.data.expires_at).toContain("9999");
+
+    // Verify in DB
+    const row = db.prepare("SELECT public_data, private_data FROM submissions WHERE id = ?").get(result.data.submission_id) as any;
+    expect(JSON.parse(row.public_data)).toEqual({ budget: "$100/hr" });
+    expect(JSON.parse(row.private_data)).toEqual({ internal: "secret" });
+  });
+
+  test("stores criteria_text and identity_text", async () => {
+    const agent = await createAgent();
+    const result = await handleSubmit(
+      {
+        agent_api_key: agent!.agent_api_key,
+        intent_text: "Test",
+        intent_embedding: makeEmbedding(1),
+        expires_at: futureDate(7),
+        criteria_text: "Must be available full-time",
+        identity_text: "We are a startup in NYC",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const row = db.prepare("SELECT criteria_text, identity_text FROM submissions WHERE id = ?").get(result.data.submission_id) as any;
+    expect(row.criteria_text).toBe("Must be available full-time");
+    expect(row.identity_text).toBe("We are a startup in NYC");
   });
 });
 
@@ -497,16 +598,17 @@ describe("submissions (list)", () => {
     expect(withdrawn.data.total).toBe(1);
   });
 
-  test("returns has_offer_embedding correctly", async () => {
+  test("returns has_identity_embedding correctly", async () => {
     const agent = await createAgent();
-    // With offer
-    await createSubmission(agent!.agent_api_key, { offer_embedding: makeEmbedding(5) });
-    // Without offer
+    // With identity embedding
+    await createSubmission(agent!.agent_api_key, { identity_embedding: makeEmbedding(5) });
+    // Without identity embedding
     await handleSubmit(
       {
         agent_api_key: agent!.agent_api_key,
-        intent_text: "Ask only",
-        ask_embedding: makeEmbedding(6),
+        intent_text: "Intent only",
+        intent_embedding: makeEmbedding(6),
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -517,10 +619,142 @@ describe("submissions (list)", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const withOffer = result.data.submissions.filter((s) => s.has_offer_embedding);
-    const withoutOffer = result.data.submissions.filter((s) => !s.has_offer_embedding);
-    expect(withOffer).toHaveLength(1);
-    expect(withoutOffer).toHaveLength(1);
+    const withIdentity = result.data.submissions.filter((s) => s.has_identity_embedding);
+    const withoutIdentity = result.data.submissions.filter((s) => !s.has_identity_embedding);
+    expect(withIdentity).toHaveLength(1);
+    expect(withoutIdentity).toHaveLength(1);
+  });
+
+  test("returns has_public_data correctly", async () => {
+    const agent = await createAgent();
+    await createSubmission(agent!.agent_api_key, { public_data: { budget: "$100/hr" } });
+    await createSubmission(agent!.agent_api_key);
+
+    const result = await handleSubmissionsList(
+      { agent_api_key: agent!.agent_api_key },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const withPub = result.data.submissions.filter((s) => s.has_public_data);
+    const withoutPub = result.data.submissions.filter((s) => !s.has_public_data);
+    expect(withPub).toHaveLength(1);
+    expect(withoutPub).toHaveLength(1);
+  });
+});
+
+// ─── Public Index ─────────────────────────────────────────────────────
+
+describe("index (public)", () => {
+  test("returns active submissions without auth", async () => {
+    const agentA = await createAgent("A");
+    const agentB = await createAgent("B");
+    await createSubmission(agentA!.agent_api_key, { public_data: { visible: true } });
+    await createSubmission(agentB!.agent_api_key);
+
+    const result = await handleIndex({}, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.total).toBe(2);
+    expect(result.data.submissions).toHaveLength(2);
+  });
+
+  test("returns public fields and intent_embedding, never private_data or identity_embedding", async () => {
+    const agent = await createAgent();
+    await createSubmission(agent!.agent_api_key, {
+      public_data: { budget: "$100/hr" },
+      private_data: { secret: "internal" },
+      identity_embedding: makeEmbedding(99),
+    });
+
+    const result = await handleIndex({}, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.submissions).toHaveLength(1);
+    const sub = result.data.submissions[0];
+
+    // These fields MUST be present
+    expect(sub.id).toBeTruthy();
+    expect(sub.agent_id).toBeTruthy();
+    expect(sub.intent_text).toBeTruthy();
+    expect(Array.isArray(sub.intent_embedding)).toBe(true);
+    expect(sub.intent_embedding).toHaveLength(512);
+    expect(sub.public_data).toEqual({ budget: "$100/hr" });
+
+    // These fields MUST NOT be present
+    expect((sub as any).private_data).toBeUndefined();
+    expect((sub as any).identity_embedding).toBeUndefined();
+    expect((sub as any).criteria_data).toBeUndefined();
+    expect((sub as any).identity_data).toBeUndefined();
+  });
+
+  test("does not return withdrawn or expired submissions", async () => {
+    const agent = await createAgent();
+    const subId = await createSubmission(agent!.agent_api_key);
+
+    await handleSubmissionWithdraw(
+      { agent_api_key: agent!.agent_api_key, submission_id: subId! },
+      ctx,
+    );
+
+    const result = await handleIndex({}, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.total).toBe(0);
+  });
+
+  test("paginates correctly", async () => {
+    const agent = await createAgent();
+    await createSubmission(agent!.agent_api_key, { intent_text: "Sub 1" });
+    await createSubmission(agent!.agent_api_key, { intent_text: "Sub 2" });
+    await createSubmission(agent!.agent_api_key, { intent_text: "Sub 3" });
+
+    const page1 = await handleIndex({ limit: 2, offset: 0 }, ctx);
+    expect(page1.ok).toBe(true);
+    if (!page1.ok) return;
+    expect(page1.data.submissions).toHaveLength(2);
+    expect(page1.data.total).toBe(3);
+
+    const page2 = await handleIndex({ limit: 2, offset: 2 }, ctx);
+    expect(page2.ok).toBe(true);
+    if (!page2.ok) return;
+    expect(page2.data.submissions).toHaveLength(1);
+  });
+});
+
+// ─── Index Get ────────────────────────────────────────────────────────
+
+describe("index/get (public)", () => {
+  test("retrieves a submission by ID without auth", async () => {
+    const agent = await createAgent();
+    const subId = await createSubmission(agent!.agent_api_key, {
+      public_data: { info: "visible" },
+    });
+
+    const result = await handleIndexGet({ submission_id: subId! }, ctx);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.id).toBe(subId);
+    expect(result.data.public_data).toEqual({ info: "visible" });
+    expect(Array.isArray(result.data.intent_embedding)).toBe(true);
+
+    // Private fields MUST NOT be present
+    expect((result.data as any).private_data).toBeUndefined();
+    expect((result.data as any).identity_embedding).toBeUndefined();
+  });
+
+  test("returns NOT_FOUND for nonexistent submission", async () => {
+    const result = await handleIndexGet({ submission_id: "nonexistent-id" }, ctx);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("NOT_FOUND");
+  });
+
+  test("requires submission_id", async () => {
+    const result = await handleIndexGet({ submission_id: "" }, ctx);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("INVALID_INPUT");
   });
 });
 
@@ -545,15 +779,15 @@ describe("match (cross-embedding scoring)", () => {
     const agentA = await createAgent("Seeker");
     const agentB = await createAgent("Offerer");
 
-    // A asks for something, B offers the same thing (high cross-match expected)
-    const askVec = makeEmbedding(10, 0.9);
-    const offerVec = makeEmbedding(10, 0.9); // Same direction = high cosine similarity
+    // A has intent, B has matching identity (high cross-match expected)
+    const vec = makeEmbedding(10, 0.9);
 
     const subAId = await handleSubmit(
       {
         agent_api_key: agentA!.agent_api_key,
         intent_text: "I need React development",
-        ask_embedding: askVec,
+        intent_embedding: vec,
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -562,8 +796,9 @@ describe("match (cross-embedding scoring)", () => {
       {
         agent_api_key: agentB!.agent_api_key,
         intent_text: "I am a React developer",
-        ask_embedding: makeEmbedding(99),   // Different ask
-        offer_embedding: offerVec,            // Same direction as A's ask
+        intent_embedding: makeEmbedding(99),
+        identity_embedding: vec, // Same direction as A's intent
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -592,7 +827,8 @@ describe("match (cross-embedding scoring)", () => {
       {
         agent_api_key: agentA!.agent_api_key,
         intent_text: "Need X",
-        ask_embedding: askVec,
+        intent_embedding: askVec,
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -601,8 +837,9 @@ describe("match (cross-embedding scoring)", () => {
       {
         agent_api_key: agentB!.agent_api_key,
         intent_text: "Offer Y (unrelated)",
-        ask_embedding: makeEmbedding(201),
-        offer_embedding: perpVec,
+        intent_embedding: makeEmbedding(201),
+        identity_embedding: perpVec,
+        expires_at: futureDate(7),
       },
       ctx,
     );
@@ -628,12 +865,12 @@ describe("match (cross-embedding scoring)", () => {
     const vec = makeEmbedding(42, 0.9);
 
     const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
     await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
 
     await handleMatch(
@@ -720,15 +957,15 @@ describe("match (tool satisfaction scoring)", () => {
 
     // Both fill the same tool
     const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
       structured_data: {
         "hiring/software-v1": { years_experience: 5, languages: ["TypeScript"] },
       },
     });
     await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
       structured_data: {
         "hiring/software-v1": { years_experience: 7, languages: ["TypeScript", "React"] },
       },
@@ -752,13 +989,13 @@ describe("match (tool satisfaction scoring)", () => {
     const vec = makeEmbedding(42, 0.9);
 
     const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
       structured_data: { "tool/a": { field: "value" } },
     });
     await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
       structured_data: { "tool/b": { field: "value" } }, // different tool
     });
 
@@ -784,16 +1021,16 @@ describe("market_insights", () => {
     const vec = makeEmbedding(42, 0.9);
 
     const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
     await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
     await createSubmission(agentC!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
 
     const result = await handleMarketInsights(
@@ -814,12 +1051,12 @@ describe("market_insights", () => {
     const vec = makeEmbedding(42, 0.9);
 
     const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
     await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
       structured_data: { "hiring/tool": { val: 1 } },
     });
 
@@ -841,12 +1078,12 @@ describe("market_insights", () => {
     const vec = makeEmbedding(42, 0.9);
 
     const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
     await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
+      intent_embedding: vec,
+      identity_embedding: vec,
     });
 
     const result = await handleMarketInsights(
@@ -873,6 +1110,279 @@ describe("market_insights", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe("UNAUTHORIZED");
+  });
+});
+
+// ─── Messaging ────────────────────────────────────────────────────────
+
+describe("message/send", () => {
+  test("sends a message to a submission", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+    const subAId = await createSubmission(agentA!.agent_api_key);
+
+    const result = await handleMessageSend(
+      {
+        agent_api_key: agentA!.agent_api_key,
+        target_submission_id: subBId!,
+        from_submission_id: subAId!,
+        message_text: "Hello, I think we're a great match!",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.message_id).toBeTruthy();
+    expect(result.data.status).toBe("pending");
+    expect(result.data.from_agent_id).toBe(agentA!.agent_id);
+  });
+
+  test("rejects messaging own submission", async () => {
+    const agent = await createAgent();
+    const subId = await createSubmission(agent!.agent_api_key);
+
+    const result = await handleMessageSend(
+      {
+        agent_api_key: agent!.agent_api_key,
+        target_submission_id: subId!,
+        message_text: "Hello myself",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toContain("own submission");
+  });
+
+  test("rejects missing message_text", async () => {
+    const agentA = await createAgent("A");
+    const agentB = await createAgent("B");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+
+    const result = await handleMessageSend(
+      {
+        agent_api_key: agentA!.agent_api_key,
+        target_submission_id: subBId!,
+        message_text: "",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  test("rejects nonexistent target submission", async () => {
+    const agent = await createAgent();
+    const result = await handleMessageSend(
+      {
+        agent_api_key: agent!.agent_api_key,
+        target_submission_id: "nonexistent-id",
+        message_text: "Hello",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("NOT_FOUND");
+  });
+
+  test("rejects unauthorized", async () => {
+    const agent = await createAgent();
+    const subId = await createSubmission(agent!.agent_api_key);
+
+    const result = await handleMessageSend(
+      {
+        target_submission_id: subId!,
+        message_text: "Hello",
+      },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("UNAUTHORIZED");
+  });
+});
+
+describe("message/inbox", () => {
+  test("returns messages for owned submissions", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+
+    await handleMessageSend(
+      {
+        agent_api_key: agentA!.agent_api_key,
+        target_submission_id: subBId!,
+        message_text: "Hello!",
+      },
+      ctx,
+    );
+
+    const result = await handleMessageInbox(
+      { agent_api_key: agentB!.agent_api_key },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.total).toBe(1);
+    expect(result.data.messages[0].message_text).toBe("Hello!");
+  });
+
+  test("filters by submission_id", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const sub1 = await createSubmission(agentB!.agent_api_key, { intent_text: "Sub 1" });
+    const sub2 = await createSubmission(agentB!.agent_api_key, { intent_text: "Sub 2" });
+
+    await handleMessageSend(
+      { agent_api_key: agentA!.agent_api_key, target_submission_id: sub1!, message_text: "Msg to sub1" },
+      ctx,
+    );
+    await handleMessageSend(
+      { agent_api_key: agentA!.agent_api_key, target_submission_id: sub2!, message_text: "Msg to sub2" },
+      ctx,
+    );
+
+    const result = await handleMessageInbox(
+      { agent_api_key: agentB!.agent_api_key, submission_id: sub1! },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.total).toBe(1);
+    expect(result.data.messages[0].message_text).toBe("Msg to sub1");
+  });
+
+  test("includes sender public submission data", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+    const subAId = await createSubmission(agentA!.agent_api_key, {
+      public_data: { name: "Alice's Agency" },
+    });
+
+    await handleMessageSend(
+      {
+        agent_api_key: agentA!.agent_api_key,
+        target_submission_id: subBId!,
+        from_submission_id: subAId!,
+        message_text: "Hi there!",
+      },
+      ctx,
+    );
+
+    const result = await handleMessageInbox(
+      { agent_api_key: agentB!.agent_api_key },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.messages[0].sender_public_data).toEqual({ name: "Alice's Agency" });
+    expect(result.data.messages[0].sender_intent_text).toBeTruthy();
+  });
+
+  test("does not show messages for other agents' submissions", async () => {
+    const agentA = await createAgent("A");
+    const agentB = await createAgent("B");
+    const agentC = await createAgent("C");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+
+    await handleMessageSend(
+      { agent_api_key: agentA!.agent_api_key, target_submission_id: subBId!, message_text: "For B" },
+      ctx,
+    );
+
+    // C should see 0 messages
+    const result = await handleMessageInbox(
+      { agent_api_key: agentC!.agent_api_key },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.total).toBe(0);
+  });
+});
+
+describe("message/respond", () => {
+  test("responds to a message", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+
+    const sendResult = await handleMessageSend(
+      {
+        agent_api_key: agentA!.agent_api_key,
+        target_submission_id: subBId!,
+        message_text: "Interested?",
+      },
+      ctx,
+    );
+    expect(sendResult.ok).toBe(true);
+    if (!sendResult.ok) return;
+
+    const respondResult = await handleMessageRespond(
+      {
+        agent_api_key: agentB!.agent_api_key,
+        message_id: sendResult.data.message_id,
+        response_text: "Yes, let's talk!",
+      },
+      ctx,
+    );
+    expect(respondResult.ok).toBe(true);
+    if (!respondResult.ok) return;
+    expect(respondResult.data.status).toBe("responded");
+    expect(respondResult.data.responded_at).toBeTruthy();
+
+    // Verify in DB
+    const row = db.prepare("SELECT response_text, status FROM v4_messages WHERE id = ?").get(sendResult.data.message_id) as any;
+    expect(row.response_text).toBe("Yes, let's talk!");
+    expect(row.status).toBe("responded");
+  });
+
+  test("rejects double response", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+
+    const sendResult = await handleMessageSend(
+      { agent_api_key: agentA!.agent_api_key, target_submission_id: subBId!, message_text: "Hi" },
+      ctx,
+    );
+    if (!sendResult.ok) return;
+
+    await handleMessageRespond(
+      { agent_api_key: agentB!.agent_api_key, message_id: sendResult.data.message_id, response_text: "First reply" },
+      ctx,
+    );
+
+    const result = await handleMessageRespond(
+      { agent_api_key: agentB!.agent_api_key, message_id: sendResult.data.message_id, response_text: "Second reply" },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toContain("already been responded");
+  });
+
+  test("rejects response by sender (not receiver)", async () => {
+    const agentA = await createAgent("Sender");
+    const agentB = await createAgent("Receiver");
+    const subBId = await createSubmission(agentB!.agent_api_key);
+
+    const sendResult = await handleMessageSend(
+      { agent_api_key: agentA!.agent_api_key, target_submission_id: subBId!, message_text: "Hi" },
+      ctx,
+    );
+    if (!sendResult.ok) return;
+
+    // A tries to respond to their own outgoing message — should fail
+    const result = await handleMessageRespond(
+      { agent_api_key: agentA!.agent_api_key, message_id: sendResult.data.message_id, response_text: "Me replying" },
+      ctx,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("NOT_FOUND");
   });
 });
 
@@ -1248,543 +1758,5 @@ describe("tool/deprecate", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe("FORBIDDEN");
-  });
-
-  test("deprecating non-existent tool returns NOT_FOUND", async () => {
-    const agent = await createAgent();
-    const result = await handleToolDeprecate(
-      { agent_api_key: agent!.agent_api_key, tool_id: "nonexistent/tool" },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("NOT_FOUND");
-  });
-
-  test("deprecated tool is excluded from default listing", async () => {
-    const agent = await createAgent();
-    await handleToolPublish(
-      {
-        agent_api_key: agent!.agent_api_key,
-        id: "hiring/active-tool",
-        display_name: "Active Tool",
-        schema: { type: "object" },
-        schema_version: "1.0.0",
-      },
-      ctx,
-    );
-    await handleToolPublish(
-      {
-        agent_api_key: agent!.agent_api_key,
-        id: "hiring/deprecated-tool",
-        display_name: "Deprecated Tool",
-        schema: { type: "object" },
-        schema_version: "1.0.0",
-      },
-      ctx,
-    );
-    await handleToolDeprecate(
-      { agent_api_key: agent!.agent_api_key, tool_id: "hiring/deprecated-tool" },
-      ctx,
-    );
-
-    const result = await handleToolList({}, ctx);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.total).toBe(1);
-    expect(result.data.tools[0].id).toBe("hiring/active-tool");
-  });
-});
-
-// ─── Required-tools enforcement in matching ───────────────────────────
-
-describe("match (required-tools enforcement)", () => {
-  test("excludes candidates that don't satisfy required tools from A", async () => {
-    const agentA = await createAgent("Hirer");
-    const agentB = await createAgent("Dev");
-    const vec = makeEmbedding(42, 0.9);
-
-    // A requires "hiring/software-v1" to be filled by the candidate
-    const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      required_tools: ["hiring/software-v1"],
-    });
-
-    // B does NOT fill "hiring/software-v1"
-    await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
-      structured_data: { "other/tool": { value: 1 } }, // different tool
-    });
-
-    const result = await handleMatch(
-      { agent_api_key: agentA!.agent_api_key, submission_id: subAId! },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    // B should be excluded because it doesn't fill A's required tool
-    expect(result.data.candidates).toHaveLength(0);
-  });
-
-  test("includes candidates that satisfy all required tools", async () => {
-    const agentA = await createAgent("Hirer");
-    const agentB = await createAgent("Dev");
-    const vec = makeEmbedding(42, 0.9);
-
-    const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      required_tools: ["hiring/software-v1"],
-    });
-
-    // B fills the required tool
-    await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
-      structured_data: { "hiring/software-v1": { years_experience: 5 } },
-    });
-
-    const result = await handleMatch(
-      { agent_api_key: agentA!.agent_api_key, submission_id: subAId! },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    // B satisfies the required tool and the vectors match — should appear
-    expect(result.data.candidates.length).toBeGreaterThan(0);
-  });
-
-  test("bidirectional required-tools: B's requirements also enforced", async () => {
-    const agentA = await createAgent("A");
-    const agentB = await createAgent("B");
-    const vec = makeEmbedding(42, 0.9);
-
-    // A has no structured_data; B requires "compliance/kyc" to be filled by the other side
-    const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
-      structured_data: {}, // empty
-    });
-    await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
-      required_tools: ["compliance/kyc"], // B requires A to fill this
-      structured_data: { "compliance/kyc": { verified: true } },
-    });
-
-    const result = await handleMatch(
-      { agent_api_key: agentA!.agent_api_key, submission_id: subAId! },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    // A doesn't fill B's required "compliance/kyc" tool — should be excluded
-    expect(result.data.candidates).toHaveLength(0);
-  });
-});
-
-// ─── ttl_mode='until' validation ──────────────────────────────────────
-
-describe("submit (ttl_mode='until' validation)", () => {
-  test("rejects 'until' mode without until_datetime", async () => {
-    const agent = await createAgent();
-    const result = await handleSubmit(
-      {
-        agent_api_key: agent!.agent_api_key,
-        intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        ttl_mode: "until",
-        // until_datetime intentionally omitted
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-    expect(result.error.message).toContain("until_datetime");
-  });
-
-  test("rejects 'until' mode with invalid datetime string", async () => {
-    const agent = await createAgent();
-    const result = await handleSubmit(
-      {
-        agent_api_key: agent!.agent_api_key,
-        intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        ttl_mode: "until",
-        until_datetime: "not-a-date",
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-    expect(result.error.message).toContain("ISO 8601");
-  });
-
-  test("rejects 'until' mode with past datetime", async () => {
-    const agent = await createAgent();
-    const result = await handleSubmit(
-      {
-        agent_api_key: agent!.agent_api_key,
-        intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        ttl_mode: "until",
-        until_datetime: "2020-01-01T00:00:00Z", // clearly in the past
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-    expect(result.error.message).toContain("future");
-  });
-
-  test("accepts 'until' mode with valid future datetime", async () => {
-    const agent = await createAgent();
-    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const result = await handleSubmit(
-      {
-        agent_api_key: agent!.agent_api_key,
-        intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        ttl_mode: "until",
-        until_datetime: future,
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.expires_at).toBe(future);
-  });
-});
-
-// ─── Weight edge cases ────────────────────────────────────────────────
-
-describe("match (weight edge cases)", () => {
-  test("zero alpha/beta/gamma falls back to defaults", async () => {
-    const agentA = await createAgent("A");
-    const agentB = await createAgent("B");
-    const vec = makeEmbedding(42, 0.9);
-
-    const subAId = await createSubmission(agentA!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
-    });
-    await createSubmission(agentB!.agent_api_key, {
-      ask_embedding: vec,
-      offer_embedding: vec,
-    });
-
-    const result = await handleMatch(
-      {
-        agent_api_key: agentA!.agent_api_key,
-        submission_id: subAId!,
-        alpha: 0,
-        beta: 0,
-        gamma: 0,
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    // Weights should fall back to defaults (sum to 1.0, no NaN)
-    const w = result.data.weights;
-    expect(w.alpha + w.beta + w.gamma).toBeCloseTo(1.0, 5);
-    expect(isNaN(w.alpha)).toBe(false);
-    expect(isNaN(w.beta)).toBe(false);
-    expect(isNaN(w.gamma)).toBe(false);
-  });
-
-  test("negative weights are rejected", async () => {
-    const agent = await createAgent();
-    const subId = await createSubmission(agent!.agent_api_key);
-
-    const result = await handleMatch(
-      {
-        agent_api_key: agent!.agent_api_key,
-        submission_id: subId!,
-        alpha: -0.5,
-        beta: -0.3,
-        gamma: -0.2,
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.code).toBe("INVALID_INPUT");
-      expect(result.error.message).toContain(">= 0");
-    }
-  });
-});
-
-// ─── Pagination bounds ────────────────────────────────────────────────
-
-describe("pagination bounds", () => {
-  test("submissions list clamps negative limit to 1", async () => {
-    const agent = await createAgent();
-    await createSubmission(agent!.agent_api_key, { intent_text: "Sub 1" });
-    await createSubmission(agent!.agent_api_key, { intent_text: "Sub 2" });
-
-    const result = await handleSubmissionsList(
-      { agent_api_key: agent!.agent_api_key, limit: -5 },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    // Negative limit is clamped to 1 — should return at most 1 result
-    expect(result.data.submissions.length).toBeLessThanOrEqual(1);
-  });
-
-  test("submissions list clamps negative offset to 0", async () => {
-    const agent = await createAgent();
-    await createSubmission(agent!.agent_api_key, { intent_text: "Sub 1" });
-
-    const result = await handleSubmissionsList(
-      { agent_api_key: agent!.agent_api_key, offset: -10 },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.submissions).toHaveLength(1);
-  });
-
-  test("tool list clamps negative limit to 1", async () => {
-    const agent = await createAgent();
-    await handleToolPublish(
-      {
-        agent_api_key: agent!.agent_api_key,
-        id: "hiring/test-tool",
-        display_name: "Test Tool",
-        schema: { type: "object" },
-        schema_version: "1.0.0",
-      },
-      ctx,
-    );
-
-    const result = await handleToolList({ limit: -1 }, ctx);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.tools.length).toBeLessThanOrEqual(1);
-  });
-});
-
-// ─── Bearer header auth ───────────────────────────────────────────────
-
-describe("bearer header auth", () => {
-  test("submit accepts agent_api_key via Authorization header", async () => {
-    const agent = await createAgent();
-    const result = await handleSubmit(
-      {
-        intent_text: "Test via bearer header",
-        ask_embedding: makeEmbedding(1),
-      },
-      ctx,
-      `Bearer ${agent!.agent_api_key}`,
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.agent_id).toBe(agent!.agent_id);
-  });
-
-  test("match accepts agent_api_key via Authorization header", async () => {
-    const agent = await createAgent();
-    const subId = await createSubmission(agent!.agent_api_key);
-
-    const result = await handleMatch(
-      { submission_id: subId! },
-      ctx,
-      `Bearer ${agent!.agent_api_key}`,
-    );
-    expect(result.ok).toBe(true);
-  });
-
-  test("rejects invalid bearer token", async () => {
-    const result = await handleSubmit(
-      {
-        intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-      },
-      ctx,
-      "Bearer invalid_key_here",
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("UNAUTHORIZED");
-  });
-});
-
-// ─── Payload size limits ──────────────────────────────────────────────
-
-describe("payload size limits", () => {
-  test("rejects intent_text over 10KB", async () => {
-    const agent = await createAgent();
-    const bigText = "x".repeat(11 * 1024); // 11 KB
-    const result = await handleSubmit(
-      {
-        agent_api_key: agent!.agent_api_key,
-        intent_text: bigText,
-        ask_embedding: makeEmbedding(1),
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-    expect(result.error.message).toContain("10KB");
-  });
-
-  test("rejects tags array over 20 items", async () => {
-    const agent = await createAgent();
-    const manyTags = Array.from({ length: 21 }, (_, i) => `tag${i}`);
-    const result = await handleSubmit(
-      {
-        agent_api_key: agent!.agent_api_key,
-        intent_text: "Test",
-        ask_embedding: makeEmbedding(1),
-        tags: manyTags,
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-    expect(result.error.message).toContain("20");
-  });
-
-  test("rejects tool schema over 50KB", async () => {
-    const agent = await createAgent();
-    const bigSchema: Record<string, any> = { type: "object", properties: {} };
-    for (let i = 0; i < 2000; i++) {
-      bigSchema.properties[`field_${i}`] = { type: "string", description: "x".repeat(30) };
-    }
-    const result = await handleToolPublish(
-      {
-        agent_api_key: agent!.agent_api_key,
-        id: "hiring/big-schema",
-        display_name: "Big Schema Tool",
-        schema: bigSchema,
-        schema_version: "1.0.0",
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-  });
-});
-
-// ─── intent_text validation on update ────────────────────────────────
-
-describe("submission/update (intent_text validation)", () => {
-  test("rejects empty string intent_text on update", async () => {
-    const agent = await createAgent();
-    const subId = await createSubmission(agent!.agent_api_key);
-
-    const result = await handleSubmissionUpdate(
-      {
-        agent_api_key: agent!.agent_api_key,
-        submission_id: subId!,
-        intent_text: "   ", // whitespace-only
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("INVALID_INPUT");
-    expect(result.error.message).toContain("non-empty");
-  });
-
-  test("accepts valid non-empty intent_text on update", async () => {
-    const agent = await createAgent();
-    const subId = await createSubmission(agent!.agent_api_key);
-
-    const result = await handleSubmissionUpdate(
-      {
-        agent_api_key: agent!.agent_api_key,
-        submission_id: subId!,
-        intent_text: "Updated properly",
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(true);
-  });
-});
-
-// ─── Error code correctness ───────────────────────────────────────────
-
-describe("error codes", () => {
-  test("submission update returns NOT_FOUND for nonexistent submission", async () => {
-    const agent = await createAgent();
-    const result = await handleSubmissionUpdate(
-      {
-        agent_api_key: agent!.agent_api_key,
-        submission_id: "nonexistent-uuid",
-        intent_text: "Test",
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("NOT_FOUND");
-  });
-
-  test("submission withdraw returns NOT_FOUND for nonexistent submission", async () => {
-    const agent = await createAgent();
-    const result = await handleSubmissionWithdraw(
-      { agent_api_key: agent!.agent_api_key, submission_id: "nonexistent-uuid" },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("NOT_FOUND");
-  });
-
-  test("match returns NOT_FOUND for nonexistent submission", async () => {
-    const agent = await createAgent();
-    const result = await handleMatch(
-      { agent_api_key: agent!.agent_api_key, submission_id: "nonexistent-uuid" },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("NOT_FOUND");
-  });
-
-  test("tool publish returns FORBIDDEN when different agent tries to update", async () => {
-    const agentA = await createAgent("A");
-    const agentB = await createAgent("B");
-
-    await handleToolPublish(
-      {
-        agent_api_key: agentA!.agent_api_key,
-        id: "hiring/guarded-tool",
-        display_name: "Guarded",
-        schema: { type: "object" },
-        schema_version: "1.0.0",
-      },
-      ctx,
-    );
-
-    const result = await handleToolPublish(
-      {
-        agent_api_key: agentB!.agent_api_key,
-        id: "hiring/guarded-tool",
-        display_name: "Hijacked",
-        schema: { type: "object" },
-        schema_version: "1.0.0",
-      },
-      ctx,
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("FORBIDDEN");
-  });
-
-  test("tool get returns NOT_FOUND for nonexistent tool", async () => {
-    const result = await handleToolGet({ tool_id: "nonexistent/tool" }, ctx);
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe("NOT_FOUND");
   });
 });

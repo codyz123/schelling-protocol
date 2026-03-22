@@ -5,19 +5,21 @@ import type { HandlerContext, HandlerResult } from "../types.js";
 
 const EMBEDDING_DIM = 512;
 const EMBEDDING_MIN_NORM = 0.5;
-const VALID_TTL_MODES = ["fixed", "until", "recurring", "indefinite"] as const;
 const VALID_STATUSES = ["active", "paused", "fulfilled", "expired", "withdrawn"] as const;
-const MAX_INTENT_TEXT_BYTES = 10 * 1024;       // 10 KB
-const MAX_STRUCTURED_DATA_BYTES = 50 * 1024;  // 50 KB
+const MAX_INTENT_TEXT_CHARS = 1000;          // chars (keep short for indexing)
+const MAX_CRITERIA_TEXT_BYTES = 10 * 1024;  // 10 KB
+const MAX_IDENTITY_TEXT_BYTES = 10 * 1024;  // 10 KB
+const MAX_STRUCTURED_DATA_BYTES = 50 * 1024; // 50 KB
+const MAX_PUBLIC_DATA_BYTES = 50 * 1024;    // 50 KB
+const MAX_PRIVATE_DATA_BYTES = 50 * 1024;   // 50 KB
+const MAX_METADATA_BYTES = 10 * 1024;       // 10 KB
 const MAX_TAGS = 20;
 const MAX_SUBMISSIONS_PER_DAY = 10;
 const MAX_REQUIRED_TOOLS = 20;
 const MAX_PREFERRED_TOOLS = 20;
-const MAX_MATCH_CONFIG_BYTES = 10 * 1024;  // 10 KB
-const MAX_INTENT_SUMMARY_BYTES = 1024;     // 1 KB
-const MAX_AGENT_CREATES_PER_DAY = 100;     // Global daily cap (all agents combined)
-const MAX_TOOL_ITEM_LENGTH = 100;          // Max chars per item in required_tools/preferred_tools
-const MAX_TAG_LENGTH = 100;                // Max chars per tag
+const MAX_AGENT_CREATES_PER_DAY = 100;
+const MAX_TOOL_ITEM_LENGTH = 100;
+const MAX_TAG_LENGTH = 100;
 
 // ─── Embedding Validation ─────────────────────────────────────────────
 
@@ -94,34 +96,6 @@ function validateStringArray(arr: unknown[], name: string, maxItemLen: number): 
   return null;
 }
 
-// ─── Expiry helpers ───────────────────────────────────────────────────
-
-function computeExpiresAt(
-  ttlMode: string,
-  ttlHours: number,
-  untilDatetime?: string,
-): { expiresAt: string; error?: string } {
-  if (ttlMode === "indefinite" || ttlMode === "recurring") {
-    return { expiresAt: "9999-12-31T23:59:59Z" };
-  }
-  if (ttlMode === "until") {
-    if (!untilDatetime) {
-      return { expiresAt: "", error: "until_datetime is required when ttl_mode is 'until'." };
-    }
-    const parsed = new Date(untilDatetime);
-    if (isNaN(parsed.getTime())) {
-      return { expiresAt: "", error: "until_datetime must be a valid ISO 8601 datetime string." };
-    }
-    if (parsed <= new Date()) {
-      return { expiresAt: "", error: "until_datetime must be in the future." };
-    }
-    return { expiresAt: parsed.toISOString() };
-  }
-  // fixed: now + ttl_hours
-  const ms = Date.now() + ttlHours * 60 * 60 * 1000;
-  return { expiresAt: new Date(ms).toISOString() };
-}
-
 // ─── Agent Create ─────────────────────────────────────────────────────
 
 export interface AgentCreateInput {
@@ -196,29 +170,23 @@ export async function handleAgentCreate(
 
 // ─── Submit ───────────────────────────────────────────────────────────
 
-const VALID_SEARCH_MODES = ["active", "passive", "hybrid"] as const;
-const VALID_SEARCH_SOURCES = ["user_directed", "agent_inferred"] as const;
-
 export interface SubmitInput {
   agent_api_key?: string;
   intent_text: string;
-  intent_summary?: string;
-  ask_embedding: number[];
-  offer_embedding?: number[];
+  intent_embedding: number[];
+  identity_embedding?: number[];
+  criteria_text?: string;
+  criteria_data?: Record<string, unknown>;
+  identity_text?: string;
+  identity_data?: Record<string, unknown>;
+  public_data?: Record<string, unknown>;
+  private_data?: Record<string, unknown>;
   structured_data?: Record<string, unknown>;
   required_tools?: string[];
   preferred_tools?: string[];
-  match_config?: Record<string, unknown>;
-  ttl_mode?: string;
-  ttl_hours?: number;
-  until_datetime?: string;
   tags?: string[];
-  // Search behavior
-  search_mode?: string;
-  search_source?: string;
-  hybrid_active_hours?: number;
-  alert_webhook?: string;
-  alert_threshold?: number;
+  metadata?: Record<string, unknown>;
+  expires_at: string;
 }
 
 export interface SubmissionOutput {
@@ -244,56 +212,71 @@ export async function handleSubmit(
   if (!params.intent_text || typeof params.intent_text !== "string" || params.intent_text.trim().length === 0) {
     return { ok: false, error: { code: "INVALID_INPUT", message: "intent_text is required and must be non-empty." } };
   }
-  if (Buffer.byteLength(params.intent_text, "utf8") > MAX_INTENT_TEXT_BYTES) {
-    return { ok: false, error: { code: "INVALID_INPUT", message: `intent_text must be under ${MAX_INTENT_TEXT_BYTES / 1024}KB.` } };
+  if (params.intent_text.length > MAX_INTENT_TEXT_CHARS) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: `intent_text must be ${MAX_INTENT_TEXT_CHARS} characters or fewer.` } };
   }
 
-  // Validate intent_summary size
-  if (params.intent_summary !== undefined && typeof params.intent_summary === "string") {
-    if (Buffer.byteLength(params.intent_summary, "utf8") > MAX_INTENT_SUMMARY_BYTES) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: `intent_summary must be under ${MAX_INTENT_SUMMARY_BYTES / 1024}KB.` } };
+  // Validate intent_embedding (required)
+  const intentErr = validateEmbedding(params.intent_embedding, "intent_embedding");
+  if (intentErr) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: intentErr } };
+  }
+
+  // Validate identity_embedding (optional)
+  if (params.identity_embedding !== undefined && params.identity_embedding !== null) {
+    const identityErr = validateEmbedding(params.identity_embedding, "identity_embedding");
+    if (identityErr) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: identityErr } };
     }
   }
 
-  // Validate ask_embedding
-  const askErr = validateEmbedding(params.ask_embedding, "ask_embedding");
-  if (askErr) {
-    return { ok: false, error: { code: "INVALID_INPUT", message: askErr } };
+  // Validate expires_at (required, must be future ISO datetime)
+  if (!params.expires_at || typeof params.expires_at !== "string") {
+    return { ok: false, error: { code: "INVALID_INPUT", message: "expires_at is required and must be a valid ISO 8601 datetime string." } };
   }
+  const expiresAtDate = new Date(params.expires_at);
+  if (isNaN(expiresAtDate.getTime())) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: "expires_at must be a valid ISO 8601 datetime string." } };
+  }
+  if (expiresAtDate <= new Date()) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: "expires_at must be in the future." } };
+  }
+  const expiresAt = expiresAtDate.toISOString();
 
-  // Validate offer_embedding (optional)
-  if (params.offer_embedding !== undefined && params.offer_embedding !== null) {
-    const offerErr = validateEmbedding(params.offer_embedding, "offer_embedding");
-    if (offerErr) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: offerErr } };
+  // Validate criteria_text
+  if (params.criteria_text !== undefined && params.criteria_text !== null) {
+    if (typeof params.criteria_text !== "string") {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "criteria_text must be a string." } };
+    }
+    if (Buffer.byteLength(params.criteria_text, "utf8") > MAX_CRITERIA_TEXT_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `criteria_text must be under ${MAX_CRITERIA_TEXT_BYTES / 1024}KB.` } };
     }
   }
 
-  // Validate ttl_mode
-  const ttlMode = params.ttl_mode ?? "fixed";
-  if (!VALID_TTL_MODES.includes(ttlMode as any)) {
-    return {
-      ok: false,
-      error: {
-        code: "INVALID_INPUT",
-        message: `ttl_mode must be one of: ${VALID_TTL_MODES.join(", ")}`,
-      },
-    };
+  // Validate identity_text
+  if (params.identity_text !== undefined && params.identity_text !== null) {
+    if (typeof params.identity_text !== "string") {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "identity_text must be a string." } };
+    }
+    if (Buffer.byteLength(params.identity_text, "utf8") > MAX_IDENTITY_TEXT_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `identity_text must be under ${MAX_IDENTITY_TEXT_BYTES / 1024}KB.` } };
+    }
   }
 
-  // Validate ttl_hours
-  const ttlHours = params.ttl_hours ?? 720;
-  if (!Number.isInteger(ttlHours) || ttlHours < 1 || ttlHours > 8760) {
-    return {
-      ok: false,
-      error: { code: "INVALID_INPUT", message: "ttl_hours must be an integer between 1 and 8760." },
-    };
+  // Validate public_data size
+  if (params.public_data !== undefined) {
+    const pdStr = JSON.stringify(params.public_data);
+    if (Buffer.byteLength(pdStr, "utf8") > MAX_PUBLIC_DATA_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `public_data must be under ${MAX_PUBLIC_DATA_BYTES / 1024}KB.` } };
+    }
   }
 
-  // Validate until_datetime for ttl_mode='until'
-  const expiryResult = computeExpiresAt(ttlMode, ttlHours, params.until_datetime);
-  if (expiryResult.error) {
-    return { ok: false, error: { code: "INVALID_INPUT", message: expiryResult.error } };
+  // Validate private_data size
+  if (params.private_data !== undefined) {
+    const pdStr = JSON.stringify(params.private_data);
+    if (Buffer.byteLength(pdStr, "utf8") > MAX_PRIVATE_DATA_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `private_data must be under ${MAX_PRIVATE_DATA_BYTES / 1024}KB.` } };
+    }
   }
 
   // Validate required_tools / preferred_tools
@@ -318,14 +301,6 @@ export async function handleSubmit(
     if (itemErr) return { ok: false, error: { code: "INVALID_INPUT", message: itemErr } };
   }
 
-  // Validate match_config size
-  if (params.match_config !== undefined) {
-    const mcStr = JSON.stringify(params.match_config);
-    if (Buffer.byteLength(mcStr, "utf8") > MAX_MATCH_CONFIG_BYTES) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: `match_config must be under ${MAX_MATCH_CONFIG_BYTES / 1024}KB.` } };
-    }
-  }
-
   // Validate tags
   if (params.tags !== undefined) {
     if (!Array.isArray(params.tags)) {
@@ -346,40 +321,11 @@ export async function handleSubmit(
     }
   }
 
-  // Validate search_mode
-  if (params.search_mode !== undefined && !VALID_SEARCH_MODES.includes(params.search_mode as any)) {
-    return {
-      ok: false,
-      error: { code: "INVALID_INPUT", message: `search_mode must be one of: ${VALID_SEARCH_MODES.join(", ")}` },
-    };
-  }
-
-  // Validate search_source
-  if (params.search_source !== undefined && !VALID_SEARCH_SOURCES.includes(params.search_source as any)) {
-    return {
-      ok: false,
-      error: { code: "INVALID_INPUT", message: `search_source must be one of: ${VALID_SEARCH_SOURCES.join(", ")}` },
-    };
-  }
-
-  // Validate hybrid_active_hours
-  if (params.hybrid_active_hours !== undefined) {
-    if (!Number.isInteger(params.hybrid_active_hours) || params.hybrid_active_hours < 1 || params.hybrid_active_hours > 8760) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: "hybrid_active_hours must be an integer between 1 and 8760." } };
-    }
-  }
-
-  // Validate alert_threshold
-  if (params.alert_threshold !== undefined) {
-    if (typeof params.alert_threshold !== "number" || params.alert_threshold < 0 || params.alert_threshold > 1) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: "alert_threshold must be a number between 0 and 1." } };
-    }
-  }
-
-  // Validate alert_webhook
-  if (params.alert_webhook !== undefined && params.alert_webhook !== null) {
-    if (typeof params.alert_webhook !== "string" || params.alert_webhook.length > 2048) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: "alert_webhook must be a string of 2048 characters or less." } };
+  // Validate metadata size
+  if (params.metadata !== undefined) {
+    const mStr = JSON.stringify(params.metadata);
+    if (Buffer.byteLength(mStr, "utf8") > MAX_METADATA_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `metadata must be under ${MAX_METADATA_BYTES / 1024}KB.` } };
     }
   }
 
@@ -396,42 +342,39 @@ export async function handleSubmit(
 
   const submissionId = randomUUID();
   const now = new Date().toISOString();
-  const expiresAt = expiryResult.expiresAt;
 
   try {
     ctx.db
       .prepare(
         `INSERT INTO submissions (
-          id, agent_id, intent_text, intent_summary,
-          ask_embedding, offer_embedding,
+          id, agent_id, intent_text, intent_embedding,
+          identity_embedding, criteria_text, criteria_data,
+          identity_text, identity_data, public_data, private_data,
           structured_data, required_tools, preferred_tools,
-          match_config, status, ttl_mode, ttl_hours,
-          created_at, updated_at, expires_at, tags,
-          search_mode, search_source, hybrid_active_hours, alert_webhook, alert_threshold
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          tags, metadata, status,
+          created_at, updated_at, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
       )
       .run(
         submissionId,
         agent.id,
         params.intent_text.trim(),
-        params.intent_summary ?? null,
-        JSON.stringify(params.ask_embedding),
-        params.offer_embedding ? JSON.stringify(params.offer_embedding) : null,
+        JSON.stringify(params.intent_embedding),
+        params.identity_embedding ? JSON.stringify(params.identity_embedding) : null,
+        params.criteria_text ?? null,
+        params.criteria_data ? JSON.stringify(params.criteria_data) : null,
+        params.identity_text ?? null,
+        params.identity_data ? JSON.stringify(params.identity_data) : null,
+        params.public_data ? JSON.stringify(params.public_data) : null,
+        params.private_data ? JSON.stringify(params.private_data) : null,
         params.structured_data ? JSON.stringify(params.structured_data) : null,
         params.required_tools ? JSON.stringify(params.required_tools) : null,
         params.preferred_tools ? JSON.stringify(params.preferred_tools) : null,
-        params.match_config ? JSON.stringify(params.match_config) : null,
-        ttlMode,
-        ttlHours,
+        params.tags ? JSON.stringify(params.tags) : null,
+        params.metadata ? JSON.stringify(params.metadata) : null,
         now,
         now,
         expiresAt,
-        params.tags ? JSON.stringify(params.tags) : null,
-        params.search_mode ?? "active",
-        params.search_source ?? "user_directed",
-        params.hybrid_active_hours ?? 168,
-        params.alert_webhook ?? null,
-        params.alert_threshold ?? 0.5,
       );
 
     // Update last_active_at
@@ -442,17 +385,6 @@ export async function handleSubmit(
       error: { code: "INTERNAL_ERROR", message: err instanceof Error ? err.message : String(err) },
     };
   }
-
-  // Trigger passive background matching for any existing active submissions
-  const alertThreshold = (params as any).alert_threshold ?? 0.5;
-  triggerPassiveAlerts(
-    ctx,
-    submissionId,
-    agent.id,
-    params.ask_embedding,
-    params.offer_embedding ?? null,
-    alertThreshold,
-  );
 
   const result: HandlerResult<SubmissionOutput> = {
     ok: true,
@@ -476,20 +408,21 @@ export interface SubmissionUpdateInput {
   agent_api_key?: string;
   submission_id: string;
   intent_text?: string;
-  intent_summary?: string;
-  ask_embedding?: number[];
-  offer_embedding?: number[];
+  intent_embedding?: number[];
+  identity_embedding?: number[];
+  criteria_text?: string;
+  criteria_data?: Record<string, unknown>;
+  identity_text?: string;
+  identity_data?: Record<string, unknown>;
+  public_data?: Record<string, unknown>;
+  private_data?: Record<string, unknown>;
   structured_data?: Record<string, unknown>;
   required_tools?: string[];
   preferred_tools?: string[];
-  match_config?: Record<string, unknown>;
   tags?: string[];
+  metadata?: Record<string, unknown>;
   status?: string;
-  search_mode?: string;
-  search_source?: string;
-  hybrid_active_hours?: number;
-  alert_webhook?: string;
-  alert_threshold?: number;
+  expires_at?: string;
 }
 
 export async function handleSubmissionUpdate(
@@ -522,23 +455,23 @@ export async function handleSubmissionUpdate(
     return { ok: false, error: { code: "INVALID_INPUT", message: "Cannot update a withdrawn submission." } };
   }
 
-  // Validate intent_text if provided — must be non-empty
+  // Validate intent_text if provided
   if (params.intent_text !== undefined) {
     if (typeof params.intent_text !== "string" || params.intent_text.trim().length === 0) {
       return { ok: false, error: { code: "INVALID_INPUT", message: "intent_text must be non-empty." } };
     }
-    if (Buffer.byteLength(params.intent_text, "utf8") > MAX_INTENT_TEXT_BYTES) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: `intent_text must be under ${MAX_INTENT_TEXT_BYTES / 1024}KB.` } };
+    if (params.intent_text.length > MAX_INTENT_TEXT_CHARS) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `intent_text must be ${MAX_INTENT_TEXT_CHARS} characters or fewer.` } };
     }
   }
 
   // Validate new embeddings if provided
-  if (params.ask_embedding !== undefined) {
-    const err = validateEmbedding(params.ask_embedding, "ask_embedding");
+  if (params.intent_embedding !== undefined) {
+    const err = validateEmbedding(params.intent_embedding, "intent_embedding");
     if (err) return { ok: false, error: { code: "INVALID_INPUT", message: err } };
   }
-  if (params.offer_embedding !== undefined && params.offer_embedding !== null) {
-    const err = validateEmbedding(params.offer_embedding, "offer_embedding");
+  if (params.identity_embedding !== undefined && params.identity_embedding !== null) {
+    const err = validateEmbedding(params.identity_embedding, "identity_embedding");
     if (err) return { ok: false, error: { code: "INVALID_INPUT", message: err } };
   }
 
@@ -553,10 +486,32 @@ export async function handleSubmissionUpdate(
     };
   }
 
-  // Validate intent_summary size
-  if (params.intent_summary !== undefined && typeof params.intent_summary === "string") {
-    if (Buffer.byteLength(params.intent_summary, "utf8") > MAX_INTENT_SUMMARY_BYTES) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: `intent_summary must be under ${MAX_INTENT_SUMMARY_BYTES / 1024}KB.` } };
+  // Validate expires_at if provided
+  if (params.expires_at !== undefined) {
+    const expiresAtDate = new Date(params.expires_at);
+    if (isNaN(expiresAtDate.getTime())) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "expires_at must be a valid ISO 8601 datetime string." } };
+    }
+    if (expiresAtDate <= new Date()) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "expires_at must be in the future." } };
+    }
+  }
+
+  // Validate text fields
+  if (params.criteria_text !== undefined && params.criteria_text !== null) {
+    if (typeof params.criteria_text !== "string") {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "criteria_text must be a string." } };
+    }
+    if (Buffer.byteLength(params.criteria_text, "utf8") > MAX_CRITERIA_TEXT_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `criteria_text must be under ${MAX_CRITERIA_TEXT_BYTES / 1024}KB.` } };
+    }
+  }
+  if (params.identity_text !== undefined && params.identity_text !== null) {
+    if (typeof params.identity_text !== "string") {
+      return { ok: false, error: { code: "INVALID_INPUT", message: "identity_text must be a string." } };
+    }
+    if (Buffer.byteLength(params.identity_text, "utf8") > MAX_IDENTITY_TEXT_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `identity_text must be under ${MAX_IDENTITY_TEXT_BYTES / 1024}KB.` } };
     }
   }
 
@@ -568,7 +523,21 @@ export async function handleSubmissionUpdate(
     }
   }
 
-  // Validate required_tools / preferred_tools size + items
+  // Validate public_data / private_data size
+  if (params.public_data !== undefined) {
+    const pdStr = JSON.stringify(params.public_data);
+    if (Buffer.byteLength(pdStr, "utf8") > MAX_PUBLIC_DATA_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `public_data must be under ${MAX_PUBLIC_DATA_BYTES / 1024}KB.` } };
+    }
+  }
+  if (params.private_data !== undefined) {
+    const pdStr = JSON.stringify(params.private_data);
+    if (Buffer.byteLength(pdStr, "utf8") > MAX_PRIVATE_DATA_BYTES) {
+      return { ok: false, error: { code: "INVALID_INPUT", message: `private_data must be under ${MAX_PRIVATE_DATA_BYTES / 1024}KB.` } };
+    }
+  }
+
+  // Validate required_tools / preferred_tools
   if (params.required_tools !== undefined) {
     if (!Array.isArray(params.required_tools) || params.required_tools.length > MAX_REQUIRED_TOOLS) {
       return { ok: false, error: { code: "INVALID_INPUT", message: `required_tools must be an array with at most ${MAX_REQUIRED_TOOLS} items.` } };
@@ -584,14 +553,6 @@ export async function handleSubmissionUpdate(
     if (itemErr) return { ok: false, error: { code: "INVALID_INPUT", message: itemErr } };
   }
 
-  // Validate match_config size
-  if (params.match_config !== undefined) {
-    const mcStr = JSON.stringify(params.match_config);
-    if (Buffer.byteLength(mcStr, "utf8") > MAX_MATCH_CONFIG_BYTES) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: `match_config must be under ${MAX_MATCH_CONFIG_BYTES / 1024}KB.` } };
-    }
-  }
-
   // Validate tags
   if (params.tags !== undefined) {
     if (!Array.isArray(params.tags) || params.tags.length > MAX_TAGS) {
@@ -601,24 +562,6 @@ export async function handleSubmissionUpdate(
     if (itemErr) return { ok: false, error: { code: "INVALID_INPUT", message: itemErr } };
   }
 
-  // Validate new search behavior fields
-  if (params.search_mode !== undefined && !VALID_SEARCH_MODES.includes(params.search_mode as any)) {
-    return { ok: false, error: { code: "INVALID_INPUT", message: `search_mode must be one of: ${VALID_SEARCH_MODES.join(", ")}` } };
-  }
-  if (params.search_source !== undefined && !VALID_SEARCH_SOURCES.includes(params.search_source as any)) {
-    return { ok: false, error: { code: "INVALID_INPUT", message: `search_source must be one of: ${VALID_SEARCH_SOURCES.join(", ")}` } };
-  }
-  if (params.hybrid_active_hours !== undefined) {
-    if (!Number.isInteger(params.hybrid_active_hours) || params.hybrid_active_hours < 1 || params.hybrid_active_hours > 8760) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: "hybrid_active_hours must be an integer between 1 and 8760." } };
-    }
-  }
-  if (params.alert_threshold !== undefined) {
-    if (typeof params.alert_threshold !== "number" || params.alert_threshold < 0 || params.alert_threshold > 1) {
-      return { ok: false, error: { code: "INVALID_INPUT", message: "alert_threshold must be a number between 0 and 1." } };
-    }
-  }
-
   const now = new Date().toISOString();
 
   // Build update
@@ -626,20 +569,21 @@ export async function handleSubmissionUpdate(
   const values: unknown[] = [now];
 
   if (params.intent_text !== undefined) { updates.push("intent_text = ?"); values.push(params.intent_text.trim()); }
-  if (params.intent_summary !== undefined) { updates.push("intent_summary = ?"); values.push(params.intent_summary); }
-  if (params.ask_embedding !== undefined) { updates.push("ask_embedding = ?"); values.push(JSON.stringify(params.ask_embedding)); }
-  if (params.offer_embedding !== undefined) { updates.push("offer_embedding = ?"); values.push(params.offer_embedding ? JSON.stringify(params.offer_embedding) : null); }
+  if (params.intent_embedding !== undefined) { updates.push("intent_embedding = ?"); values.push(JSON.stringify(params.intent_embedding)); }
+  if (params.identity_embedding !== undefined) { updates.push("identity_embedding = ?"); values.push(params.identity_embedding ? JSON.stringify(params.identity_embedding) : null); }
+  if (params.criteria_text !== undefined) { updates.push("criteria_text = ?"); values.push(params.criteria_text ?? null); }
+  if (params.criteria_data !== undefined) { updates.push("criteria_data = ?"); values.push(params.criteria_data ? JSON.stringify(params.criteria_data) : null); }
+  if (params.identity_text !== undefined) { updates.push("identity_text = ?"); values.push(params.identity_text ?? null); }
+  if (params.identity_data !== undefined) { updates.push("identity_data = ?"); values.push(params.identity_data ? JSON.stringify(params.identity_data) : null); }
+  if (params.public_data !== undefined) { updates.push("public_data = ?"); values.push(params.public_data ? JSON.stringify(params.public_data) : null); }
+  if (params.private_data !== undefined) { updates.push("private_data = ?"); values.push(params.private_data ? JSON.stringify(params.private_data) : null); }
   if (params.structured_data !== undefined) { updates.push("structured_data = ?"); values.push(JSON.stringify(params.structured_data)); }
   if (params.required_tools !== undefined) { updates.push("required_tools = ?"); values.push(JSON.stringify(params.required_tools)); }
   if (params.preferred_tools !== undefined) { updates.push("preferred_tools = ?"); values.push(JSON.stringify(params.preferred_tools)); }
-  if (params.match_config !== undefined) { updates.push("match_config = ?"); values.push(JSON.stringify(params.match_config)); }
   if (params.tags !== undefined) { updates.push("tags = ?"); values.push(JSON.stringify(params.tags)); }
+  if (params.metadata !== undefined) { updates.push("metadata = ?"); values.push(params.metadata ? JSON.stringify(params.metadata) : null); }
   if (params.status !== undefined) { updates.push("status = ?"); values.push(params.status); }
-  if (params.search_mode !== undefined) { updates.push("search_mode = ?"); values.push(params.search_mode); }
-  if (params.search_source !== undefined) { updates.push("search_source = ?"); values.push(params.search_source); }
-  if (params.hybrid_active_hours !== undefined) { updates.push("hybrid_active_hours = ?"); values.push(params.hybrid_active_hours); }
-  if (params.alert_webhook !== undefined) { updates.push("alert_webhook = ?"); values.push(params.alert_webhook ?? null); }
-  if (params.alert_threshold !== undefined) { updates.push("alert_threshold = ?"); values.push(params.alert_threshold); }
+  if (params.expires_at !== undefined) { updates.push("expires_at = ?"); values.push(new Date(params.expires_at).toISOString()); }
 
   values.push(params.submission_id, agent.id);
 
@@ -724,18 +668,16 @@ export interface SubmissionRecord {
   submission_id: string;
   agent_id: string;
   intent_text: string;
-  intent_summary: string | null;
   status: string;
-  ttl_mode: string;
-  ttl_hours: number;
   expires_at: string;
   created_at: string;
   updated_at: string | null;
   tags: string[] | null;
   required_tools: string[] | null;
   preferred_tools: string[] | null;
-  has_offer_embedding: boolean;
+  has_identity_embedding: boolean;
   has_structured_data: boolean;
+  has_public_data: boolean;
 }
 
 export async function handleSubmissionsList(
@@ -753,9 +695,11 @@ export async function handleSubmissionsList(
   const offset = Math.max(params.offset ?? 0, 0);
   const statusFilter = params.status ?? null;
 
-  let query = `SELECT id, agent_id, intent_text, intent_summary, status, ttl_mode, ttl_hours,
+  let query = `SELECT id, agent_id, intent_text, status,
     expires_at, created_at, updated_at, tags, required_tools, preferred_tools,
-    (offer_embedding IS NOT NULL) as has_offer, (structured_data IS NOT NULL) as has_sd
+    (identity_embedding IS NOT NULL) as has_identity,
+    (structured_data IS NOT NULL) as has_sd,
+    (public_data IS NOT NULL) as has_pub
     FROM submissions WHERE agent_id = ?`;
   const qParams: unknown[] = [agent.id];
 
@@ -777,21 +721,129 @@ export async function handleSubmissionsList(
     submission_id: row.id,
     agent_id: row.agent_id,
     intent_text: row.intent_text,
-    intent_summary: row.intent_summary,
     status: row.status,
-    ttl_mode: row.ttl_mode,
-    ttl_hours: row.ttl_hours,
     expires_at: row.expires_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
     tags: row.tags ? safeJsonParse(row.tags, null) : null,
     required_tools: row.required_tools ? safeJsonParse(row.required_tools, null) : null,
     preferred_tools: row.preferred_tools ? safeJsonParse(row.preferred_tools, null) : null,
-    has_offer_embedding: !!row.has_offer,
+    has_identity_embedding: !!row.has_identity,
     has_structured_data: !!row.has_sd,
+    has_public_data: !!row.has_pub,
   }));
 
   return { ok: true, data: { submissions, total } };
+}
+
+// ─── Public Index ──────────────────────────────────────────────────────
+// No auth required. Returns only public-safe fields.
+
+export interface IndexInput {
+  limit?: number;
+  offset?: number;
+  tags_filter?: string[];
+}
+
+export interface PublicSubmission {
+  id: string;
+  agent_id: string;
+  intent_text: string;
+  intent_embedding: number[];
+  public_data: Record<string, unknown> | null;
+  tags: string[] | null;
+  status: string;
+  created_at: string;
+  expires_at: string;
+}
+
+export async function handleIndex(
+  params: IndexInput,
+  ctx: HandlerContext,
+): Promise<HandlerResult<{ submissions: PublicSubmission[]; total: number }>> {
+  const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+  const offset = Math.max(params.offset ?? 0, 0);
+
+  const now = new Date().toISOString();
+
+  let query = `SELECT id, agent_id, intent_text, intent_embedding, public_data, tags, status, created_at, expires_at
+    FROM submissions
+    WHERE status = 'active' AND expires_at > ?`;
+  const qParams: unknown[] = [now];
+
+  const countQuery = `SELECT COUNT(*) as c FROM submissions WHERE status = 'active' AND expires_at > ?`;
+  const countParams: unknown[] = [now];
+
+  // Optional tag filter
+  if (params.tags_filter && Array.isArray(params.tags_filter) && params.tags_filter.length > 0) {
+    // Filter by any matching tag using JSON contains
+    const tagConditions = params.tags_filter.map(() => "tags LIKE ?").join(" OR ");
+    query += ` AND (${tagConditions})`;
+    for (const tag of params.tags_filter) {
+      qParams.push(`%${tag.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+      countParams.push(`%${tag.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+    }
+  }
+
+  const total = (ctx.db.prepare(countQuery).get(...countParams) as { c: number })?.c ?? 0;
+
+  query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+  qParams.push(limit, offset);
+
+  const rows = ctx.db.prepare(query).all(...qParams) as Record<string, any>[];
+
+  const submissions: PublicSubmission[] = rows.map((row) => ({
+    id: row.id,
+    agent_id: row.agent_id,
+    intent_text: row.intent_text,
+    intent_embedding: safeJsonParse(row.intent_embedding, []),
+    public_data: row.public_data ? safeJsonParse(row.public_data, null) : null,
+    tags: row.tags ? safeJsonParse(row.tags, null) : null,
+    status: row.status,
+    created_at: row.created_at,
+    expires_at: row.expires_at,
+  }));
+
+  return { ok: true, data: { submissions, total } };
+}
+
+export interface IndexGetInput {
+  submission_id: string;
+}
+
+export async function handleIndexGet(
+  params: IndexGetInput,
+  ctx: HandlerContext,
+): Promise<HandlerResult<PublicSubmission>> {
+  if (!params.submission_id) {
+    return { ok: false, error: { code: "INVALID_INPUT", message: "submission_id is required." } };
+  }
+
+  const row = ctx.db
+    .prepare(
+      `SELECT id, agent_id, intent_text, intent_embedding, public_data, tags, status, created_at, expires_at
+       FROM submissions WHERE id = ?`,
+    )
+    .get(params.submission_id) as Record<string, any> | undefined;
+
+  if (!row) {
+    return { ok: false, error: { code: "NOT_FOUND", message: "Submission not found." } };
+  }
+
+  return {
+    ok: true,
+    data: {
+      id: row.id,
+      agent_id: row.agent_id,
+      intent_text: row.intent_text,
+      intent_embedding: safeJsonParse(row.intent_embedding, []),
+      public_data: row.public_data ? safeJsonParse(row.public_data, null) : null,
+      tags: row.tags ? safeJsonParse(row.tags, null) : null,
+      status: row.status,
+      created_at: row.created_at,
+      expires_at: row.expires_at,
+    },
+  };
 }
 
 // ─── Safe JSON Parse ──────────────────────────────────────────────────
@@ -802,87 +854,5 @@ export function safeJsonParse<T>(json: string | null | undefined, fallback: T): 
     return JSON.parse(json) as T;
   } catch {
     return fallback;
-  }
-}
-
-// ─── Passive Alert Trigger ────────────────────────────────────────────
-// Called after a new submission is inserted. Scores all existing active
-// submissions from other agents and creates v4_alerts for any matches
-// above the threshold. Runs synchronously, best-effort (never throws).
-
-function cosineSim(a: number[], b: number[]): number {
-  let dot = 0, na = 0, nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    na += a[i] * a[i];
-    nb += b[i] * b[i];
-  }
-  const denom = Math.sqrt(na) * Math.sqrt(nb);
-  return denom === 0 ? 0 : dot / denom;
-}
-
-export function triggerPassiveAlerts(
-  ctx: HandlerContext,
-  submissionId: string,
-  agentId: string,
-  askEmbedding: number[],
-  offerEmbedding: number[] | null,
-  threshold: number,
-): void {
-  try {
-    const now = new Date().toISOString();
-
-    const candidates = ctx.db
-      .prepare(
-        `SELECT s.id, s.agent_id, s.ask_embedding, s.offer_embedding, a.reputation_score
-         FROM submissions s
-         JOIN v4_agents a ON s.agent_id = a.id
-         WHERE s.status = 'active'
-           AND s.expires_at > ?
-           AND s.agent_id != ?`,
-      )
-      .all(now, agentId) as Record<string, any>[];
-
-    for (const cand of candidates) {
-      const askB: number[] | null = safeJsonParse(cand.ask_embedding, null);
-      if (!askB) continue;
-      const offerB: number[] | null = cand.offer_embedding
-        ? safeJsonParse(cand.offer_embedding, null)
-        : null;
-
-      // Cross-match score: directional cosine similarity
-      const simAB = offerB ? Math.max(0, cosineSim(askEmbedding, offerB)) : 0;
-      const simBA = offerEmbedding ? Math.max(0, cosineSim(askB, offerEmbedding)) : 0;
-
-      let crossScore: number;
-      if (offerEmbedding || offerB) {
-        crossScore = (simAB + simBA) / 2;
-      } else {
-        crossScore = Math.max(0, cosineSim(askEmbedding, askB));
-      }
-
-      if (crossScore < threshold) continue;
-
-      // Skip if alert already exists for this pair
-      const existing = ctx.db
-        .prepare("SELECT id FROM v4_alerts WHERE submission_id = ? AND matched_submission_id = ?")
-        .get(submissionId, cand.id);
-      if (existing) continue;
-
-      const breakdown = JSON.stringify({
-        cross_score: Math.round(crossScore * 10000) / 10000,
-        ask_offer_sim_ab: Math.round(simAB * 10000) / 10000,
-        ask_offer_sim_ba: Math.round(simBA * 10000) / 10000,
-      });
-
-      ctx.db
-        .prepare(
-          `INSERT INTO v4_alerts (id, submission_id, matched_submission_id, score, score_breakdown, status, created_at)
-           VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
-        )
-        .run(randomUUID(), submissionId, cand.id, crossScore, breakdown, now);
-    }
-  } catch {
-    // Best-effort: never block the submit response
   }
 }

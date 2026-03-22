@@ -61,10 +61,16 @@ import {
   handleSubmissionUpdate,
   handleSubmissionWithdraw,
   handleSubmissionsList,
+  handleIndex,
+  handleIndexGet,
 } from "../handlers/submit.js";
 import { handleMatch } from "../handlers/match.js";
-import { handleAlertsList, handleAlertsDismiss } from "../handlers/alerts.js";
 import { handleMarketInsights } from "../handlers/market-insights.js";
+import {
+  handleMessageSend,
+  handleMessageInbox,
+  handleMessageRespond,
+} from "../handlers/messages-v4.js";
 import {
   handleToolPublish,
   handleToolList,
@@ -165,7 +171,8 @@ const OPERATIONS: Record<string, HandlerFn> = {
   submissions: handleSubmissionsList,
   match: handleMatch,
   market_insights: handleMarketInsights,
-  alerts: handleAlertsList,
+  // v4: Public index (no auth)
+  index: handleIndex,
 };
 
 // ─── Marketplace Operations (gated by MARKETPLACE_ENABLED) ──────────
@@ -236,8 +243,12 @@ const NESTED_OPERATIONS: Record<string, HandlerFn> = {
   // v4 submissions
   "submission/update": handleSubmissionUpdate,
   "submission/withdraw": handleSubmissionWithdraw,
-  // v4 alerts
-  "alerts/dismiss": handleAlertsDismiss,
+  // v4 public index
+  "index/get": handleIndexGet,
+  // v4 messaging
+  "message/send": handleMessageSend,
+  "message/inbox": handleMessageInbox,
+  "message/respond": handleMessageRespond,
   // v4 coordination tools
   "tool/publish": handleToolPublish,
   "tool/list": handleToolList,

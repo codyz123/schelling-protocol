@@ -80,7 +80,7 @@ export async function handleMarketInsights(
 
   const sub = ctx.db
     .prepare(
-      `SELECT id, ask_embedding, offer_embedding, structured_data, required_tools, match_config
+      `SELECT id, intent_embedding, identity_embedding, structured_data, required_tools
        FROM submissions WHERE id = ? AND agent_id = ?`,
     )
     .get(params.submission_id, agent.id) as Record<string, any> | undefined;
@@ -95,14 +95,12 @@ export async function handleMarketInsights(
   const threshold = params.threshold ?? 0.3;
   const altThreshold = params.alt_threshold ?? 0.5;
 
-  const askA: number[] = safeJsonParse(sub.ask_embedding, []);
-  const offerA: number[] | null = sub.offer_embedding ? safeJsonParse(sub.offer_embedding, null) : null;
+  const intentA: number[] = safeJsonParse(sub.intent_embedding, []);
+  const identityA: number[] | null = sub.identity_embedding ? safeJsonParse(sub.identity_embedding, null) : null;
   const structuredA: Record<string, any> | null = sub.structured_data ? safeJsonParse(sub.structured_data, null) : null;
 
-  // Load match_config for directional weights (same as match.ts)
-  const matchConfig: Record<string, any> = sub.match_config ? safeJsonParse(sub.match_config, {}) : {};
-  const wAb: number = (typeof matchConfig.w_ab === "number" && matchConfig.w_ab > 0) ? matchConfig.w_ab : DEFAULT_W_AB;
-  const wBa: number = (typeof matchConfig.w_ba === "number" && matchConfig.w_ba > 0) ? matchConfig.w_ba : DEFAULT_W_BA;
+  const wAb: number = DEFAULT_W_AB;
+  const wBa: number = DEFAULT_W_BA;
   const wDirectionalSum = wAb + wBa;
 
   const now = new Date().toISOString();
@@ -110,7 +108,7 @@ export async function handleMarketInsights(
   // Fetch all active submissions from other agents (specific columns only)
   const pool = ctx.db
     .prepare(
-      `SELECT s.id, s.ask_embedding, s.offer_embedding, s.structured_data, s.required_tools
+      `SELECT s.id, s.intent_embedding, s.identity_embedding, s.structured_data, s.required_tools
        FROM submissions s
        WHERE s.status = 'active' AND s.expires_at > ? AND s.agent_id != ?`,
     )
@@ -128,15 +126,15 @@ export async function handleMarketInsights(
   const scored: ScoredEntry[] = [];
 
   for (const candSub of pool) {
-    const askB: number[] | null = safeJsonParse(candSub.ask_embedding, null);
-    if (!askB) continue; // malformed row — skip
-    const offerB: number[] | null = candSub.offer_embedding ? safeJsonParse(candSub.offer_embedding, null) : null;
+    const intentB: number[] | null = safeJsonParse(candSub.intent_embedding, null);
+    if (!intentB) continue; // malformed row — skip
+    const identityB: number[] | null = candSub.identity_embedding ? safeJsonParse(candSub.identity_embedding, null) : null;
 
-    const simAB = offerB ? Math.max(0, cosine(askA, offerB)) : 0;
-    const simBA = offerA ? Math.max(0, cosine(askB, offerA)) : 0;
-    const crossScore = (offerA || offerB)
+    const simAB = identityB ? Math.max(0, cosine(intentA, identityB)) : 0;
+    const simBA = identityA ? Math.max(0, cosine(intentB, identityA)) : 0;
+    const crossScore = (identityA || identityB)
       ? (wAb * simAB + wBa * simBA) / wDirectionalSum
-      : Math.max(0, cosine(askA, askB));
+      : Math.max(0, cosine(intentA, intentB));
 
     scored.push({
       submissionId: candSub.id,

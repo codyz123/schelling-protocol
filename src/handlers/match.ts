@@ -209,7 +209,7 @@ export async function handleMatch(
   // Fetch the requesting submission
   const sub = ctx.db
     .prepare(
-      `SELECT id, agent_id, ask_embedding, offer_embedding, structured_data, required_tools, match_config
+      `SELECT id, agent_id, intent_embedding, identity_embedding, structured_data, required_tools
        FROM submissions WHERE id = ? AND agent_id = ? AND status = 'active'`,
     )
     .get(params.submission_id, agent.id) as Record<string, any> | undefined;
@@ -221,16 +221,15 @@ export async function handleMatch(
     };
   }
 
-  const askA: number[] = safeJsonParse(sub.ask_embedding, []);
-  const offerA: number[] | null = sub.offer_embedding ? safeJsonParse(sub.offer_embedding, null) : null;
+  const intentA: number[] = safeJsonParse(sub.intent_embedding, []);
+  const identityA: number[] | null = sub.identity_embedding ? safeJsonParse(sub.identity_embedding, null) : null;
   const structuredA: Record<string, any> | null = sub.structured_data ? safeJsonParse(sub.structured_data, null) : null;
   const requiredToolsA: string[] = sub.required_tools ? safeJsonParse(sub.required_tools, []) : [];
-  const matchConfig: Record<string, any> = sub.match_config ? safeJsonParse(sub.match_config, {}) : {};
 
-  // Resolve weights (request params > match_config > defaults)
-  const rawAlpha = params.alpha ?? matchConfig.alpha ?? DEFAULT_ALPHA;
-  const rawBeta = params.beta ?? matchConfig.beta ?? DEFAULT_BETA;
-  const rawGamma = params.gamma ?? matchConfig.gamma ?? DEFAULT_GAMMA;
+  // Resolve weights (request params > defaults)
+  const rawAlpha = params.alpha ?? DEFAULT_ALPHA;
+  const rawBeta = params.beta ?? DEFAULT_BETA;
+  const rawGamma = params.gamma ?? DEFAULT_GAMMA;
 
   // Reject negative weights; clamp each to [0.0, 1.0]
   if (rawAlpha < 0 || rawBeta < 0 || rawGamma < 0) {
@@ -240,12 +239,12 @@ export async function handleMatch(
   const clampedBeta = Math.min(rawBeta, 1.0);
   const clampedGamma = Math.min(rawGamma, 1.0);
 
-  const minScore = params.min_score ?? matchConfig.min_score ?? DEFAULT_MIN_SCORE;
-  const topK = Math.max(1, Math.min(params.top_k ?? matchConfig.max_candidates ?? DEFAULT_TOP_K, MAX_TOP_K));
+  const minScore = params.min_score ?? DEFAULT_MIN_SCORE;
+  const topK = Math.max(1, Math.min(params.top_k ?? DEFAULT_TOP_K, MAX_TOP_K));
 
   // Directional weights for cross-score formula
-  const wAb: number = (typeof matchConfig.w_ab === "number" && matchConfig.w_ab > 0) ? matchConfig.w_ab : DEFAULT_W_AB;
-  const wBa: number = (typeof matchConfig.w_ba === "number" && matchConfig.w_ba > 0) ? matchConfig.w_ba : DEFAULT_W_BA;
+  const wAb: number = DEFAULT_W_AB;
+  const wBa: number = DEFAULT_W_BA;
   const wDirectionalSum = wAb + wBa;
 
   // Normalize composite weights — guard against zero sum
@@ -262,7 +261,7 @@ export async function handleMatch(
   const now = new Date().toISOString();
   const candidates = ctx.db
     .prepare(
-      `SELECT s.id, s.agent_id, s.intent_text, s.ask_embedding, s.offer_embedding,
+      `SELECT s.id, s.agent_id, s.intent_text, s.intent_embedding, s.identity_embedding,
               s.structured_data, s.required_tools, a.reputation_score
        FROM submissions s
        JOIN v4_agents a ON s.agent_id = a.id
@@ -276,9 +275,9 @@ export async function handleMatch(
 
   for (const candSub of candidates) {
     // Parse candidate embeddings with safe JSON parsing
-    const askB: number[] | null = safeJsonParse(candSub.ask_embedding, null);
-    const offerB: number[] | null = candSub.offer_embedding ? safeJsonParse(candSub.offer_embedding, null) : null;
-    if (!askB) continue; // malformed row — skip
+    const intentB: number[] | null = safeJsonParse(candSub.intent_embedding, null);
+    const identityB: number[] | null = candSub.identity_embedding ? safeJsonParse(candSub.identity_embedding, null) : null;
+    if (!intentB) continue; // malformed row — skip
 
     const structuredB: Record<string, any> | null = candSub.structured_data
       ? safeJsonParse(candSub.structured_data, null)
@@ -308,16 +307,18 @@ export async function handleMatch(
     if (!requiredToolsMet) continue;
 
     // ── Cross-match scoring (spec formula) ───────────────────────────
+    // simAB = cosine(A.intent, B.identity) — does B's identity match A's intent?
+    // simBA = cosine(B.intent, A.identity) — does A's identity match B's intent?
     // cross_score = (w_ab * max(0, simAB) + w_ba * max(0, simBA)) / (w_ab + w_ba)
-    const simAB = offerB ? Math.max(0, cosine(askA, offerB)) : 0;
-    const simBA = offerA ? Math.max(0, cosine(askB, offerA)) : 0;
+    const simAB = identityB ? Math.max(0, cosine(intentA, identityB)) : 0;
+    const simBA = identityA ? Math.max(0, cosine(intentB, identityA)) : 0;
 
     let crossScore: number;
-    if (offerA || offerB) {
+    if (identityA || identityB) {
       crossScore = (wAb * simAB + wBa * simBA) / wDirectionalSum;
     } else {
-      // Serendipity fallback: neither submission has an offer embedding
-      crossScore = Math.max(0, cosine(askA, askB));
+      // Serendipity fallback: neither submission has an identity embedding
+      crossScore = Math.max(0, cosine(intentA, intentB));
     }
 
     // ── Cross-score threshold filter (spec step 2) ───────────────────
