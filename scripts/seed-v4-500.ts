@@ -11,6 +11,7 @@ function expiresAt(days = 30): string {
 }
 
 function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 function pickN<T>(arr: T[], n: number): T[] {
   const shuffled = [...arr].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, n);
@@ -302,7 +303,16 @@ async function main() {
       console.log(`  ✓ Agent ${name} created`);
     } else {
       console.log(`  ✗ Agent ${name} failed:`, res);
+      // If rate limited, wait and retry
+      if (res.error === 'RATE_LIMITED') {
+        const wait = res.retry_after_ms || 60000;
+        console.log(`  ⏳ Rate limited, waiting ${Math.ceil(wait/1000)}s...`);
+        await sleep(wait + 1000);
+        const retry = await post('agent/create', { display_name: name });
+        if (retry.agent_api_key) { agents.push(retry.agent_api_key); console.log(`  ✓ Agent ${name} created (retry)`); }
+      }
     }
+    await sleep(600);
   }
 
   if (agents.length === 0) { console.error('No agents created!'); process.exit(1); }
@@ -331,7 +341,20 @@ async function main() {
       } else {
         failed++;
         if (failed <= 3) console.log(`  ✗ Failed:`, JSON.stringify(res).substring(0, 200));
+        // If rate limited, wait and retry
+        if (res.code === 'RATE_LIMITED' || res.error === 'RATE_LIMITED') {
+          const wait = res.retry_after_ms || 60000;
+          console.log(`  ⏳ Rate limited, waiting ${Math.ceil(wait/1000)}s...`);
+          await sleep(wait + 1000);
+          // Retry this submission
+          const retry = await post('submit', body, key);
+          if (retry.submission_id || retry.data?.submission_id) {
+            created++; failed--;
+          }
+        }
       }
+      // Throttle to stay under rate limit (~100/min = 600ms between)
+      await sleep(600);
     }
   }
 
