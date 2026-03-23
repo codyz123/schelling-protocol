@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 
   -- Intent (required, short, indexed)
   intent_text      TEXT NOT NULL,
-  intent_embedding TEXT NOT NULL,               -- 512-dim float32 JSON array
+  intent_embedding TEXT,                        -- 512-dim float32 JSON array (optional)
 
   -- Criteria (optional, can be long, free text + structured)
   criteria_text    TEXT,                        -- free text: how you judge matches

@@ -1,10 +1,7 @@
 -- Migration 004: Update v4 submissions schema
--- Renames ask_embedding→intent_embedding, offer_embedding→identity_embedding
--- Adds new columns for criteria, identity, public/private data
--- Safe to run multiple times (IF NOT EXISTS / try-catch pattern)
+-- Safe to run multiple times
 
--- Drop and recreate submissions if old schema exists
--- This is safe pre-launch (no real user data in v4 tables yet)
+-- Drop and recreate if schema is stale (pre-launch, no real user data)
 DROP TABLE IF EXISTS v4_alerts;
 DROP TABLE IF EXISTS v4_messages;
 DROP TABLE IF EXISTS negotiation_records;

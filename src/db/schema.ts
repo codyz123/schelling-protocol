@@ -65,24 +65,17 @@ export function initSchema(db: DatabaseConnection): void {
     }
   }
 
-  // Apply v4 schema update migration (drops old v4 tables if they exist with wrong schema)
+  // Apply v4 schema update — always drop and recreate v4 tables (pre-launch, no real data)
+  // This ensures the schema is always fresh and matches the latest 003 migration
   try {
     const v4UpdateSql = readFileSync(resolve(process.cwd(), "migrations/004_v4_schema_update.sql"), "utf-8");
     if (v4UpdateSql) {
-      // Only run if old schema exists (has ask_embedding instead of intent_embedding)
-      try {
-        const check = db.prepare("SELECT ask_embedding FROM submissions LIMIT 0");
-        check.get(); // Will succeed if old column exists
-        // Old schema detected — drop and let 003 recreate
-        db.exec(v4UpdateSql);
-        // Re-run 003 to create fresh tables
-        const v4SqlAgain = loadV4Migration();
-        if (v4SqlAgain) db.exec(v4SqlAgain);
-      } catch {
-        // Column doesn't exist (new schema) or table doesn't exist — skip
-      }
+      db.exec(v4UpdateSql);
+      // Re-run 003 to create fresh tables with correct schema
+      const v4SqlAgain = loadV4Migration();
+      if (v4SqlAgain) db.exec(v4SqlAgain);
     }
   } catch {
-    // Migration file not found — skip
+    // Migration file not found or already applied — skip
   }
 }
