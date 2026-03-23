@@ -413,9 +413,9 @@ async function loadSubmissions() {
       body: JSON.stringify({ limit: 50 }),
     });
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error?.message || 'Unknown error');
-    allSubmissions = json.data?.submissions || [];
-    const total = json.data?.total || allSubmissions.length;
+    if (json.error) throw new Error(json.error?.message || 'Unknown error');
+    allSubmissions = json.data?.submissions || json.submissions || [];
+    const total = json.data?.total ?? json.total ?? allSubmissions.length;
     document.getElementById('sub-count').textContent = `${total} active submission${total===1?'':'s'}`;
     renderSubmissions(allSubmissions);
   } catch (e) {
