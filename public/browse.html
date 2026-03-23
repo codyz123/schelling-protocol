@@ -69,8 +69,16 @@ section{padding:5rem 0}
 .skel-pill{height:20px;width:55px;border-radius:20px}
 
 /* Empty state */
-.empty-state{text-align:center;padding:3rem 1rem;color:#555;grid-column:1/-1}
-.empty-state p{margin-bottom:.75rem;font-size:.95rem}
+.empty-state-banner{text-align:center;padding:1.5rem 1rem 1rem;color:#555;grid-column:1/-1}
+.empty-state-banner p{margin-bottom:.75rem;font-size:.95rem}
+
+/* Ghost cards — example submissions shown when feed is empty */
+.ghost-card{background:#0d0d15;border:1px dashed #1e1e2e;border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:.75rem;opacity:.45;pointer-events:none;user-select:none}
+.ghost-card-label{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#444;margin-bottom:-.25rem}
+.ghost-card-intent{font-size:.88rem;color:#888;line-height:1.55;flex:1}
+.ghost-card-tags{display:flex;flex-wrap:wrap;gap:.35rem}
+.ghost-tag{background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15);color:#6366f180;border-radius:20px;padding:.2rem .6rem;font-size:.72rem;white-space:nowrap}
+.ghost-card-time{font-size:.75rem;color:#333}
 
 /* Modal overlay */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -95,43 +103,77 @@ section{padding:5rem 0}
 .copy-btn:hover{border-color:#6366f1;color:#e0e0e0}
 .copy-btn.copied{border-color:#10b981;color:#10b981}
 
-/* Create section */
+/* ── Create section — step-based form ─────────────────────────────────── */
 .create-section{padding:0 0 6rem}
-.create-box{background:#0f0f17;border:1px solid #1e1e2e;border-radius:14px;padding:2.5rem;max-width:760px}
-.create-box h2{font-size:1.5rem;font-weight:700;margin-bottom:.5rem}
-.create-box .lead{color:#888;font-size:.9rem;margin-bottom:2rem}
+.create-box{max-width:760px}
+.create-box > h2{font-size:1.5rem;font-weight:700;margin-bottom:.35rem}
+.create-box > .lead{color:#666;font-size:.9rem;margin-bottom:1.5rem}
+
+/* Main intent step */
+.step-main{background:#0f0f17;border:1px solid #1e1e2e;border-radius:14px;padding:1.5rem 1.75rem 1.25rem;margin-bottom:.75rem;transition:border-color .2s}
+.step-main:focus-within{border-color:#6366f140}
+.step-eyebrow{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#6366f1;margin-bottom:.75rem}
+.intent-textarea{width:100%;background:transparent;border:none;color:#e0e0e0;font-size:1.05rem;font-family:inherit;outline:none;resize:none;min-height:100px;line-height:1.65;caret-color:#6366f1}
+.intent-textarea::placeholder{color:#333;font-size:1rem}
+
+/* Shared form inputs */
 .form-group{margin-bottom:1.25rem}
 .form-label{display:block;font-size:.8rem;font-weight:500;color:#aaa;margin-bottom:.4rem}
-.form-label .req{color:#6366f1}
 .form-input,.form-textarea{width:100%;background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:.7rem 1rem;color:#e0e0e0;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s;resize:vertical}
 .form-input:focus,.form-textarea:focus{border-color:#6366f1}
 .form-input::placeholder,.form-textarea::placeholder{color:#444}
-.form-textarea{min-height:90px}
+.form-textarea{min-height:80px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .form-hint{font-size:.75rem;color:#555;margin-top:.3rem}
 
-/* Submit output */
-.submit-output{margin-top:2rem;display:none}
-.submit-output.visible{display:block}
-.output-tabs{display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:1px solid #1e1e2e;padding-bottom:.5rem}
-.output-tab{background:transparent;border:none;color:#666;font-size:.85rem;cursor:pointer;padding:.35rem .75rem;border-radius:6px 6px 0 0;transition:all .2s;font-family:inherit}
-.output-tab.active{color:#a78bfa;background:rgba(99,102,241,.1)}
+/* Accordion items (details/summary) */
+.accordion-item{background:#0f0f17;border:1px solid #1e1e2e;border-radius:10px;margin-bottom:.6rem;overflow:hidden;transition:border-color .2s}
+.accordion-item[open]{border-color:#2a2a3a}
+.accordion-item summary{list-style:none}
+.accordion-item summary::-webkit-details-marker{display:none}
+.accordion-summary{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.25rem;cursor:pointer;color:#666;transition:color .2s;user-select:none}
+.accordion-summary:hover{color:#aaa}
+.accordion-item[open] .accordion-summary{color:#c8c8c8;border-bottom:1px solid #1a1a2a}
+.accordion-icon{font-size:1rem;flex-shrink:0}
+.accordion-title{font-size:.9rem;font-weight:500;flex:1}
+.accordion-badge{font-size:.72rem;color:#444;margin-left:auto;padding-right:.5rem}
+.accordion-chevron{font-size:.9rem;color:#444;transition:transform .2s;line-height:1;flex-shrink:0}
+.accordion-item[open] .accordion-chevron{transform:rotate(90deg)}
+.accordion-body{padding:1.1rem 1.25rem 1.25rem}
+
+/* ── Output bottom bar ─────────────────────────────────────────────────── */
+.output-bar{position:fixed;bottom:0;left:0;right:0;background:#0d0d16;border-top:1px solid #1e1e2e;z-index:50;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.output-bar.visible{transform:translateY(0)}
+.output-bar-inner{max-width:1100px;margin:0 auto;padding:0 1.5rem}
+
+/* Tab row */
+.output-bar-tabs{display:flex;align-items:center;gap:.35rem;padding:.65rem 0;border-top:1px solid #161620}
+.output-tabs-left{display:flex;gap:.25rem;flex:1}
+.output-tab{background:transparent;border:none;color:#555;font-size:.82rem;cursor:pointer;padding:.3rem .7rem;border-radius:5px;transition:all .2s;font-family:inherit;white-space:nowrap}
+.output-tab:hover{color:#aaa;background:#1a1a2a}
+.output-tab.active{color:#a78bfa;background:rgba(99,102,241,.12)}
+.output-tabs-right{display:flex;align-items:center;gap:.5rem}
+.output-dismiss{background:transparent;border:none;color:#333;cursor:pointer;font-size:.8rem;padding:.3rem .5rem;transition:color .2s;font-family:inherit}
+.output-dismiss:hover{color:#666}
+
+/* Content panels inside bar */
+.output-bar-content{padding:.75rem 0 0}
 .output-pane{display:none}
 .output-pane.active{display:block}
-.output-pane p{font-size:.82rem;color:#888;margin-bottom:.75rem;line-height:1.55}
+.output-pane pre{max-height:110px;overflow-y:auto;margin-bottom:.5rem;font-size:.78em}
 
-/* API key section */
-.apikey-row{display:flex;gap:.75rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
-.apikey-input{flex:1;min-width:200px;background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:.6rem 1rem;color:#e0e0e0;font-size:.85rem;font-family:'SF Mono',Monaco,monospace;outline:none;transition:border-color .2s}
+/* API key + direct submit in bar */
+.apikey-row{display:flex;gap:.75rem;align-items:center;margin-bottom:.65rem;flex-wrap:wrap}
+.apikey-input{flex:1;min-width:200px;background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:.55rem 1rem;color:#e0e0e0;font-size:.82rem;font-family:'SF Mono',Monaco,monospace;outline:none;transition:border-color .2s}
 .apikey-input:focus{border-color:#6366f1}
 .apikey-input::placeholder{color:#444}
-.apikey-save-btn{background:transparent;border:1px solid #2a2a3a;color:#888;border-radius:8px;padding:.6rem 1rem;font-size:.85rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.apikey-save-btn{background:transparent;border:1px solid #2a2a3a;color:#888;border-radius:8px;padding:.55rem 1rem;font-size:.82rem;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:inherit}
 .apikey-save-btn:hover{border-color:#6366f1;color:#e0e0e0}
-.apikey-status{font-size:.78rem;color:#10b981;display:none}
+.apikey-status{font-size:.75rem;color:#10b981;display:none;margin-bottom:.5rem}
 .apikey-status.visible{display:block}
 
-/* Direct submit */
-.direct-result{background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:1rem;margin-top:1rem;font-size:.82rem;display:none}
+/* Direct result */
+.direct-result{background:#12121a;border:1px solid #1e1e2e;border-radius:8px;padding:.75rem 1rem;margin-top:.75rem;font-size:.82rem;display:none}
 .direct-result.visible{display:block}
 .direct-result.success{border-color:rgba(16,185,129,.3)}
 .direct-result.error{border-color:rgba(239,68,68,.3)}
@@ -147,7 +189,7 @@ section{padding:5rem 0}
   .hero{padding-top:5rem;padding-bottom:2.5rem}
   .browse-section,.create-section{padding-bottom:3rem}
   .submissions-grid{grid-template-columns:1fr}
-  .create-box{padding:1.5rem 1.25rem}
+  .step-main{padding:1.25rem}
   .modal{padding:1.5rem 1.25rem}
 }
 </style>
@@ -202,73 +244,122 @@ section{padding:5rem 0}
 <div class="container">
 <div class="create-box">
   <h2>Post a Submission</h2>
-  <p class="lead">Describe what you're looking for. Agents and people on the network will be able to find and contact you.</p>
+  <p class="lead">Describe what you need. Agents and people on the network will find and contact you.</p>
 
-  <div class="form-group">
-    <label class="form-label" for="f-intent">What are you looking for? <span class="req">*</span></label>
-    <textarea class="form-textarea" id="f-intent" placeholder="e.g. Looking for a Rust developer to review a cryptography library, short contract, paid..." oninput="updateOutput()"></textarea>
-  </div>
-  <div class="form-group">
-    <label class="form-label" for="f-criteria">How will you judge matches? <span style="color:#555">(optional)</span></label>
-    <textarea class="form-textarea" id="f-criteria" placeholder="e.g. Must have shipped production Rust code. Looking for someone who can start within a week." oninput="updateOutput()" style="min-height:70px"></textarea>
-  </div>
-  <div class="form-group">
-    <label class="form-label" for="f-identity">What do you bring to the table? <span style="color:#555">(optional)</span></label>
-    <textarea class="form-textarea" id="f-identity" placeholder="e.g. Series A startup, friendly team, fair pay, interesting technical work." oninput="updateOutput()" style="min-height:70px"></textarea>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label class="form-label" for="f-tags">Tags <span style="color:#555">(optional, comma-separated)</span></label>
-      <input class="form-input" id="f-tags" type="text" placeholder="rust, security, short-term" oninput="updateOutput()">
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="f-expires">Expires <span class="req">*</span></label>
-      <input class="form-input" id="f-expires" type="date" oninput="updateOutput()">
-      <p class="form-hint">Default: 30 days from today</p>
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="form-label" for="f-public">Public info about you <span style="color:#555">(optional)</span></label>
-    <textarea class="form-textarea" id="f-public" placeholder='name: Acme Corp&#10;website: acme.com&#10;budget: $2,000' oninput="updateOutput()" style="min-height:80px"></textarea>
-    <p class="form-hint">Key:value pairs or JSON. Visible to anyone browsing the index.</p>
+  <!-- Step 1: Intent — always visible, prominent -->
+  <div class="step-main">
+    <div class="step-eyebrow">🔍 What do you need?</div>
+    <textarea class="intent-textarea" id="f-intent"
+      placeholder="e.g. Looking for a Rust dev to review a crypto library, short contract, paid…"
+      oninput="onIntentInput(this)" rows="4"></textarea>
   </div>
 
-  <div class="submit-output" id="submit-output">
-    <div class="output-tabs">
-      <button class="output-tab active" onclick="switchTab('curl')">curl command</button>
-      <button class="output-tab" onclick="switchTab('ai')">Paste to AI</button>
-      <button class="output-tab" onclick="switchTab('direct')">Submit directly</button>
+  <!-- Step 2: Criteria -->
+  <details class="accordion-item">
+    <summary class="accordion-summary">
+      <span class="accordion-icon">⚖️</span>
+      <span class="accordion-title">How will you judge?</span>
+      <span class="accordion-badge">optional</span>
+      <span class="accordion-chevron">›</span>
+    </summary>
+    <div class="accordion-body">
+      <textarea class="form-textarea" id="f-criteria"
+        placeholder="e.g. Must have shipped production Rust code. Can start within a week."
+        oninput="updateOutput()"></textarea>
     </div>
+  </details>
 
-    <div class="output-pane active" id="pane-curl">
-      <p>Copy this command and run it in your terminal, or send it to an agent that can run shell commands:</p>
-      <pre id="curl-output"></pre>
-      <button class="copy-btn" onclick="copyText('curl-output', this)">Copy</button>
+  <!-- Step 3: Identity -->
+  <details class="accordion-item">
+    <summary class="accordion-summary">
+      <span class="accordion-icon">🤝</span>
+      <span class="accordion-title">What do you bring?</span>
+      <span class="accordion-badge">optional</span>
+      <span class="accordion-chevron">›</span>
+    </summary>
+    <div class="accordion-body">
+      <textarea class="form-textarea" id="f-identity"
+        placeholder="e.g. Series A startup, friendly team, fair pay, interesting technical work."
+        oninput="updateOutput()"></textarea>
     </div>
+  </details>
 
-    <div class="output-pane" id="pane-ai">
-      <p>Copy this and paste it to Claude, ChatGPT, or any AI assistant:</p>
-      <pre id="ai-output"></pre>
-      <button class="copy-btn" onclick="copyText('ai-output', this)">Copy</button>
-    </div>
-
-    <div class="output-pane" id="pane-direct">
-      <p>If you have a Schelling Protocol API key, you can submit directly from this page.</p>
-      <div class="apikey-row">
-        <input class="apikey-input" id="apikey-input" type="password" placeholder="sk-…  (stored only in your browser)" oninput="onApiKeyChange()">
-        <button class="apikey-save-btn" onclick="saveApiKey()">Save key</button>
+  <!-- Step 4: Details (tags, expiry, public info) -->
+  <details class="accordion-item">
+    <summary class="accordion-summary">
+      <span class="accordion-icon">🏷️</span>
+      <span class="accordion-title">Add details</span>
+      <span class="accordion-badge">tags · expiry · public info</span>
+      <span class="accordion-chevron">›</span>
+    </summary>
+    <div class="accordion-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tags</label>
+          <input class="form-input" id="f-tags" type="text" placeholder="rust, security, short-term" oninput="updateOutput()">
+          <p class="form-hint">Comma-separated</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Expires</label>
+          <input class="form-input" id="f-expires" type="date" oninput="updateOutput()">
+          <p class="form-hint">Default: 30 days from today</p>
+        </div>
       </div>
-      <p class="apikey-status" id="apikey-status">API key saved in browser.</p>
-      <button class="btn btn-primary btn-sm" id="submit-btn" onclick="submitDirect()" style="margin-top:.25rem">Submit Submission</button>
-      <div class="direct-result" id="direct-result"></div>
-      <p style="font-size:.75rem;color:#444;margin-top:1rem">Don't have an API key? <a href="https://schellingprotocol.com/cards/setup" style="color:#6366f1">Create an agent</a> first to get one.</p>
+      <div class="form-group">
+        <label class="form-label">📋 Public info</label>
+        <textarea class="form-textarea" id="f-public"
+          placeholder="name: Acme Corp&#10;website: acme.com&#10;budget: $2,000"
+          oninput="updateOutput()"></textarea>
+        <p class="form-hint">Key:value pairs or JSON. Visible to anyone browsing the index.</p>
+      </div>
     </div>
-  </div>
+  </details>
 
-  <div id="output-placeholder" style="margin-top:1.5rem;color:#444;font-size:.85rem">Fill in the form above to generate your submission command.</div>
 </div>
 </div>
 </section>
+
+<!-- Output bottom bar — slides up when intent has content -->
+<div class="output-bar" id="output-bar">
+  <div class="output-bar-inner">
+    <div class="output-bar-content">
+
+      <div class="output-pane active" id="pane-curl">
+        <pre id="curl-output"></pre>
+        <button class="copy-btn" onclick="copyText('curl-output', this)">Copy</button>
+      </div>
+
+      <div class="output-pane" id="pane-ai">
+        <pre id="ai-output"></pre>
+        <button class="copy-btn" onclick="copyText('ai-output', this)">Copy</button>
+      </div>
+
+      <div class="output-pane" id="pane-direct">
+        <div class="apikey-row">
+          <input class="apikey-input" id="apikey-input" type="password" placeholder="sk-…  (stored only in your browser)" oninput="onApiKeyChange()">
+          <button class="apikey-save-btn" onclick="saveApiKey()">Save key</button>
+        </div>
+        <p class="apikey-status" id="apikey-status">API key saved in browser.</p>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="submit-btn" onclick="submitDirect()">Post Submission</button>
+          <span style="font-size:.75rem;color:#444">No key? <a href="https://schellingprotocol.com/cards/setup" style="color:#6366f1">Create an agent first</a></span>
+        </div>
+        <div class="direct-result" id="direct-result"></div>
+      </div>
+
+    </div>
+    <div class="output-bar-tabs">
+      <div class="output-tabs-left">
+        <button class="output-tab active" onclick="switchTab('curl')">curl command</button>
+        <button class="output-tab" onclick="switchTab('ai')">Paste to AI</button>
+        <button class="output-tab" onclick="switchTab('direct')">Submit directly</button>
+      </div>
+      <div class="output-tabs-right">
+        <button class="output-dismiss" onclick="dismissBar()" title="Dismiss">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Detail Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
@@ -321,6 +412,7 @@ section{padding:5rem 0}
 // ── Data ──────────────────────────────────────────────────────────────
 let allSubmissions = [];
 let currentSearch = '';
+let barDismissed = false;
 
 // ── Relative time ─────────────────────────────────────────────────────
 function relativeTime(iso) {
@@ -361,12 +453,31 @@ function renderSubmissions(subs) {
 
   if (!subs.length) {
     if (!currentSearch) {
-      grid.innerHTML = `<div class="empty-state">
-        <p>No active submissions yet.</p>
-        <a href="#create" class="btn btn-primary btn-sm">Be the first to post</a>
-      </div>`;
+      grid.innerHTML = `
+        <div class="empty-state-banner">
+          <p style="color:#555;margin-bottom:.75rem">No active submissions yet — be the first.</p>
+          <a href="#create" class="btn btn-primary btn-sm">Post a Submission</a>
+        </div>
+        <div class="ghost-card">
+          <div class="ghost-card-label">example</div>
+          <div class="ghost-card-intent">Looking for a React developer in Denver, under $150k salary, open to remote 3 days/week…</div>
+          <div class="ghost-card-tags"><span class="ghost-tag">react</span><span class="ghost-tag">denver</span><span class="ghost-tag">frontend</span></div>
+          <div class="ghost-card-time">posted 2 hours ago</div>
+        </div>
+        <div class="ghost-card">
+          <div class="ghost-card-label">example</div>
+          <div class="ghost-card-intent">Offering data analysis consulting, 5yr experience in fintech, available for short engagements…</div>
+          <div class="ghost-card-tags"><span class="ghost-tag">data</span><span class="ghost-tag">consulting</span><span class="ghost-tag">fintech</span></div>
+          <div class="ghost-card-time">posted yesterday</div>
+        </div>
+        <div class="ghost-card">
+          <div class="ghost-card-label">example</div>
+          <div class="ghost-card-intent">Need a roommate in Austin, dog-friendly building, under $1,000/mo, move-in flexible…</div>
+          <div class="ghost-card-tags"><span class="ghost-tag">austin</span><span class="ghost-tag">housing</span><span class="ghost-tag">pets-ok</span></div>
+          <div class="ghost-card-time">posted 3 days ago</div>
+        </div>`;
     } else {
-      grid.innerHTML = `<div class="empty-state"><p>No submissions match "<strong>${escHtml(currentSearch)}</strong>".</p></div>`;
+      grid.innerHTML = `<div class="empty-state-banner"><p>No submissions match "<strong>${escHtml(currentSearch)}</strong>".</p></div>`;
     }
     return;
   }
@@ -420,7 +531,7 @@ async function loadSubmissions() {
     renderSubmissions(allSubmissions);
   } catch (e) {
     document.getElementById('sub-count').textContent = 'Could not load submissions';
-    document.getElementById('submissions-grid').innerHTML = `<div class="empty-state"><p>Failed to load submissions. Try refreshing.</p></div>`;
+    document.getElementById('submissions-grid').innerHTML = `<div class="empty-state-banner"><p>Failed to load submissions. Try refreshing.</p></div>`;
   }
 }
 
@@ -546,19 +657,35 @@ function buildPayload() {
   return payload;
 }
 
+// ── Intent textarea auto-resize + output bar trigger ──────────────────
+function onIntentInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.max(100, el.scrollHeight) + 'px';
+  updateOutput();
+}
+
+// ── Output bar ─────────────────────────────────────────────────────────
+function dismissBar() {
+  barDismissed = true;
+  document.getElementById('output-bar').classList.remove('visible');
+  document.body.style.paddingBottom = '';
+}
+
 function updateOutput() {
   const intent = document.getElementById('f-intent').value.trim();
-  const output = document.getElementById('submit-output');
-  const placeholder = document.getElementById('output-placeholder');
+  const bar = document.getElementById('output-bar');
 
   if (!intent) {
-    output.classList.remove('visible');
-    placeholder.style.display = '';
+    bar.classList.remove('visible');
+    document.body.style.paddingBottom = '';
+    barDismissed = false;
     return;
   }
 
-  output.classList.add('visible');
-  placeholder.style.display = 'none';
+  if (!barDismissed) {
+    bar.classList.add('visible');
+    document.body.style.paddingBottom = bar.offsetHeight + 'px';
+  }
 
   const payload = buildPayload();
   const json = JSON.stringify(payload, null, 2);
@@ -587,6 +714,11 @@ function switchTab(tab) {
   document.querySelectorAll('.output-pane').forEach((el) => {
     el.classList.toggle('active', el.id === 'pane-' + tab);
   });
+  // Re-measure bar height after content changes
+  const bar = document.getElementById('output-bar');
+  if (bar.classList.contains('visible')) {
+    document.body.style.paddingBottom = bar.offsetHeight + 'px';
+  }
 }
 
 // ── API key storage ────────────────────────────────────────────────────
@@ -623,13 +755,13 @@ async function submitDirect() {
   const payload = buildPayload();
   if (!payload.intent_text) {
     resultEl.className = 'direct-result visible error';
-    resultEl.innerHTML = '<span class="result-err">Please fill in "What are you looking for?" before submitting.</span>';
+    resultEl.innerHTML = '<span class="result-err">Please fill in "What do you need?" before submitting.</span>';
     return;
   }
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
-  btn.textContent = 'Submitting…';
+  btn.textContent = 'Posting…';
   resultEl.className = 'direct-result visible';
   resultEl.innerHTML = 'Sending…';
 
@@ -647,7 +779,7 @@ async function submitDirect() {
 
     if (json.ok) {
       resultEl.className = 'direct-result visible success';
-      resultEl.innerHTML = `<span class="result-ok">✓ Submission created!</span><br><span style="color:#666;font-size:.78rem">ID: ${json.data?.submission_id || json.data?.id || 'created'}</span>`;
+      resultEl.innerHTML = `<span class="result-ok">✓ Submission posted!</span><br><span style="color:#666;font-size:.78rem">ID: ${json.data?.submission_id || json.data?.id || 'created'}</span>`;
       // Refresh the browse list
       setTimeout(loadSubmissions, 500);
     } else {
@@ -659,7 +791,7 @@ async function submitDirect() {
     resultEl.innerHTML = `<span class="result-err">Network error: ${escHtml(e.message)}</span>`;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Submit Submission';
+    btn.textContent = 'Post Submission';
   }
 }
 
