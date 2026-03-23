@@ -406,7 +406,8 @@ function filterSubmissions(q) {
 // ── Fetch ──────────────────────────────────────────────────────────────
 async function loadSubmissions() {
   try {
-    const res = await fetch('/schelling/index', {
+    const apiBase = window.location.hostname === 'localhost' ? '' : 'https://schelling-protocol-production.up.railway.app';
+    const res = await fetch(apiBase + '/schelling/index', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ limit: 50 }),
@@ -633,7 +634,8 @@ async function submitDirect() {
   resultEl.innerHTML = 'Sending…';
 
   try {
-    const res = await fetch('/schelling/submit', {
+    const apiBase = window.location.hostname === 'localhost' ? '' : 'https://schelling-protocol-production.up.railway.app';
+    const res = await fetch(apiBase + '/schelling/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
