@@ -65,17 +65,24 @@ export function initSchema(db: DatabaseConnection): void {
     }
   }
 
-  // Apply v4 schema update — always drop and recreate v4 tables (pre-launch, no real data)
-  // This ensures the schema is always fresh and matches the latest 003 migration
+  // v4 schema update — only run once (check for marker table)
   try {
-    const v4UpdateSql = readFileSync(resolve(process.cwd(), "migrations/004_v4_schema_update.sql"), "utf-8");
-    if (v4UpdateSql) {
-      db.exec(v4UpdateSql);
-      // Re-run 003 to create fresh tables with correct schema
-      const v4SqlAgain = loadV4Migration();
-      if (v4SqlAgain) db.exec(v4SqlAgain);
-    }
+    db.prepare("SELECT 1 FROM v4_schema_v2_applied LIMIT 1").get();
+    // Marker exists — schema already updated, skip
   } catch {
-    // Migration file not found or already applied — skip
+    // Marker doesn't exist — run migration
+    try {
+      const v4UpdateSql = readFileSync(resolve(process.cwd(), "migrations/004_v4_schema_update.sql"), "utf-8");
+      if (v4UpdateSql) {
+        db.exec(v4UpdateSql);
+        const v4SqlAgain = loadV4Migration();
+        if (v4SqlAgain) db.exec(v4SqlAgain);
+        // Create marker so we don't run this again
+        db.exec("CREATE TABLE IF NOT EXISTS v4_schema_v2_applied (applied_at TEXT DEFAULT (datetime('now')))");
+        db.exec("INSERT INTO v4_schema_v2_applied DEFAULT VALUES");
+      }
+    } catch {
+      // Migration file not found — skip
+    }
   }
 }
