@@ -767,7 +767,7 @@ export async function handleIndex(
   params: IndexInput,
   ctx: HandlerContext,
 ): Promise<HandlerResult<{ submissions: PublicSubmission[]; total: number }>> {
-  const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+  const limit = Math.min(Math.max(params.limit ?? 50, 1), 1000);
   const offset = Math.max(params.offset ?? 0, 0);
   const includeEmbeddings = params.include_embeddings === true;
 

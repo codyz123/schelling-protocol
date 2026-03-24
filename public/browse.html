@@ -346,7 +346,7 @@ async function loadData() {
     const res = await fetch(API + '/schelling/index', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ limit: 200 }),
+      body: JSON.stringify({ limit: 1000 }),
     });
     const json = await res.json();
     allSubs = json.data?.submissions || json.submissions || [];
