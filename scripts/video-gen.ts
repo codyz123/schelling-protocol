@@ -11,7 +11,12 @@ import { titleCard } from './video-templates/title-card';
 import { terminal } from './video-templates/terminal';
 import { matchResults } from './video-templates/match-results';
 
-const ELEVENLABS_KEY = 'sk_21db619bb40e554f4cf86d8f0851c932c657add8ad2c2655';
+// Read from the environment (Bun also loads a local .env). Never commit the key.
+const ELEVENLABS_KEY = process.env.ELEVENLABS_API_KEY;
+if (!ELEVENLABS_KEY) {
+  console.error('ELEVENLABS_API_KEY is not set. Export it (or put it in an uncommitted .env) before running video-gen.');
+  process.exit(1);
+}
 const FPS = 24; // 24fps is fine for this content, saves render time
 
 interface Scene {
